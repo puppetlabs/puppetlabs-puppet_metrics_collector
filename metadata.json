@@ -1,0 +1,39 @@
+{
+  "name": "puppetlabs-pe_support_script",
+  "version": "2016.2.0",
+  "author": "puppetlabs",
+  "summary": "Provides the enterprise support command.",
+  "license": "Puppet Enterprise Software License Agreement",
+  "source": "https://github.com/puppetlabs/pe_support_script",
+  "project_page": "https://github.com/puppetlabs/pe_support_script",
+  "issues_url": "",
+  "dependencies": [
+    {
+      "name":"puppetlabs-pe_manager",
+      "version_requirement":">= 2016.2.0"
+    }
+  ],
+  "operatingsystem_support": [
+    {
+      "operatingsystem": "RedHat",
+      "operatingsystemrelease": [
+        "6",
+        "7"
+      ]
+    },
+    {
+      "operatingsystem": "SLES",
+      "operatingsystemrelease": [
+        "11",
+        "12"
+      ]
+    },
+    {
+      "operatingsystem": "Ubuntu",
+      "operatingsystemrelease": [
+        "12.04",
+        "14.04"
+      ]
+    }
+  ]
+}
