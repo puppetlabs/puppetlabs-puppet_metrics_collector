@@ -1,0 +1,692 @@
+#!/bin/bash
+#==========================================================
+# Copyright @ 2014 Puppet Labs, LLC
+# Redistribution prohibited.
+# Address: 308 SW 2nd Ave., 5th Floor Portland, OR 97204
+# Phone: (877) 575-9775
+# Email: info@puppetlabs.com
+#
+# Please refer to the LICENSE.pdf file included
+# with the Puppet Enterprise distribution
+# for licensing information.
+#==========================================================
+
+#===[ Summary ]=========================================================
+
+# This program runs diagnostics for Puppet Enterprise. Run this file to
+# run the diagnostics and data aggregation.
+
+#===[ Setup ]===========================================================
+
+# Source the installer script. Fail hard if not present.
+
+SCRIPT_DIR="$(dirname "${0?}")"
+if [ -f "${SCRIPT_DIR?}/utilities" ] ; then
+    UTILITIES_FILE="${SCRIPT_DIR}/utilities"
+elif [ -f "/opt/puppetlabs/server/share/installer/utilities" ] ; then
+    UTILITIES_FILE="/opt/puppetlabs/server/share/installer/utilities"
+else
+    echo "Could not find the utilities library.  Please run from the puppet-enterprise installer directory."
+    exit 1
+fi
+. $UTILITIES_FILE
+
+register_exception_handler
+prepare_platform
+prepare_user
+
+#===[ Global variables ]================================================
+
+TIMESTAMP=$(date '+%Y%m%d%H%M%S')
+
+DROP=/var/tmp/puppet_enterprise_support_${TIMESTAMP}
+
+#===[ Functions ]=======================================================
+
+# This command is a modification of the utilities 'run'
+# command. It captures the output of a command specified by the first argument
+# and writes stdout and stderr to the specified file. If logging is enabled,
+# it appends the output to the logfile. If debugging is enabled, it will print
+# the command to be executed to the terminal.
+#
+# In the case where running the support script is necessary, the underlying
+# system may be unstable in some manner, so the support script needs extra
+# logging and debug information in case that it too starts failing.
+#
+# Example:
+#
+#  run_diagnostic "/usr/sbin/sestatus" "system/selinux.txt"
+#
+#
+run_diagnostic() {
+  local timeout=''
+  # Parse options
+  while :
+  do
+    case "$1" in
+      --timeout)
+        timeout=$2
+        shift 2
+        ;;
+      *)
+        break
+        ;;
+    esac
+  done
+
+  local t_run_diagnostic__command="${1?}"
+  local t_run_diagnostic__outfile="${DROP}/${2?}"
+
+  if is_debug; then
+    display " ** Collecting output of \"${t_run_diagnostic__command?}\""
+    display_newline
+  else
+    # Display some sort of progress so the user can know if progress has
+    # stalled.
+    display_nonewline '.'
+  fi
+
+  if [ -n "$timeout" ] ; then
+    if [ -x "${PUPPET_BIN_DIR?}/ruby" ] ; then
+      local prefix_command="with_timeout $timeout "
+    else
+      display " ** Warning: --timeout X passed, but PE ruby is not present.  Ignoring timeout flag."
+      display_newline
+    fi
+  fi
+
+  if has_logfile; then
+      echo "${t_run_diagnostic__command?}" >> "${LOGFILE?}"
+  fi
+  if is_noop; then
+    return 0
+  else
+    if has_logfile; then
+      # If logging is enabled, write the output to both the logfile and the
+      # out file.
+      ( eval "${prefix_command:-}${t_run_diagnostic__command?} 2>&1" ) | tee -a "${LOGFILE?}" >> $t_run_diagnostic__outfile
+      # Return the status of the command, not tee
+      return "${PIPESTATUS[0]}"
+    else
+      ( eval "${prefix_command:-}${t_run_diagnostic__command?} 2>&1" ) >> $t_run_diagnostic__outfile
+      return $?
+    fi
+  fi
+}
+
+#===[Networking checks]=========================================================
+
+netstat_checks() {
+  if [ "x${PLATFORM_NAME?}" = "xsolaris" ]; then
+    run_diagnostic "netstat -anf inet" "networking/ports.txt"
+  else
+    run_diagnostic "netstat -anptu" "networking/ports.txt"
+  fi
+}
+
+iptables_checks() {
+  iptables_file="networking/ip_tables.txt"
+  if [ "x${PLATFORM_NAME?}" = "xsolaris" ]; then
+    if run_suppress_output "wherefore ipf" && run_suppress_output "wherefore ipfstat"; then
+      run_diagnostic "ipfstat" $iptables_file
+      run_diagnostic "ipfstat -i" $iptables_file
+      run_diagnostic "ipfstat -o" $iptables_file
+      run_diagnostic "ipf -V" $iptables_file
+    fi
+  else
+    if run_suppress_output "wherefore iptables" ; then
+      run_diagnostic "iptables -L" $iptables_file
+      run_diagnostic "ip6tables -L" $iptables_file
+    else
+      run_diagnostic "lsmod | $PLATFORM_EGREP ip" "networking/ip_modules.txt"
+    fi
+  fi
+}
+
+hostname_checks() {
+  echo ${PLATFORM_HOSTNAME?} > $DROP/networking/hostname_output.txt
+
+  # this part doesn't work so well if your hostname is mapped to 127.0.x.1 in /etc/hosts
+
+  # See if hostname resolves
+  # This won't work on solaris
+  if ! [ ${PLATFORM_NAME?} = "solaris" ]; then
+    ipaddress=`ping  -t1 -c1 ${PLATFORM_HOSTNAME?} | awk -F\( '{print $2}' | awk -F\) '{print $1}' | head -1`
+    echo $ipaddress > $DROP/networking/guessed_ip_address.txt
+    run_suppress_output "wherefore tracepath" && mapped_hostname=`tracepath $ipaddress | head -1 | awk '{print $2}'`
+    echo $mapped_hostname > $DROP/networking/mapped_hostname_from_guessed_ip_address.txt
+  fi
+}
+
+can_contact_master() {
+  if run_suppress_output "wherefore puppet" && [ -f "${PUPPET_BIN_DIR?}/puppet" ]; then
+    if [ "x${PLATFORM_NAME?}" = "xsolaris" ]; then
+      PING="ping"
+    else
+      PING="ping -c 1"
+    fi
+
+    if $PING $(${PUPPET_BIN_DIR?}/puppet agent --configprint server) &> /dev/null; then
+      echo "Master is alive." > $DROP/networking/puppet_ping.txt
+    else
+      echo "Master is unreachable." > $DROP/networking/puppet_ping.txt
+    fi
+  else
+    echo "No puppet found, master status is unknown." > $DROP/networking/puppet_ping.txt
+  fi
+}
+
+ifconfig_output() {
+  if run_suppress_output "wherefore ifconfig" && ifconfig -a &> /dev/null; then
+    run_diagnostic "ifconfig -a" "networking/ifconfig.txt"
+  fi
+}
+
+#===[Resource checks]===========================================================
+
+get_all_database_names() {
+    echo "$(sudo -H -u pe-postgres ${SERVER_BIN_DIR?}/psql -t -c 'select datname from pg_catalog.pg_database;' | awk '{print $1}')"
+}
+
+df_checks() {
+  # Conditionally do some disk use checks
+  if $(df -h &> /dev/null); then
+    run_diagnostic "df -h" "resources/df_output.txt"
+  elif $(df -k &> /dev/null); then
+    run_diagnostic "df -k" "resources/df_output.txt"
+  fi
+
+  if $(df -i &> /dev/null); then
+    run_diagnostic "df -i" "resources/df_inodes_output.txt"
+  fi
+}
+
+db_relation_size_checks() {
+  # Inspired by https://wiki.postgresql.org/wiki/Disk_Usage#Finding_the_size_of_your_biggest_relations
+  local database_names=$(get_all_database_names)
+  for db in $database_names; do
+    local command="sudo -H -u pe-postgres ${SERVER_BIN_DIR?}/psql $db -c \
+\"SELECT '$db' as dbname, nspname || '.' || relname AS relation, \
+pg_size_pretty(pg_relation_size(C.oid)) AS size FROM pg_class C \
+LEFT JOIN pg_namespace N ON (N.oid = C.relnamespace) \
+WHERE nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast') \
+ORDER BY pg_relation_size(C.oid) DESC;\""
+    run_diagnostic "${command?}" "resources/db_relation_sizes.txt"
+  done
+}
+
+db_size_from_psql() {
+  local db=$1
+  local drop_file=resources/db_sizes_from_psql.txt
+  local command="sudo -H -u pe-postgres ${SERVER_BIN_DIR?}/psql -c \"SELECT '$db' AS dbname, pg_size_pretty(pg_database_size('$db'));\""
+  run_diagnostic "${command?}" "$drop_file"
+}
+
+db_size_from_fs() {
+  local db=$1
+  local drop_file=resources/db_sizes_from_du.txt
+  local oid=$(sudo -H -u pe-postgres "${SERVER_BIN_DIR?}/psql" -t -c "SELECT oid FROM pg_database WHERE datname='$db';")
+
+  run_diagnostic "echo -e -n '${db}\t' ; find ${SERVER_DATA_DIR}/postgresql/ -name ${oid} -print0 | xargs -0 du -sh " "$drop_file"
+}
+
+db_size_checks() {
+  if is_postgres; then
+    # Check size of databases, both from the filesystem's perspective and the
+    # database's perspective
+    local database_names=$(get_all_database_names)
+    for db in $database_names; do
+      # Find size via psql
+      db_size_from_psql $db
+
+      # Find size via filesystem
+      db_size_from_fs $db
+    done
+  fi
+}
+
+free_checks() {
+  # Sorry, no free on solaris. Seriously.
+  if [ ${PLATFORM_NAME?} = "solaris" ]; then
+    run_diagnostic "pagesize -a" "resources/free_mem.txt"
+    run_diagnostic "prtconf | $PLATFORM_EGREP 'Mem'" "resources/free_mem.txt"
+    run_diagnostic "swap -l" "resources/free_mem.txt"
+    run_diagnostic "swap -s" "resources/free_mem.txt"
+  else
+    run_diagnostic "free" "resources/free_mem.txt"
+  fi
+}
+
+ntp_checks() {
+    run_suppress_output "wherefore ntpq" && run_diagnostic "ntpq -p" "networking/ntpq_output.txt"
+}
+
+#===[System checks]=============================================================
+
+selinux_checks() {
+  [ -f /usr/sbin/sestatus ] && run_diagnostic "/usr/sbin/sestatus" "system/selinux.txt"
+}
+
+get_umask() {
+  umask > $DROP/system/umask.txt
+}
+
+facter_checks() {
+  run_diagnostic "${PUPPET_BIN_DIR?}/puppet facts" "system/facter_output.txt"
+}
+
+etc_checks() {
+  cp -p /etc/resolv.conf $DROP/system/etc
+  cp -p /etc/nsswitch.conf $DROP/system/etc
+  cp -p /etc/hosts $DROP/system/etc
+  case "${PLATFORM_NAME?}" in
+    debian|ubuntu)
+      CONFDIR="/etc/default"
+    ;;
+    *)
+      CONFDIR="/etc/sysconfig"
+    ;;
+  esac
+  if [ -f $CONFDIR/mcollective ]; then
+    cp -p $CONFDIR/mcollective $DROP/system/etc
+  fi
+  if [ -f $CONFDIR/pe-activemq ]; then
+    cp -p $CONFDIR/pe-activemq $DROP/system/etc
+  fi
+  if [ -f $CONFDIR/pe-console-services ]; then
+    cp -p $CONFDIR/pe-console-services $DROP/system/etc
+  fi
+  if [ -f $CONFDIR/pe-nginx ]; then
+    cp -p $CONFDIR/pe-nginx $DROP/system/etc
+  fi
+  if [ -f $CONFDIR/pe-orchestration-services ]; then
+    cp -p $CONFDIR/pe-orchestration-services $DROP/system/etc
+  fi
+  if [ -d $CONFDIR/pe-pgsql ]; then
+    cp -Rp $CONFDIR/pe-pgsql $DROP/system/etc
+  fi
+  if [ -f $CONFDIR/pe-puppetdb ]; then
+    cp -p $CONFDIR/pe-puppetdb $DROP/system/etc
+  fi
+  if [ -f $CONFDIR/pe-puppetserver ]; then
+    cp -p $CONFDIR/pe-puppetserver $DROP/system/etc
+  fi
+  if [ -f $CONFDIR/pe-razor-server ]; then
+    cp -p $CONFDIR/pe-razor-server $DROP/system/etc
+  fi
+  if [ -d $CONFDIR/pgsql ]; then
+    cp -Rp $CONFDIR/pgsql $DROP/system/etc
+  fi
+  if [ -f $CONFDIR/puppet ]; then
+    cp -p $CONFDIR/puppet $DROP/system/etc
+  fi
+  if [ -f $CONFDIR/pxp-agent ]; then
+    cp -p $CONFDIR/pxp-agent $DROP/system/etc
+  fi
+}
+
+os_checks() {
+  if [ ${PLATFORM_NAME?} = "solaris" ]; then
+    # Probably want more information than this here
+    echo "Solaris" > $DROP/system/os_checks.txt
+  elif run_suppress_output "wherefore lsb_release"; then
+    run_diagnostic "lsb_release -a" "system/lsb_release.txt"
+  fi
+
+  run_diagnostic "uname -a" "system/uname.txt"
+  run_diagnostic "uptime" "system/uptime.txt"
+}
+
+ps_checks() {
+  run_diagnostic "ps -ef" "system/ps_ef.txt"
+  $(ps -e f &> /dev/null) && run_diagnostic "ps -e f" "system/ps_tree.txt"
+}
+
+list_all_services() {
+  case "${PLATFORM_NAME?}" in
+    solaris)
+      run_diagnostic "svcs -a" "system/services.txt"
+    ;;
+    rhel|centos|sles)
+      run_diagnostic "chkconfig --list" "system/services.txt"
+    ;;
+    debian|ubuntu)
+      # no chkconfig here. thanks debian.
+    ;;
+    *)
+      # unsupported platform
+    ;;
+  esac
+}
+
+grab_env_vars() {
+  run_diagnostic "env" "system/env.txt"
+}
+
+pe_logs() {
+  cp -LpR /var/log/puppetlabs/* "${DROP}/logs"
+}
+
+get_state() {
+  mkdir -p "${DROP}/enterprise/puppetserver_state/"
+  t_puppet_state_dir=$("$(puppet_bin_dir)/puppet" config print --section=agent statedir)
+  t_state_dir="${t_puppet_state_dir:=/opt/puppetlabs/puppet/cache/state/}"
+  cp -LpR "${t_state_dir}" "${DROP}/enterprise/puppetserver_state/"
+}
+
+other_logs() {
+  for log in "system" "syslog" "messages"; do
+    [ -f /var/log/${log} ] && cp -pR /var/log/${log} $DROP/logs && gzip -9 $DROP/logs/${log}
+  done
+}
+
+#===[Puppet Enterprise checks]==================================================
+
+gather_enterprise_files() {
+  # tar provides a convenient way to exclude things from a tarball.
+  # However, we don't actually want to double-tarball things.
+  # So, just untar it afterward.
+
+  #optionally exclude modules, redact /etc/puppet.conf
+  #z flag fails on solaris
+  #--exclude also fails on solaris. sweet.
+  local modulepath=$(${PUPPET_BIN_DIR?}/puppet master --configprint modulepath)
+  local basemodulepath=$(${PUPPET_BIN_DIR?}/puppet master --configprint basemodulepath)
+  local environmentpath=$(${PUPPET_BIN_DIR?}/puppet master --configprint environmentpath)
+  local paths="${modulepath}:${basemodulepath}:${environmentpath}"
+  if [ "$FILESYNC" != "y" ]; then
+    # Exclude code-staging if not capturing filesync data.
+    local paths="${paths}:/etc/puppetlabs/code-staging"
+  fi
+  local untar_path="enterprise/"
+  if [ ${PLATFORM_NAME?} = "solaris" ]; then
+    find /etc/puppetlabs/puppet -name *.pem > "$DROP/tar_excludes.txt"
+    echo "/etc/puppetlabs/puppet/modules" >> "$DROP/tar_excludes.txt"
+    echo "/etc/puppetlabs/puppet/manifests" >> "$DROP/tar_excludes.txt"
+    echo "/etc/puppetlabs/puppet/ssl/ca/private/ca.pass" >> "$DROP/tar_excludes.txt"
+    echo "/etc/puppetlabs/mcollective/credentials" >> "$DROP/tar_excludes.txt"
+    echo "/etc/puppetlabs/mcollective/ssl" >> "$DROP/tar_excludes.txt"
+    IFS_SAVE="$IFS"
+    IFS=':'
+    for path in $paths; do
+      if [ -n "$path" ] ; then
+        echo $path >> "$DROP/tar_excludes.txt"
+      fi
+    done
+    IFS="$IFS_SAVE"
+    mkdir -p $untar_path
+    tar -pcXf "$DROP/tar_excludes.txt" - /etc/puppetlabs | ( cd $untar_path; tar -pxf - 2> /dev/null )
+    rm -rf "$DROP/tar_excludes.txt"
+  else
+    IFS_SAVE="$IFS"
+    IFS=':'
+    for path in $paths; do
+      if [ -n "$path" ] ; then
+        local excludes="${excludes} --exclude=${path}"
+      fi
+    done
+    IFS="$IFS_SAVE"
+    local tar_command="
+      tar -pc --exclude=/etc/puppetlabs/puppet/ssl/ca \
+              --exclude=/etc/puppetlabs/puppet/ssl/private_keys \
+              --exclude=/etc/puppetlabs/puppet/ssl/private \
+              --exclude=/etc/puppetlabs/puppet/modules \
+              --exclude=/etc/puppetlabs/puppet/manifests \
+              --exclude=/etc/puppetlabs/puppet/ssl/ca/private/ca.pass \
+              --exclude=/etc/puppetlabs/mcollective/credentials \
+              --exclude=/etc/puppetlabs/mcollective/ssl \
+              --exclude=/etc/puppetlabs/installer/database_info.* \
+              --exclude=/etc/puppetlabs/activemq/broker.pem \
+              --exclude=/etc/puppetlabs/activemq/credentials.properties \
+              $excludes \
+              --transform 's,,${untar_path},' \
+              -f - /etc/puppetlabs 2> /dev/null | tar -pxf -
+    "
+    eval $tar_command
+  fi
+}
+
+# Display listings of the Puppet Enterprise files and module files
+list_pe_and_module_files() {
+  local enterprise_dirs="/etc/puppetlabs /opt/puppetlabs"
+  local modulepath=$(${PUPPET_BIN_DIR?}/puppet master --configprint modulepath)
+  local basemodulepath=$(${PUPPET_BIN_DIR?}/puppet master --configprint basemodulepath)
+  local environmentpath=$(${PUPPET_BIN_DIR?}/puppet master --configprint environmentpath)
+  local paths=$(echo "${modulepath}:${basemodulepath}:${environmentpath}" | tr '[:\n]' '\0' | xargs -0)
+  # Remove directories under directories in $enterprise_dirs so the listings aren't duplicated
+  for dir in ${enterprise_dirs}; do
+    paths=$(echo $paths | sed "s,${dir}/[^ ]*,,g")
+  done
+  enterprise_dirs="${enterprise_dirs} ${paths}"
+  for dir in ${enterprise_dirs}; do
+    dir_desc=$(echo "${dir}" | sed 's,\/,_,g')
+    if [ -d "${dir}" ]; then
+      find "${dir}" -ls > $DROP/enterprise/find/${dir_desc}.txt
+    else
+      echo "No directory ${dir}" > $DROP/enterprise/find/${dir_desc}.txt
+    fi
+  done
+}
+
+# Gather all modules installed on the modulepath
+module_listing() {
+  if [ -f "${PUPPET_BIN_DIR?}/puppet" ]; then
+    run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list" "enterprise/modules.txt"
+  fi
+}
+
+# Check r10k version
+check_r10k() {
+  if [ -x "${PUPPET_BIN_DIR?}/gem" ]; then
+    run_diagnostic "${PUPPET_BIN_DIR?}/gem list | $PLATFORM_EGREP r10k" "enterprise/r10k_gem_version.txt"
+  fi
+  if [ -x "${PUPPET_BIN_DIR}/r10k" ]; then
+    run_diagnostic "${PUPPET_BIN_DIR}/r10k deploy display -p --detail" "enterprise/r10k_deploy_display.txt"
+  fi
+}
+
+# Gather all changes to the installed Puppet Enterprise modules
+module_changes() {
+  if [ -f "${PUPPET_BIN_DIR?}/puppet" ]; then
+    pe_module_path="/opt/puppetlabs/puppet/modules"
+    for module in $(ls "${pe_module_path?}"); do
+      echo "${module?}:" >> "${DROP}/enterprise/module_changes.txt"
+      run_diagnostic "${PUPPET_BIN_DIR?}/puppet module changes ${pe_module_path?}/${module?}" "enterprise/module_changes.txt"
+    done
+  fi
+}
+
+# Gather all packages that are part of the Puppet Enterprise installation
+package_listing() {
+  pkg_file=enterprise/packages.txt
+  case "${PLATFORM_PACKAGING?}" in
+    rpm)
+      run_diagnostic "rpm -qa | $PLATFORM_EGREP '^pe-.*'" $pkg_file
+    ;;
+
+    dpkg)
+      run_diagnostic "dpkg-query -W -f '\${Package}\n' | $PLATFORM_EGREP '^pe-.*$'" $pkg_file
+    ;;
+
+    pkgadd)
+      run_diagnostic "pkginfo | $PLATFORM_EGREP 'PUP.*'" $pkg_file
+    ;;
+
+    *)
+      #fail
+    ;;
+  esac
+}
+
+check_certificates() {
+  if [ -f "${PUPPET_BIN_DIR?}/puppet" ] && [ "x$(${PUPPET_BIN_DIR?}/puppet master --configprint ca)" = "xtrue" ]; then
+    run_diagnostic "${PUPPET_BIN_DIR?}/puppet cert list --all" "enterprise/certs.txt"
+  fi
+}
+
+# Use ruby timeout since bash timeout is not available on all platforms
+with_timeout() {
+  local timeout=$1
+  shift
+
+  # Pass arguments to run as an array so that Process.spawn() will execute the
+  # command without creating a subshell. Ruby script passed to stdin.
+  "${PUPPET_BIN_DIR?}/ruby" -rtimeout -- - "$@" <<EOscript
+pid = Process.spawn(*ARGV, pgroup: true)
+begin
+  Timeout.timeout(${timeout}) { Process.wait pid }
+rescue Timeout::Error
+  puts 'Timeout ${timeout} seconds has expired.'
+  puts "Sending TERM signal to process group of pid #{pid}..."
+  Process.kill('TERM', -Process.getpgid(pid)) rescue Errno::ESRCH
+end
+EOscript
+}
+
+mco_commands() {
+  if [ -f "${PUPPET_BIN_DIR}/mco" ]; then
+    mco_user="peadmin"
+    if getent passwd ${mco_user} &> /dev/null; then
+      run_diagnostic --timeout 15 "su - ${mco_user?} -c 'mco ping'" "enterprise/mco_ping_$mco_user.txt"
+      run_diagnostic --timeout 15 "su - ${mco_user?} -c 'mco inventory ${PLATFORM_HOSTNAME}'" "/enterprise/mco_inventory_${mco_user}.txt"
+    else
+      echo "No such user: '${mco_user}'." > "${DROP}/enterprise/mco_$mco_user.txt"
+    fi
+  fi
+}
+
+activemq_limits() {
+if is_package_installed pe-activemq; then
+  echo "File descriptors in use by pe-activemq:" > $DROP/enterprise/activemq_resource_limits
+  run_diagnostic "lsof -u pe-activemq | wc -l" "enterprise/activemq_resource_limits"
+  echo -e "\n\nResource limits for pe-activemq:\n" >> $DROP/enterprise/activemq_resource_limits
+  run_diagnostic "su -s /bin/bash pe-activemq -c 'ulimit -a'" "enterprise/activemq_resource_limits"
+fi
+}
+
+# Gets the nodes.csv file from the console if we can access it
+nodes_listing() {
+  local timeout=5
+  local t_path_to_console_conf="/etc/puppetlabs/puppet/console.conf"
+
+  if [ -f "${t_path_to_console_conf?}" ] && [ -f "${PUPPET_BIN_DIR?}/puppet" ]; then
+    local t_server="$(get_ini_field ${t_path_to_console_conf?} 'server')"
+    local t_port="$(get_ini_field ${t_path_to_console_conf?} 'port')"
+    local t_host_cert="$(${PUPPET_BIN_DIR?}/puppet master --configprint hostcert)"
+    local t_host_priv_key="$(${PUPPET_BIN_DIR?}/puppet master --configprint hostprivkey)"
+
+    run_diagnostic "$(puppet_bin_dir)/curl -k --silent --show-error --cert ${t_host_cert?} --key ${t_host_priv_key?} --max-time ${timeout} https://${t_server?}:${t_port?}/nodes.csv" "enterprise/nodes.csv"
+  fi
+}
+
+# Curls the status of the console
+console_status() {
+  run_diagnostic "$(puppet_bin_dir)/curl --silent --show-error --max-time 5 http://127.0.0.1:4432/status/v1/services?level=debug" "enterprise/console_status"
+}
+
+get_rbac_directory_settings_info() {
+    local t_rbac_info_query="SELECT row_to_json(row) FROM ( SELECT \
+id, display_name, help_link, type, hostname, port, ssl, login, \
+connect_timeout, base_dn, user_rdn, user_display_name_attr, user_email_attr, \
+user_lookup_attr, group_rdn, group_object_class, group_name_attr, \
+group_member_attr, group_lookup_attr FROM directory_settings) row;"
+
+    run_diagnostic "sudo -u pe-postgres ${SERVER_BIN_DIR?}/psql -d pe-rbac -c \"${t_rbac_info_query}\"" "enterprise/rbac_directory_settings.json"
+}
+
+filesync_state() {
+  if [ -x /opt/puppetlabs/server/data/puppetserver/filesync ]; then
+    # If explicitly requested, grab filesync data.
+    if [ "$FILESYNC" = "y" ]; then
+      cp -Rp /opt/puppetlabs/server/data/puppetserver/filesync "$DROP/enterprise"
+    fi
+  fi
+}
+
+get_puppetdb_summary_stats() {
+  if [ -d /etc/puppetlabs/puppetdb ]; then
+      local q_puppetdb_plaintext_port="$(get_ini_field '/etc/puppetlabs/puppetdb/conf.d/jetty.ini' 'port')"
+      run_diagnostic "$(puppet_bin_dir)/curl --silent --show-error -X GET http://127.0.0.1:${q_puppetdb_plaintext_port}/pdb/admin/v1/summary-stats" "enterprise/puppetdb_summary_stats.json"
+  fi
+}
+
+#===[Main]======================================================================
+
+# Always use debug mode, because we're trying to solve a problem!
+IS_DEBUG=y
+
+# Verify space for drop files
+if [ "x${PLATFORM_NAME?}" = "xsolaris" ]; then
+  DF=$(df -b /var/tmp | $PLATFORM_EGREP -v Filesystem | awk '{print $2}')
+else
+  DF=$(df -Pk /var/tmp | $PLATFORM_EGREP -v Filesystem | awk '{print $4}')
+fi
+
+if [ "$DF" -lt "25600" ]; then
+  display_failure "Not enough disk space in /var/tmp. This script needs 25MB or more to run."
+fi
+
+display_major_separator
+display "Creating drop directory at ${DROP?}"
+
+mkdir -p $DROP/{resources,system,system/etc,enterprise/{find,state},networking,logs}
+pushd $DROP &> /dev/null
+
+display 'Collecting information'
+
+netstat_checks
+selinux_checks
+iptables_checks
+df_checks
+db_size_checks
+db_relation_size_checks
+facter_checks
+etc_checks
+hostname_checks
+ntp_checks
+gather_enterprise_files
+get_umask
+list_pe_and_module_files
+os_checks
+module_listing
+module_changes
+package_listing
+ps_checks
+free_checks
+check_certificates
+list_all_services
+grab_env_vars
+can_contact_master
+pe_logs
+get_state
+other_logs
+ifconfig_output
+check_r10k
+mco_commands
+activemq_limits
+nodes_listing
+console_status
+get_rbac_directory_settings_info
+filesync_state
+get_puppetdb_summary_stats
+
+support_archive="${DROP?}.tar"
+tar cvf ${support_archive?} -C $(dirname $DROP) $(basename $DROP) &> /dev/null
+gzip -f9 ${support_archive?}
+
+popd &> /dev/null
+rm -rf $DROP
+
+unregister_exception_handler
+
+display 'Data collected, ready for submission'
+display_newline
+display "Support data is located at ${support_archive?}.gz"
+display_newline
+display_major_separator
+display "Current Puppet Enterprise customers:"
+echo "Please submit ${support_archive?}.gz to Puppet Labs Support at the Box upload site you've been invited to." | display_wrapped_text 0 0
+display_newline
+display_newline
+
+quit
