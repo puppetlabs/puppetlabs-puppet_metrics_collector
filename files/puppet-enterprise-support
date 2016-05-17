@@ -36,6 +36,9 @@ prepare_platform
 prepare_user
 
 #===[ Global variables ]================================================
+readonly PUPPET_BIN_DIR='/opt/puppetlabs/puppet/bin'
+readonly SERVER_BIN_DIR='/opt/puppetlabs/server/bin'
+readonly SERVER_DATA_DIR='/opt/puppetlabs/server/data'
 
 TIMESTAMP=$(date '+%Y%m%d%H%M%S')
 
