@@ -76,6 +76,14 @@ fail() {
   exit 1
 }
 
+# Portable test for command existance.
+#
+# Arguments:
+# 1. Command to test.
+cmd() {
+  hash "$1" &> /dev/null;
+}
+
 # This command is a modification of the utilities 'run'
 # command. It captures the output of a command specified by the first argument
 # and writes stdout and stderr to the specified file. If logging is enabled,
@@ -160,14 +168,14 @@ netstat_checks() {
 iptables_checks() {
   iptables_file="networking/ip_tables.txt"
   if [ "x${PLATFORM_NAME?}" = "xsolaris" ]; then
-    if run_suppress_output "wherefore ipf" && run_suppress_output "wherefore ipfstat"; then
+    if cmd ipf && cmd ipfstat; then
       run_diagnostic "ipfstat" $iptables_file
       run_diagnostic "ipfstat -i" $iptables_file
       run_diagnostic "ipfstat -o" $iptables_file
       run_diagnostic "ipf -V" $iptables_file
     fi
   else
-    if run_suppress_output "wherefore iptables" ; then
+    if cmd iptables; then
       run_diagnostic "iptables -L" $iptables_file
       run_diagnostic "ip6tables -L" $iptables_file
     else
@@ -186,13 +194,13 @@ hostname_checks() {
   if ! [ ${PLATFORM_NAME?} = "solaris" ]; then
     ipaddress=`ping  -t1 -c1 ${PLATFORM_HOSTNAME?} | awk -F\( '{print $2}' | awk -F\) '{print $1}' | head -1`
     echo $ipaddress > $DROP/networking/guessed_ip_address.txt
-    run_suppress_output "wherefore tracepath" && mapped_hostname=`tracepath $ipaddress | head -1 | awk '{print $2}'`
+    cmd tracepath && mapped_hostname=`tracepath $ipaddress | head -1 | awk '{print $2}'`
     echo $mapped_hostname > $DROP/networking/mapped_hostname_from_guessed_ip_address.txt
   fi
 }
 
 can_contact_master() {
-  if run_suppress_output "wherefore puppet" && [ -f "${PUPPET_BIN_DIR?}/puppet" ]; then
+  if cmd puppet && [ -f "${PUPPET_BIN_DIR?}/puppet" ]; then
     if [ "x${PLATFORM_NAME?}" = "xsolaris" ]; then
       PING="ping"
     else
@@ -210,7 +218,7 @@ can_contact_master() {
 }
 
 ifconfig_output() {
-  if run_suppress_output "wherefore ifconfig" && ifconfig -a &> /dev/null; then
+  if cmd ifconfig && ifconfig -a &> /dev/null; then
     run_diagnostic "ifconfig -a" "networking/ifconfig.txt"
   fi
 }
@@ -291,7 +299,7 @@ free_checks() {
 }
 
 ntp_checks() {
-    run_suppress_output "wherefore ntpq" && run_diagnostic "ntpq -p" "networking/ntpq_output.txt"
+    cmd ntpq && run_diagnostic "ntpq -p" "networking/ntpq_output.txt"
 }
 
 #===[System checks]=============================================================
@@ -362,7 +370,7 @@ os_checks() {
   if [ ${PLATFORM_NAME?} = "solaris" ]; then
     # Probably want more information than this here
     echo "Solaris" > $DROP/system/os_checks.txt
-  elif run_suppress_output "wherefore lsb_release"; then
+  elif cmd lsb_release; then
     run_diagnostic "lsb_release -a" "system/lsb_release.txt"
   fi
 
