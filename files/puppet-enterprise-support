@@ -59,6 +59,23 @@ display_newline() {
   display ''
 }
 
+# Display an error message to STDERR, but do not exit.
+#
+# Arguments:
+# 1. Message to display.
+display_error() {
+  display "$@" 1>&2
+}
+
+# Display an error message to STDERR and exit 1.
+#
+# Arguments:
+# 1. Message to display.
+fail() {
+  display_error "$@"
+  exit 1
+}
+
 # This command is a modification of the utilities 'run'
 # command. It captures the output of a command specified by the first argument
 # and writes stdout and stderr to the specified file. If logging is enabled,
@@ -639,7 +656,7 @@ else
 fi
 
 if [ "$DF" -lt "25600" ]; then
-  display_failure "Not enough disk space in /var/tmp. This script needs 25MB or more to run."
+  fail "Not enough disk space in /var/tmp. This script needs 25MB or more to run."
 fi
 
 display "Creating drop directory at ${DROP?}"
