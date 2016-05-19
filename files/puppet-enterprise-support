@@ -89,6 +89,8 @@ cmd() {
 # * PLATFORM_NAME : Name of the platorm, e.g. "centos".
 # * PLATFORM_RELEASE : Release version, e.g. "10.10".
 # * PLATFORM_EGREP : Proper invocation of `grep -E` for the platform.
+# * PLATFORM_HOSTNAME : Fully-Qualified hostname of this machine, e.g. "myhost.mycompany.com".
+# * PLATFORM_HOSTNAME_SHORT : Shortened hostname of this machine, e.g. "myhost".
 detect_platform() {
   # Default for most platforms. Exceptions are Solaris and AIX defined blow.
   PLATFORM_EGREP='grep -E'
@@ -210,10 +212,53 @@ detect_platform() {
     fail "Unknown platform."
   fi
 
+  # Hostname
+  case "${PLATFORM_NAME?}" in
+    solaris)
+      # Calling hostname --fqdn on solaris will set the hostname to '--fqdn' so we don't do that.
+      # Note there is a single space and literal tab character inside the brackets to match spaces or tabs
+      # in resolv.conf
+      t_fqdn=`sed -n 's/^[ 	]*domain[ 	]*\(.*\)$/\1/p' /etc/resolv.conf`
+      t_host=`uname -n`
+      if [ -z $t_fqdn ]; then
+        PLATFORM_HOSTNAME=${t_host?}
+      else
+        PLATFORM_HOSTNAME="${t_host?}.${t_fqdn:-''}"
+      fi
+
+      PLATFORM_HOSTNAME_SHORT=${t_host?}
+      ;;
+    aix)
+      # As with solaris, calling `hostname --fqdn` sets the hostname
+      # to '--fqdn' if /opt/freeware/bin is in the path and we're
+      # calling GNU hostname. AIX also has AIX hostname, in /bin, in
+      # which `hostname` prints the fqdn, and `hostname -s` prints
+      # hostname with domain info trimmed. We use the AIX hostname
+      # because its more sane and reliably there.
+      PLATFORM_HOSTNAME=`/bin/hostname`
+      PLATFORM_HOSTNAME_SHORT=`/bin/hostname -s`
+      ;;
+    *)
+      if hostname --fqdn &> /dev/null; then
+        PLATFORM_HOSTNAME=`hostname --fqdn 2> /dev/null`
+      else
+        PLATFORM_HOSTNAME=`hostname`
+      fi
+
+      if hostname --short &> /dev/null; then
+        PLATFORM_HOSTNAME_SHORT=`hostname --short 2> /dev/null`
+      else
+        PLATFORM_HOSTNAME_SHORT=`echo "${PLATFORM_HOSTNAME}" | cut -d. -f1`
+      fi
+      ;;
+  esac
+
   # Now that global variables are set, flag them as readonly.
   readonly PLATFORM_NAME
   readonly PLATFORM_RELEASE
   readonly PLATFORM_EGREP
+  readonly PLATFORM_HOSTNAME
+  readonly PLATFORM_HOSTNAME_SHORT
 }
 
 # This command is a modification of the utilities 'run'
