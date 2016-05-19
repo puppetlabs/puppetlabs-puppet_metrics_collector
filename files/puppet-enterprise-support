@@ -287,6 +287,34 @@ detect_platform() {
   readonly PLATFORM_PACKAGING
 }
 
+# Is the package installed? Returns 0 for true, 1 for false.
+#
+# Arguments:
+# 1. Name of package.
+is_package_installed() {
+  case "${PLATFORM_PACKAGING?}" in
+    rpm)
+      (rpm -qi "${1?}") &> /dev/null
+      return $?
+      ;;
+    dpkg)
+      (dpkg-query --show --showformat '${Package}:${Status}\\n' "${1?}" 2>&1 | grep ' installed') &> /dev/null
+      return $?
+      ;;
+    pkgadd)
+      (pkginfo -l ${1?} | ${PLATFORM_EGREP?} 'STATUS:[:space:]*.*[:space:]*installed') &> /dev/null
+      return $?
+      ;;
+    ips)
+      ("pkg info ${1?}") &> /dev/null
+      return $?
+      ;;
+    *)
+      fail "Do not know how to check if package is installed on ${PLATFORM_NAME?}."
+      ;;
+  esac
+}
+
 # This command is a modification of the utilities 'run'
 # command. It captures the output of a command specified by the first argument
 # and writes stdout and stderr to the specified file. If logging is enabled,
@@ -475,7 +503,7 @@ db_size_from_fs() {
 }
 
 db_size_checks() {
-  if is_postgres; then
+  if is_package_installed 'pe-postgresql-server'; then
     # Check size of databases, both from the filesystem's perspective and the
     # database's perspective
     local database_names=$(get_all_database_names)
