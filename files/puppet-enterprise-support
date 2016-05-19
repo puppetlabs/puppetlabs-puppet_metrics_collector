@@ -35,6 +35,7 @@ fi
 readonly PUPPET_BIN_DIR='/opt/puppetlabs/puppet/bin'
 readonly SERVER_BIN_DIR='/opt/puppetlabs/server/bin'
 readonly SERVER_DATA_DIR='/opt/puppetlabs/server/data'
+readonly SCRIPT_NAME="$(basename "${0}")"
 
 TIMESTAMP=$(date '+%Y%m%d%H%M%S')
 
@@ -859,7 +860,19 @@ get_puppetdb_summary_stats() {
 IS_DEBUG=y
 
 detect_platform
-prepare_user
+
+case "${PLATFORM_NAME?}" in
+  solaris)
+    if [[ "${EUID?}" -ne 0 ]]; then
+      fail "${SCRIPT_NAME?} must be run as root"
+    fi
+    ;;
+  *)
+    if [[ "$(id -u)" -ne 0 ]]; then
+      fail "${SCRIPT_NAME?} must be run as root"
+    fi
+    ;;
+esac
 
 # Verify space for drop files
 if [ "x${PLATFORM_NAME?}" = "xsolaris" ]; then
