@@ -726,4 +726,4 @@ display "Please submit ${support_archive?}.gz to Puppet Support at the Box uploa
 display_newline
 display_newline
 
-quit
+exit 0
