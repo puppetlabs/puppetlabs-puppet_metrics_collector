@@ -633,7 +633,7 @@ pe_logs() {
 
 get_state() {
   mkdir -p "${DROP}/enterprise/puppetserver_state/"
-  t_puppet_state_dir=$("$(puppet_bin_dir)/puppet" config print --section=agent statedir)
+  t_puppet_state_dir=$("${PUPPET_BIN_DIR}/puppet" config print --section=agent statedir)
   t_state_dir="${t_puppet_state_dir:=/opt/puppetlabs/puppet/cache/state/}"
   cp -LpR "${t_state_dir}" "${DROP}/enterprise/puppetserver_state/"
 }
@@ -839,13 +839,13 @@ nodes_listing() {
     local t_host_cert="$(${PUPPET_BIN_DIR?}/puppet master --configprint hostcert)"
     local t_host_priv_key="$(${PUPPET_BIN_DIR?}/puppet master --configprint hostprivkey)"
 
-    run_diagnostic "$(puppet_bin_dir)/curl -k --silent --show-error --cert ${t_host_cert?} --key ${t_host_priv_key?} --max-time ${timeout} https://${t_server?}:${t_port?}/nodes.csv" "enterprise/nodes.csv"
+    run_diagnostic "${PUPPET_BIN_DIR}/curl -k --silent --show-error --cert ${t_host_cert?} --key ${t_host_priv_key?} --max-time ${timeout} https://${t_server?}:${t_port?}/nodes.csv" "enterprise/nodes.csv"
   fi
 }
 
 # Curls the status of the console
 console_status() {
-  run_diagnostic "$(puppet_bin_dir)/curl --silent --show-error --max-time 5 http://127.0.0.1:4432/status/v1/services?level=debug" "enterprise/console_status"
+  run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --max-time 5 http://127.0.0.1:4432/status/v1/services?level=debug" "enterprise/console_status"
 }
 
 get_rbac_directory_settings_info() {
@@ -870,7 +870,7 @@ filesync_state() {
 get_puppetdb_summary_stats() {
   if [ -d /etc/puppetlabs/puppetdb ]; then
       local q_puppetdb_plaintext_port="$(get_ini_field '/etc/puppetlabs/puppetdb/conf.d/jetty.ini' 'port')"
-      run_diagnostic "$(puppet_bin_dir)/curl --silent --show-error -X GET http://127.0.0.1:${q_puppetdb_plaintext_port}/pdb/admin/v1/summary-stats" "enterprise/puppetdb_summary_stats.json"
+      run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error -X GET http://127.0.0.1:${q_puppetdb_plaintext_port}/pdb/admin/v1/summary-stats" "enterprise/puppetdb_summary_stats.json"
   fi
 }
 
