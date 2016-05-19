@@ -324,6 +324,27 @@ is_package_installed() {
   esac
 }
 
+# Print the value of a given ini field in a file. This doesn't respect sections,
+# so fields must be unique. If the field doesn't exist, nothing is printed.
+# Ignores whitespace around the field, value and equal sign.
+#
+# Arguments:
+# 1. The file to read
+# 2. The field to retrieve
+get_ini_field() {
+  t_ini_file="${1?}"
+  t_ini_field="${2?}"
+
+  t_extract_field="
+      field_regex = /^\s*${t_ini_field?}\s*=(.*)$/
+      if match = File.read('${t_ini_file?}').match(field_regex)
+          print match[1].strip
+      end
+  "
+
+  "${PUPPET_BIN_DIR?}/ruby" -e "${t_extract_field?}"
+}
+
 # This command is a modification of the utilities 'run'
 # command. It captures the output of a command specified by the first argument
 # and writes stdout and stderr to the specified file. If logging is enabled,
