@@ -81,6 +81,15 @@ cmd() {
   hash "$1" &> /dev/null;
 }
 
+# Running in noop mode? Return 0 if true.
+is_noop() {
+  if [ y = "${IS_NOOP:-""}" ]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
 # Discovers the runtime platform.
 #
 # Arguments:
