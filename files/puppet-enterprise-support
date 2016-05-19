@@ -31,7 +31,6 @@ else
 fi
 . $UTILITIES_FILE
 
-register_exception_handler
 prepare_platform
 prepare_user
 
@@ -717,7 +716,6 @@ gzip -f9 ${support_archive?}
 popd &> /dev/null
 rm -rf $DROP
 
-unregister_exception_handler
 
 display 'Data collected, ready for submission'
 display_newline
