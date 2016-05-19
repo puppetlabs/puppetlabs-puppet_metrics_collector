@@ -31,9 +31,6 @@ else
 fi
 . $UTILITIES_FILE
 
-prepare_platform
-prepare_user
-
 #===[ Global variables ]================================================
 readonly PUPPET_BIN_DIR='/opt/puppetlabs/puppet/bin'
 readonly SERVER_BIN_DIR='/opt/puppetlabs/server/bin'
@@ -81,6 +78,135 @@ fail() {
 # 1. Command to test.
 cmd() {
   hash "$1" &> /dev/null;
+}
+
+# Discovers the runtime platform.
+#
+# Arguments:
+# None.
+#
+# Global Variables:
+# * PLATFORM_NAME : Name of the platorm, e.g. "centos".
+# * PLATFORM_RELEASE : Release version, e.g. "10.10".
+detect_platform() {
+  # First try identifying using lsb_release.  This takes care of Ubuntu
+  # (lsb-release is part of ubuntu-minimal).
+  if cmd lsb_release; then
+    t_prepare_platform=`lsb_release -icr 2>&1`
+
+    PLATFORM_NAME="$(printf "${t_prepare_platform?}" | grep -E '^Distributor ID:' | cut -s -d: -f2 | sed 's/[[:space:]]//' | tr '[[:upper:]]' '[[:lower:]]')"
+
+    # Sanitize name for unusual platforms
+    case "${PLATFORM_NAME?}" in
+      redhatenterpriseserver | redhatenterpriseclient | redhatenterpriseas | redhatenterprisees | enterpriseenterpriseserver | redhatenterpriseworkstation | redhatenterprisecomputenode | oracleserver)
+        PLATFORM_NAME=rhel
+        ;;
+      enterprise* )
+        PLATFORM_NAME=centos
+        ;;
+      scientific | scientifics | scientificsl )
+        PLATFORM_NAME=rhel
+        ;;
+      'suse linux' )
+        PLATFORM_NAME=sles
+        ;;
+      amazonami )
+        PLATFORM_NAME=amazon
+        ;;
+    esac
+
+    # Release
+    PLATFORM_RELEASE="$(printf "${t_prepare_platform?}" | grep -E '^Release:' | cut -s -d: -f2 | sed 's/[[:space:]]//g')"
+
+    # Sanitize release for unusual platforms
+    case "${PLATFORM_NAME?}" in
+      centos | rhel )
+        # Platform uses only number before period as the release,
+        # e.g. "CentOS 5.5" is release "5"
+        PLATFORM_RELEASE="$(printf "${PLATFORM_RELEASE?}" | cut -d. -f1)"
+        ;;
+      debian )
+        # Platform uses only number before period as the release,
+        # e.g. "Debian 6.0.1" is release "6"
+        PLATFORM_RELEASE="$(printf "${PLATFORM_RELEASE?}" | cut -d. -f1)"
+        if [ ${PLATFORM_RELEASE} = "testing" ] ; then
+          PLATFORM_RELEASE=7
+        fi
+        ;;
+    esac
+  elif [ "x$(uname -s)" = "xDarwin" ]; then
+    PLATFORM_NAME="osx"
+    # sw_vers returns something like 10.9.2, but we only want 10.9 so chop off the end
+    t_platform_release="$(/usr/bin/sw_vers -productVersion | cut -d'.' -f1,2)"
+    PLATFORM_RELEASE="${t_platform_release?}"
+    # Test for Solaris.
+  elif [ "x$(uname -s)" = "xSunOS" ]; then
+    PLATFORM_NAME="solaris"
+    t_platform_release="$(uname -r)"
+    # JJM We get back 5.10 but we only care about the right side of the decimal.
+    PLATFORM_RELEASE="${t_platform_release##*.}"
+  elif [ "x$(uname -s)" = "xAIX" ] ; then
+    PLATFORM_NAME="aix"
+    t_platform_release="$(oslevel | cut -d'.' -f1,2)"
+    PLATFORM_RELEASE="${t_platform_release}"
+
+  # Test for RHEL variant. RHEL, CentOS, OEL
+  elif [ -f /etc/redhat-release -a -r /etc/redhat-release -a -s /etc/redhat-release ]; then
+    # Oracle Enterprise Linux 5.3 and higher identify the same as RHEL
+    if grep -qi 'red hat enterprise' /etc/redhat-release; then
+      PLATFORM_NAME=rhel
+    elif grep -qi 'centos' /etc/redhat-release; then
+      PLATFORM_NAME=centos
+    elif grep -qi 'scientific' /etc/redhat-release; then
+      PLATFORM_NAME=rhel
+    elif grep -qi 'fedora' /etc/redhat-release; then
+      PLATFORM_NAME='fedora'
+    fi
+    # Release - take first digits after ' release ' only.
+    PLATFORM_RELEASE="$(sed 's/.*\ release\ \([[:digit:]]\+\).*/\1/g;q' /etc/redhat-release)"
+  # Test for Cumulus releases
+  elif [ -r "/etc/os-release" ] && grep -E "Cumulus Linux" "/etc/os-release" &> /dev/null ; then
+    PLATFORM_NAME=cumulus
+    PLATFORM_RELEASE=`grep -E "VERSION_ID" "/etc/os-release" | cut -d'=' -f2 | cut -d'.' -f'1,2'`
+  # Test for Debian releases
+  elif [ -f /etc/debian_version -a -r /etc/debian_version -a -s /etc/debian_version ]; then
+    t_prepare_platform__debian_version_file="/etc/debian_version"
+    t_prepare_platform__debian_version=`cat /etc/debian_version`
+
+    if cat "${t_prepare_platform__debian_version_file?}" | grep -E '^[[:digit:]]' > /dev/null; then
+      PLATFORM_NAME=debian
+      PLATFORM_RELEASE="$(printf "${t_prepare_platform__debian_version?}" | sed 's/\..*//')"
+    elif cat "${t_prepare_platform__debian_version_file?}" | grep -E '^wheezy' > /dev/null; then
+      PLATFORM_NAME=debian
+      PLATFORM_RELEASE="7"
+    fi
+  elif [ -f /etc/SuSE-release -a -r /etc/SuSE-release ]; then
+    t_prepare_platform__suse_version=`cat /etc/SuSE-release`
+
+    if printf "${t_prepare_platform__suse_version?}" | grep -E 'Enterprise Server'; then
+      PLATFORM_NAME=sles
+      t_version=`/bin/cat /etc/SuSE-release | grep VERSION | sed 's/^VERSION = \(\d*\)/\1/' `
+      t_patchlevel=`cat /etc/SuSE-release | grep PATCHLEVEL | sed 's/^PATCHLEVEL = \(\d*\)/\1/' `
+      PLATFORM_RELEASE="${t_version}"
+    fi
+  elif [ -f /etc/system-release ]; then
+    if grep -qi 'amazon linux' /etc/system-release; then
+      PLATFORM_NAME=amazon
+      PLATFORM_RELEASE=6
+    else
+      fail "$(cat /etc/system-release) is not a supported platform for Puppet Enterprise."
+    fi
+  elif [ -z "${PLATFORM_NAME:-""}" ]; then
+    fail "$(uname -s) is not a supported platform for Puppet Enterprise."
+  fi
+
+  if [ -z "${PLATFORM_NAME:-""}" -o -z "${PLATFORM_RELEASE:-""}" ]; then
+    fail "Unknown platform."
+  fi
+
+  # Now that global variables are set, flag them as readonly.
+  readonly PLATFORM_NAME
+  readonly PLATFORM_RELEASE
 }
 
 # This command is a modification of the utilities 'run'
@@ -654,6 +780,9 @@ get_puppetdb_summary_stats() {
 
 # Always use debug mode, because we're trying to solve a problem!
 IS_DEBUG=y
+
+detect_platform
+prepare_user
 
 # Verify space for drop files
 if [ "x${PLATFORM_NAME?}" = "xsolaris" ]; then
