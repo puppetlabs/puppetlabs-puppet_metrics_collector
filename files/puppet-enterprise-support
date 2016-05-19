@@ -349,14 +349,8 @@ run_diagnostic() {
   local t_run_diagnostic__command="${1?}"
   local t_run_diagnostic__outfile="${DROP}/${2?}"
 
-  if is_debug; then
-    display " ** Collecting output of \"${t_run_diagnostic__command?}\""
-    display_newline
-  else
-    # Display some sort of progress so the user can know if progress has
-    # stalled.
-    display_nonewline '.'
-  fi
+  display " ** Collecting output of \"${t_run_diagnostic__command?}\""
+  display_newline
 
   if [ -n "$timeout" ] ; then
     if [ -x "${PUPPET_BIN_DIR?}/ruby" ] ; then
@@ -367,22 +361,11 @@ run_diagnostic() {
     fi
   fi
 
-  if has_logfile; then
-      echo "${t_run_diagnostic__command?}" >> "${LOGFILE?}"
-  fi
   if is_noop; then
     return 0
   else
-    if has_logfile; then
-      # If logging is enabled, write the output to both the logfile and the
-      # out file.
-      ( eval "${prefix_command:-}${t_run_diagnostic__command?} 2>&1" ) | tee -a "${LOGFILE?}" >> $t_run_diagnostic__outfile
-      # Return the status of the command, not tee
-      return "${PIPESTATUS[0]}"
-    else
-      ( eval "${prefix_command:-}${t_run_diagnostic__command?} 2>&1" ) >> $t_run_diagnostic__outfile
-      return $?
-    fi
+    ( eval "${prefix_command:-}${t_run_diagnostic__command?} 2>&1" ) >> $t_run_diagnostic__outfile
+    return $?
   fi
 }
 
@@ -883,9 +866,6 @@ get_puppetdb_summary_stats() {
 }
 
 #===[Main]======================================================================
-
-# Always use debug mode, because we're trying to solve a problem!
-IS_DEBUG=y
 
 detect_platform
 
