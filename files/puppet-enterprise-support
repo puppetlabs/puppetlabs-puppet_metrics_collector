@@ -16,20 +16,6 @@
 # This program runs diagnostics for Puppet Enterprise. Run this file to
 # run the diagnostics and data aggregation.
 
-#===[ Setup ]===========================================================
-
-# Source the installer script. Fail hard if not present.
-
-SCRIPT_DIR="$(dirname "${0?}")"
-if [ -f "${SCRIPT_DIR?}/utilities" ] ; then
-    UTILITIES_FILE="${SCRIPT_DIR}/utilities"
-elif [ -f "/opt/puppetlabs/server/share/installer/utilities" ] ; then
-    UTILITIES_FILE="/opt/puppetlabs/server/share/installer/utilities"
-else
-    echo "Could not find the utilities library.  Please run from the puppet-enterprise installer directory."
-    exit 1
-fi
-. $UTILITIES_FILE
 
 #===[ Global variables ]================================================
 readonly PUPPET_BIN_DIR='/opt/puppetlabs/puppet/bin'
