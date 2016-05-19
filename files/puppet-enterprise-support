@@ -88,7 +88,11 @@ cmd() {
 # Global Variables:
 # * PLATFORM_NAME : Name of the platorm, e.g. "centos".
 # * PLATFORM_RELEASE : Release version, e.g. "10.10".
+# * PLATFORM_EGREP : Proper invocation of `grep -E` for the platform.
 detect_platform() {
+  # Default for most platforms. Exceptions are Solaris and AIX defined blow.
+  PLATFORM_EGREP='grep -E'
+
   # First try identifying using lsb_release.  This takes care of Ubuntu
   # (lsb-release is part of ubuntu-minimal).
   if cmd lsb_release; then
@@ -145,10 +149,12 @@ detect_platform() {
     t_platform_release="$(uname -r)"
     # JJM We get back 5.10 but we only care about the right side of the decimal.
     PLATFORM_RELEASE="${t_platform_release##*.}"
+    PLATFORM_EGREP='egrep'
   elif [ "x$(uname -s)" = "xAIX" ] ; then
     PLATFORM_NAME="aix"
     t_platform_release="$(oslevel | cut -d'.' -f1,2)"
     PLATFORM_RELEASE="${t_platform_release}"
+    PLATFORM_EGREP='egrep'
 
   # Test for RHEL variant. RHEL, CentOS, OEL
   elif [ -f /etc/redhat-release -a -r /etc/redhat-release -a -s /etc/redhat-release ]; then
@@ -207,6 +213,7 @@ detect_platform() {
   # Now that global variables are set, flag them as readonly.
   readonly PLATFORM_NAME
   readonly PLATFORM_RELEASE
+  readonly PLATFORM_EGREP
 }
 
 # This command is a modification of the utilities 'run'
