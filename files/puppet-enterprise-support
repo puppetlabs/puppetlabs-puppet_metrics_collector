@@ -91,6 +91,7 @@ cmd() {
 # * PLATFORM_EGREP : Proper invocation of `grep -E` for the platform.
 # * PLATFORM_HOSTNAME : Fully-Qualified hostname of this machine, e.g. "myhost.mycompany.com".
 # * PLATFORM_HOSTNAME_SHORT : Shortened hostname of this machine, e.g. "myhost".
+# * PLATFORM_PACKAGING : Name of local packaging system, e.g. "dpkg".
 detect_platform() {
   # Default for most platforms. Exceptions are Solaris and AIX defined blow.
   PLATFORM_EGREP='grep -E'
@@ -253,12 +254,36 @@ detect_platform() {
       ;;
   esac
 
+  # Packaging
+  case "${PLATFORM_NAME?}" in
+    centos | rhel | sles | amazon | aix | eos | fedora )
+      PLATFORM_PACKAGING=rpm
+      ;;
+    ubuntu | debian | cumulus)
+      PLATFORM_PACKAGING=dpkg
+      ;;
+    solaris )
+      case  "${PLATFORM_RELEASE?}" in
+        10)
+          PLATFORM_PACKAGING=pkgadd
+          ;;
+        11)
+          PLATFORM_PACKAGING=ips
+          ;;
+      esac
+      ;;
+    *)
+      fail "Unknown packaging system for platform: ${PLATFORM_NAME?}"
+      ;;
+  esac
+
   # Now that global variables are set, flag them as readonly.
   readonly PLATFORM_NAME
   readonly PLATFORM_RELEASE
   readonly PLATFORM_EGREP
   readonly PLATFORM_HOSTNAME
   readonly PLATFORM_HOSTNAME_SHORT
+  readonly PLATFORM_PACKAGING
 }
 
 # This command is a modification of the utilities 'run'
