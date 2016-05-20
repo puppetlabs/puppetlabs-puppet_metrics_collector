@@ -456,7 +456,7 @@ ifconfig_output() {
 #===[Resource checks]===========================================================
 
 get_all_database_names() {
-    echo "$(sudo -H -u pe-postgres ${SERVER_BIN_DIR?}/psql -t -c 'select datname from pg_catalog.pg_database;' | awk '{print $1}')"
+  echo "$(sudo -H -u pe-postgres ${SERVER_BIN_DIR?}/psql -t -c 'select datname from pg_catalog.pg_database;' | awk '{print $1}' | grep -v '^template')"
 }
 
 df_checks() {
