@@ -835,21 +835,6 @@ if is_package_installed pe-activemq; then
 fi
 }
 
-# Gets the nodes.csv file from the console if we can access it
-nodes_listing() {
-  local timeout=5
-  local t_path_to_console_conf="/etc/puppetlabs/puppet/console.conf"
-
-  if [ -f "${t_path_to_console_conf?}" ] && [ -f "${PUPPET_BIN_DIR?}/puppet" ]; then
-    local t_server="$(get_ini_field ${t_path_to_console_conf?} 'server')"
-    local t_port="$(get_ini_field ${t_path_to_console_conf?} 'port')"
-    local t_host_cert="$(${PUPPET_BIN_DIR?}/puppet master --configprint hostcert)"
-    local t_host_priv_key="$(${PUPPET_BIN_DIR?}/puppet master --configprint hostprivkey)"
-
-    run_diagnostic "${PUPPET_BIN_DIR}/curl -k --silent --show-error --cert ${t_host_cert?} --key ${t_host_priv_key?} --max-time ${timeout} https://${t_server?}:${t_port?}/nodes.csv" "enterprise/nodes.csv"
-  fi
-}
-
 # Curls the status of the console
 console_status() {
   run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --max-time 5 http://127.0.0.1:4432/status/v1/services?level=debug" "enterprise/console_status"
@@ -946,7 +931,6 @@ ifconfig_output
 check_r10k
 mco_commands
 activemq_limits
-nodes_listing
 console_status
 get_rbac_directory_settings_info
 filesync_state
