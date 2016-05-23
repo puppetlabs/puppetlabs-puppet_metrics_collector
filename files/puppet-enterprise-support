@@ -16,32 +16,320 @@
 # This program runs diagnostics for Puppet Enterprise. Run this file to
 # run the diagnostics and data aggregation.
 
-#===[ Setup ]===========================================================
-
-# Source the installer script. Fail hard if not present.
-
-SCRIPT_DIR="$(dirname "${0?}")"
-if [ -f "${SCRIPT_DIR?}/utilities" ] ; then
-    UTILITIES_FILE="${SCRIPT_DIR}/utilities"
-elif [ -f "/opt/puppetlabs/server/share/installer/utilities" ] ; then
-    UTILITIES_FILE="/opt/puppetlabs/server/share/installer/utilities"
-else
-    echo "Could not find the utilities library.  Please run from the puppet-enterprise installer directory."
-    exit 1
-fi
-. $UTILITIES_FILE
-
-register_exception_handler
-prepare_platform
-prepare_user
 
 #===[ Global variables ]================================================
+readonly PUPPET_BIN_DIR='/opt/puppetlabs/puppet/bin'
+readonly SERVER_BIN_DIR='/opt/puppetlabs/server/bin'
+readonly SERVER_DATA_DIR='/opt/puppetlabs/server/data'
+readonly SCRIPT_NAME="$(basename "${0}")"
 
 TIMESTAMP=$(date '+%Y%m%d%H%M%S')
 
 DROP=/var/tmp/puppet_enterprise_support_${TIMESTAMP}
 
 #===[ Functions ]=======================================================
+
+# Display a multiline string, because we can't rely on `echo` to do the right thing.
+#
+# Arguments:
+# 1. Text to display.
+display() {
+  printf "%s\n" "${1?}"
+}
+
+# Display a newline
+display_newline() {
+  display ''
+}
+
+# Display an error message to STDERR, but do not exit.
+#
+# Arguments:
+# 1. Message to display.
+display_error() {
+  display "$@" 1>&2
+}
+
+# Display an error message to STDERR and exit 1.
+#
+# Arguments:
+# 1. Message to display.
+fail() {
+  display_error "$@"
+  exit 1
+}
+
+# Portable test for command existance.
+#
+# Arguments:
+# 1. Command to test.
+cmd() {
+  hash "$1" &> /dev/null;
+}
+
+# Running in noop mode? Return 0 if true.
+is_noop() {
+  if [ y = "${IS_NOOP:-""}" ]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+# Discovers the runtime platform.
+#
+# Arguments:
+# None.
+#
+# Global Variables:
+# * PLATFORM_NAME : Name of the platorm, e.g. "centos".
+# * PLATFORM_RELEASE : Release version, e.g. "10.10".
+# * PLATFORM_EGREP : Proper invocation of `grep -E` for the platform.
+# * PLATFORM_HOSTNAME : Fully-Qualified hostname of this machine, e.g. "myhost.mycompany.com".
+# * PLATFORM_HOSTNAME_SHORT : Shortened hostname of this machine, e.g. "myhost".
+# * PLATFORM_PACKAGING : Name of local packaging system, e.g. "dpkg".
+detect_platform() {
+  # Default for most platforms. Exceptions are Solaris and AIX defined blow.
+  PLATFORM_EGREP='grep -E'
+
+  # First try identifying using lsb_release.  This takes care of Ubuntu
+  # (lsb-release is part of ubuntu-minimal).
+  if cmd lsb_release; then
+    t_prepare_platform=`lsb_release -icr 2>&1`
+
+    PLATFORM_NAME="$(printf "${t_prepare_platform?}" | grep -E '^Distributor ID:' | cut -s -d: -f2 | sed 's/[[:space:]]//' | tr '[[:upper:]]' '[[:lower:]]')"
+
+    # Sanitize name for unusual platforms
+    case "${PLATFORM_NAME?}" in
+      redhatenterpriseserver | redhatenterpriseclient | redhatenterpriseas | redhatenterprisees | enterpriseenterpriseserver | redhatenterpriseworkstation | redhatenterprisecomputenode | oracleserver)
+        PLATFORM_NAME=rhel
+        ;;
+      enterprise* )
+        PLATFORM_NAME=centos
+        ;;
+      scientific | scientifics | scientificsl )
+        PLATFORM_NAME=rhel
+        ;;
+      'suse linux' )
+        PLATFORM_NAME=sles
+        ;;
+      amazonami )
+        PLATFORM_NAME=amazon
+        ;;
+    esac
+
+    # Release
+    PLATFORM_RELEASE="$(printf "${t_prepare_platform?}" | grep -E '^Release:' | cut -s -d: -f2 | sed 's/[[:space:]]//g')"
+
+    # Sanitize release for unusual platforms
+    case "${PLATFORM_NAME?}" in
+      centos | rhel )
+        # Platform uses only number before period as the release,
+        # e.g. "CentOS 5.5" is release "5"
+        PLATFORM_RELEASE="$(printf "${PLATFORM_RELEASE?}" | cut -d. -f1)"
+        ;;
+      debian )
+        # Platform uses only number before period as the release,
+        # e.g. "Debian 6.0.1" is release "6"
+        PLATFORM_RELEASE="$(printf "${PLATFORM_RELEASE?}" | cut -d. -f1)"
+        if [ ${PLATFORM_RELEASE} = "testing" ] ; then
+          PLATFORM_RELEASE=7
+        fi
+        ;;
+    esac
+  elif [ "x$(uname -s)" = "xDarwin" ]; then
+    PLATFORM_NAME="osx"
+    # sw_vers returns something like 10.9.2, but we only want 10.9 so chop off the end
+    t_platform_release="$(/usr/bin/sw_vers -productVersion | cut -d'.' -f1,2)"
+    PLATFORM_RELEASE="${t_platform_release?}"
+    # Test for Solaris.
+  elif [ "x$(uname -s)" = "xSunOS" ]; then
+    PLATFORM_NAME="solaris"
+    t_platform_release="$(uname -r)"
+    # JJM We get back 5.10 but we only care about the right side of the decimal.
+    PLATFORM_RELEASE="${t_platform_release##*.}"
+    PLATFORM_EGREP='egrep'
+  elif [ "x$(uname -s)" = "xAIX" ] ; then
+    PLATFORM_NAME="aix"
+    t_platform_release="$(oslevel | cut -d'.' -f1,2)"
+    PLATFORM_RELEASE="${t_platform_release}"
+    PLATFORM_EGREP='egrep'
+
+  # Test for RHEL variant. RHEL, CentOS, OEL
+  elif [ -f /etc/redhat-release -a -r /etc/redhat-release -a -s /etc/redhat-release ]; then
+    # Oracle Enterprise Linux 5.3 and higher identify the same as RHEL
+    if grep -qi 'red hat enterprise' /etc/redhat-release; then
+      PLATFORM_NAME=rhel
+    elif grep -qi 'centos' /etc/redhat-release; then
+      PLATFORM_NAME=centos
+    elif grep -qi 'scientific' /etc/redhat-release; then
+      PLATFORM_NAME=rhel
+    elif grep -qi 'fedora' /etc/redhat-release; then
+      PLATFORM_NAME='fedora'
+    fi
+    # Release - take first digits after ' release ' only.
+    PLATFORM_RELEASE="$(sed 's/.*\ release\ \([[:digit:]]\+\).*/\1/g;q' /etc/redhat-release)"
+  # Test for Cumulus releases
+  elif [ -r "/etc/os-release" ] && grep -E "Cumulus Linux" "/etc/os-release" &> /dev/null ; then
+    PLATFORM_NAME=cumulus
+    PLATFORM_RELEASE=`grep -E "VERSION_ID" "/etc/os-release" | cut -d'=' -f2 | cut -d'.' -f'1,2'`
+  # Test for Debian releases
+  elif [ -f /etc/debian_version -a -r /etc/debian_version -a -s /etc/debian_version ]; then
+    t_prepare_platform__debian_version_file="/etc/debian_version"
+    t_prepare_platform__debian_version=`cat /etc/debian_version`
+
+    if cat "${t_prepare_platform__debian_version_file?}" | grep -E '^[[:digit:]]' > /dev/null; then
+      PLATFORM_NAME=debian
+      PLATFORM_RELEASE="$(printf "${t_prepare_platform__debian_version?}" | sed 's/\..*//')"
+    elif cat "${t_prepare_platform__debian_version_file?}" | grep -E '^wheezy' > /dev/null; then
+      PLATFORM_NAME=debian
+      PLATFORM_RELEASE="7"
+    fi
+  elif [ -f /etc/SuSE-release -a -r /etc/SuSE-release ]; then
+    t_prepare_platform__suse_version=`cat /etc/SuSE-release`
+
+    if printf "${t_prepare_platform__suse_version?}" | grep -E 'Enterprise Server'; then
+      PLATFORM_NAME=sles
+      t_version=`/bin/cat /etc/SuSE-release | grep VERSION | sed 's/^VERSION = \(\d*\)/\1/' `
+      t_patchlevel=`cat /etc/SuSE-release | grep PATCHLEVEL | sed 's/^PATCHLEVEL = \(\d*\)/\1/' `
+      PLATFORM_RELEASE="${t_version}"
+    fi
+  elif [ -f /etc/system-release ]; then
+    if grep -qi 'amazon linux' /etc/system-release; then
+      PLATFORM_NAME=amazon
+      PLATFORM_RELEASE=6
+    else
+      fail "$(cat /etc/system-release) is not a supported platform for Puppet Enterprise."
+    fi
+  elif [ -z "${PLATFORM_NAME:-""}" ]; then
+    fail "$(uname -s) is not a supported platform for Puppet Enterprise."
+  fi
+
+  if [ -z "${PLATFORM_NAME:-""}" -o -z "${PLATFORM_RELEASE:-""}" ]; then
+    fail "Unknown platform."
+  fi
+
+  # Hostname
+  case "${PLATFORM_NAME?}" in
+    solaris)
+      # Calling hostname --fqdn on solaris will set the hostname to '--fqdn' so we don't do that.
+      # Note there is a single space and literal tab character inside the brackets to match spaces or tabs
+      # in resolv.conf
+      t_fqdn=`sed -n 's/^[ 	]*domain[ 	]*\(.*\)$/\1/p' /etc/resolv.conf`
+      t_host=`uname -n`
+      if [ -z $t_fqdn ]; then
+        PLATFORM_HOSTNAME=${t_host?}
+      else
+        PLATFORM_HOSTNAME="${t_host?}.${t_fqdn:-''}"
+      fi
+
+      PLATFORM_HOSTNAME_SHORT=${t_host?}
+      ;;
+    aix)
+      # As with solaris, calling `hostname --fqdn` sets the hostname
+      # to '--fqdn' if /opt/freeware/bin is in the path and we're
+      # calling GNU hostname. AIX also has AIX hostname, in /bin, in
+      # which `hostname` prints the fqdn, and `hostname -s` prints
+      # hostname with domain info trimmed. We use the AIX hostname
+      # because its more sane and reliably there.
+      PLATFORM_HOSTNAME=`/bin/hostname`
+      PLATFORM_HOSTNAME_SHORT=`/bin/hostname -s`
+      ;;
+    *)
+      if hostname --fqdn &> /dev/null; then
+        PLATFORM_HOSTNAME=`hostname --fqdn 2> /dev/null`
+      else
+        PLATFORM_HOSTNAME=`hostname`
+      fi
+
+      if hostname --short &> /dev/null; then
+        PLATFORM_HOSTNAME_SHORT=`hostname --short 2> /dev/null`
+      else
+        PLATFORM_HOSTNAME_SHORT=`echo "${PLATFORM_HOSTNAME}" | cut -d. -f1`
+      fi
+      ;;
+  esac
+
+  # Packaging
+  case "${PLATFORM_NAME?}" in
+    centos | rhel | sles | amazon | aix | eos | fedora )
+      PLATFORM_PACKAGING=rpm
+      ;;
+    ubuntu | debian | cumulus)
+      PLATFORM_PACKAGING=dpkg
+      ;;
+    solaris )
+      case  "${PLATFORM_RELEASE?}" in
+        10)
+          PLATFORM_PACKAGING=pkgadd
+          ;;
+        11)
+          PLATFORM_PACKAGING=ips
+          ;;
+      esac
+      ;;
+    *)
+      fail "Unknown packaging system for platform: ${PLATFORM_NAME?}"
+      ;;
+  esac
+
+  # Now that global variables are set, flag them as readonly.
+  readonly PLATFORM_NAME
+  readonly PLATFORM_RELEASE
+  readonly PLATFORM_EGREP
+  readonly PLATFORM_HOSTNAME
+  readonly PLATFORM_HOSTNAME_SHORT
+  readonly PLATFORM_PACKAGING
+}
+
+# Is the package installed? Returns 0 for true, 1 for false.
+#
+# Arguments:
+# 1. Name of package.
+is_package_installed() {
+  case "${PLATFORM_PACKAGING?}" in
+    rpm)
+      (rpm -qi "${1?}") &> /dev/null
+      return $?
+      ;;
+    dpkg)
+      (dpkg-query --show --showformat '${Package}:${Status}\\n' "${1?}" 2>&1 | grep ' installed') &> /dev/null
+      return $?
+      ;;
+    pkgadd)
+      (pkginfo -l ${1?} | ${PLATFORM_EGREP?} 'STATUS:[:space:]*.*[:space:]*installed') &> /dev/null
+      return $?
+      ;;
+    ips)
+      ("pkg info ${1?}") &> /dev/null
+      return $?
+      ;;
+    *)
+      fail "Do not know how to check if package is installed on ${PLATFORM_NAME?}."
+      ;;
+  esac
+}
+
+# Print the value of a given ini field in a file. This doesn't respect sections,
+# so fields must be unique. If the field doesn't exist, nothing is printed.
+# Ignores whitespace around the field, value and equal sign.
+#
+# Arguments:
+# 1. The file to read
+# 2. The field to retrieve
+get_ini_field() {
+  t_ini_file="${1?}"
+  t_ini_field="${2?}"
+
+  t_extract_field="
+      field_regex = /^\s*${t_ini_field?}\s*=(.*)$/
+      if match = File.read('${t_ini_file?}').match(field_regex)
+          print match[1].strip
+      end
+  "
+
+  "${PUPPET_BIN_DIR?}/ruby" -e "${t_extract_field?}"
+}
 
 # This command is a modification of the utilities 'run'
 # command. It captures the output of a command specified by the first argument
@@ -77,14 +365,8 @@ run_diagnostic() {
   local t_run_diagnostic__command="${1?}"
   local t_run_diagnostic__outfile="${DROP}/${2?}"
 
-  if is_debug; then
-    display " ** Collecting output of \"${t_run_diagnostic__command?}\""
-    display_newline
-  else
-    # Display some sort of progress so the user can know if progress has
-    # stalled.
-    display_nonewline '.'
-  fi
+  display " ** Collecting output of \"${t_run_diagnostic__command?}\""
+  display_newline
 
   if [ -n "$timeout" ] ; then
     if [ -x "${PUPPET_BIN_DIR?}/ruby" ] ; then
@@ -95,22 +377,11 @@ run_diagnostic() {
     fi
   fi
 
-  if has_logfile; then
-      echo "${t_run_diagnostic__command?}" >> "${LOGFILE?}"
-  fi
   if is_noop; then
     return 0
   else
-    if has_logfile; then
-      # If logging is enabled, write the output to both the logfile and the
-      # out file.
-      ( eval "${prefix_command:-}${t_run_diagnostic__command?} 2>&1" ) | tee -a "${LOGFILE?}" >> $t_run_diagnostic__outfile
-      # Return the status of the command, not tee
-      return "${PIPESTATUS[0]}"
-    else
-      ( eval "${prefix_command:-}${t_run_diagnostic__command?} 2>&1" ) >> $t_run_diagnostic__outfile
-      return $?
-    fi
+    ( eval "${prefix_command:-}${t_run_diagnostic__command?} 2>&1" ) >> $t_run_diagnostic__outfile
+    return $?
   fi
 }
 
@@ -127,14 +398,14 @@ netstat_checks() {
 iptables_checks() {
   iptables_file="networking/ip_tables.txt"
   if [ "x${PLATFORM_NAME?}" = "xsolaris" ]; then
-    if run_suppress_output "wherefore ipf" && run_suppress_output "wherefore ipfstat"; then
+    if cmd ipf && cmd ipfstat; then
       run_diagnostic "ipfstat" $iptables_file
       run_diagnostic "ipfstat -i" $iptables_file
       run_diagnostic "ipfstat -o" $iptables_file
       run_diagnostic "ipf -V" $iptables_file
     fi
   else
-    if run_suppress_output "wherefore iptables" ; then
+    if cmd iptables; then
       run_diagnostic "iptables -L" $iptables_file
       run_diagnostic "ip6tables -L" $iptables_file
     else
@@ -153,13 +424,13 @@ hostname_checks() {
   if ! [ ${PLATFORM_NAME?} = "solaris" ]; then
     ipaddress=`ping  -t1 -c1 ${PLATFORM_HOSTNAME?} | awk -F\( '{print $2}' | awk -F\) '{print $1}' | head -1`
     echo $ipaddress > $DROP/networking/guessed_ip_address.txt
-    run_suppress_output "wherefore tracepath" && mapped_hostname=`tracepath $ipaddress | head -1 | awk '{print $2}'`
+    cmd tracepath && mapped_hostname=`tracepath $ipaddress | head -1 | awk '{print $2}'`
     echo $mapped_hostname > $DROP/networking/mapped_hostname_from_guessed_ip_address.txt
   fi
 }
 
 can_contact_master() {
-  if run_suppress_output "wherefore puppet" && [ -f "${PUPPET_BIN_DIR?}/puppet" ]; then
+  if cmd puppet && [ -f "${PUPPET_BIN_DIR?}/puppet" ]; then
     if [ "x${PLATFORM_NAME?}" = "xsolaris" ]; then
       PING="ping"
     else
@@ -177,7 +448,7 @@ can_contact_master() {
 }
 
 ifconfig_output() {
-  if run_suppress_output "wherefore ifconfig" && ifconfig -a &> /dev/null; then
+  if cmd ifconfig && ifconfig -a &> /dev/null; then
     run_diagnostic "ifconfig -a" "networking/ifconfig.txt"
   fi
 }
@@ -231,7 +502,7 @@ db_size_from_fs() {
 }
 
 db_size_checks() {
-  if is_postgres; then
+  if is_package_installed 'pe-postgresql-server'; then
     # Check size of databases, both from the filesystem's perspective and the
     # database's perspective
     local database_names=$(get_all_database_names)
@@ -258,7 +529,7 @@ free_checks() {
 }
 
 ntp_checks() {
-    run_suppress_output "wherefore ntpq" && run_diagnostic "ntpq -p" "networking/ntpq_output.txt"
+    cmd ntpq && run_diagnostic "ntpq -p" "networking/ntpq_output.txt"
 }
 
 #===[System checks]=============================================================
@@ -329,7 +600,7 @@ os_checks() {
   if [ ${PLATFORM_NAME?} = "solaris" ]; then
     # Probably want more information than this here
     echo "Solaris" > $DROP/system/os_checks.txt
-  elif run_suppress_output "wherefore lsb_release"; then
+  elif cmd lsb_release; then
     run_diagnostic "lsb_release -a" "system/lsb_release.txt"
   fi
 
@@ -369,7 +640,7 @@ pe_logs() {
 
 get_state() {
   mkdir -p "${DROP}/enterprise/puppetserver_state/"
-  t_puppet_state_dir=$("$(puppet_bin_dir)/puppet" config print --section=agent statedir)
+  t_puppet_state_dir=$("${PUPPET_BIN_DIR}/puppet" config print --section=agent statedir)
   t_state_dir="${t_puppet_state_dir:=/opt/puppetlabs/puppet/cache/state/}"
   cp -LpR "${t_state_dir}" "${DROP}/enterprise/puppetserver_state/"
 }
@@ -575,13 +846,13 @@ nodes_listing() {
     local t_host_cert="$(${PUPPET_BIN_DIR?}/puppet master --configprint hostcert)"
     local t_host_priv_key="$(${PUPPET_BIN_DIR?}/puppet master --configprint hostprivkey)"
 
-    run_diagnostic "$(puppet_bin_dir)/curl -k --silent --show-error --cert ${t_host_cert?} --key ${t_host_priv_key?} --max-time ${timeout} https://${t_server?}:${t_port?}/nodes.csv" "enterprise/nodes.csv"
+    run_diagnostic "${PUPPET_BIN_DIR}/curl -k --silent --show-error --cert ${t_host_cert?} --key ${t_host_priv_key?} --max-time ${timeout} https://${t_server?}:${t_port?}/nodes.csv" "enterprise/nodes.csv"
   fi
 }
 
 # Curls the status of the console
 console_status() {
-  run_diagnostic "$(puppet_bin_dir)/curl --silent --show-error --max-time 5 http://127.0.0.1:4432/status/v1/services?level=debug" "enterprise/console_status"
+  run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --max-time 5 http://127.0.0.1:4432/status/v1/services?level=debug" "enterprise/console_status"
 }
 
 get_rbac_directory_settings_info() {
@@ -606,14 +877,26 @@ filesync_state() {
 get_puppetdb_summary_stats() {
   if [ -d /etc/puppetlabs/puppetdb ]; then
       local q_puppetdb_plaintext_port="$(get_ini_field '/etc/puppetlabs/puppetdb/conf.d/jetty.ini' 'port')"
-      run_diagnostic "$(puppet_bin_dir)/curl --silent --show-error -X GET http://127.0.0.1:${q_puppetdb_plaintext_port}/pdb/admin/v1/summary-stats" "enterprise/puppetdb_summary_stats.json"
+      run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error -X GET http://127.0.0.1:${q_puppetdb_plaintext_port}/pdb/admin/v1/summary-stats" "enterprise/puppetdb_summary_stats.json"
   fi
 }
 
 #===[Main]======================================================================
 
-# Always use debug mode, because we're trying to solve a problem!
-IS_DEBUG=y
+detect_platform
+
+case "${PLATFORM_NAME?}" in
+  solaris)
+    if [[ "${EUID?}" -ne 0 ]]; then
+      fail "${SCRIPT_NAME?} must be run as root"
+    fi
+    ;;
+  *)
+    if [[ "$(id -u)" -ne 0 ]]; then
+      fail "${SCRIPT_NAME?} must be run as root"
+    fi
+    ;;
+esac
 
 # Verify space for drop files
 if [ "x${PLATFORM_NAME?}" = "xsolaris" ]; then
@@ -623,10 +906,9 @@ else
 fi
 
 if [ "$DF" -lt "25600" ]; then
-  display_failure "Not enough disk space in /var/tmp. This script needs 25MB or more to run."
+  fail "Not enough disk space in /var/tmp. This script needs 25MB or more to run."
 fi
 
-display_major_separator
 display "Creating drop directory at ${DROP?}"
 
 mkdir -p $DROP/{resources,system,system/etc,enterprise/{find,state},networking,logs}
@@ -677,16 +959,14 @@ gzip -f9 ${support_archive?}
 popd &> /dev/null
 rm -rf $DROP
 
-unregister_exception_handler
 
 display 'Data collected, ready for submission'
 display_newline
 display "Support data is located at ${support_archive?}.gz"
 display_newline
-display_major_separator
 display "Current Puppet Enterprise customers:"
-echo "Please submit ${support_archive?}.gz to Puppet Labs Support at the Box upload site you've been invited to." | display_wrapped_text 0 0
+display "Please submit ${support_archive?}.gz to Puppet Support at the Box upload site you've been invited to."
 display_newline
 display_newline
 
-quit
+exit 0
