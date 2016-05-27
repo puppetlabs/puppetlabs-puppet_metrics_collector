@@ -869,6 +869,9 @@ get_puppetdb_summary_stats() {
 
 #===[Main]======================================================================
 
+# Default to no collection of filesync data
+FILESYNC=${FILESYNC:-n}
+
 detect_platform
 
 case "${PLATFORM_NAME?}" in
