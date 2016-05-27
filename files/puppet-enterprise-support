@@ -760,7 +760,7 @@ check_r10k() {
   if [ -x "${PUPPET_BIN_DIR?}/gem" ]; then
     run_diagnostic "${PUPPET_BIN_DIR?}/gem list | $PLATFORM_EGREP r10k" "enterprise/r10k_gem_version.txt"
   fi
-  if [ -x "${PUPPET_BIN_DIR}/r10k" ]; then
+  if [ -x "${PUPPET_BIN_DIR}/r10k" ] && [ -e /etc/puppetlabs/r10k/r10k.yaml ]; then
     run_diagnostic "${PUPPET_BIN_DIR}/r10k deploy display -p --detail" "enterprise/r10k_deploy_display.txt"
   fi
 }
