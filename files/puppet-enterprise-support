@@ -838,7 +838,12 @@ mco_commands() {
 activemq_limits() {
 if is_package_installed pe-activemq; then
   echo "File descriptors in use by pe-activemq:" > $DROP/enterprise/activemq_resource_limits
-  run_diagnostic "lsof -u pe-activemq | wc -l" "enterprise/activemq_resource_limits"
+  if cmd lsof; then
+    run_diagnostic "lsof -u pe-activemq | wc -l" "enterprise/activemq_resource_limits"
+  else
+    echo "lsof: command not found" >> $DROP/enterprise/activemq_resource_limits
+  fi
+
   echo -e "\n\nResource limits for pe-activemq:\n" >> $DROP/enterprise/activemq_resource_limits
   run_diagnostic "su -s /bin/bash pe-activemq -c 'ulimit -a'" "enterprise/activemq_resource_limits"
 fi
