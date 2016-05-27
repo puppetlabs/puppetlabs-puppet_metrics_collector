@@ -424,8 +424,10 @@ hostname_checks() {
   if ! [ ${PLATFORM_NAME?} = "solaris" ]; then
     ipaddress=`ping  -t1 -c1 ${PLATFORM_HOSTNAME?} | awk -F\( '{print $2}' | awk -F\) '{print $1}' | head -1`
     echo $ipaddress > $DROP/networking/guessed_ip_address.txt
-    cmd tracepath && mapped_hostname=`tracepath $ipaddress | head -1 | awk '{print $2}'`
-    echo $mapped_hostname > $DROP/networking/mapped_hostname_from_guessed_ip_address.txt
+    if cmd tracepath; then
+      mapped_hostname=`tracepath $ipaddress | head -1 | awk '{print $2}'`
+      echo $mapped_hostname > $DROP/networking/mapped_hostname_from_guessed_ip_address.txt
+    fi
   fi
 }
 
@@ -529,13 +531,17 @@ free_checks() {
 }
 
 ntp_checks() {
-    cmd ntpq && run_diagnostic "ntpq -p" "networking/ntpq_output.txt"
+  if cmd ntpq; then
+    run_diagnostic "ntpq -p" "networking/ntpq_output.txt"
+  fi
 }
 
 #===[System checks]=============================================================
 
 selinux_checks() {
-  [ -f /usr/sbin/sestatus ] && run_diagnostic "/usr/sbin/sestatus" "system/selinux.txt"
+  if [ -x /usr/sbin/sestatus ]; then
+    run_diagnostic "/usr/sbin/sestatus" "system/selinux.txt"
+  fi
 }
 
 get_umask() {
@@ -647,7 +653,9 @@ get_state() {
 
 other_logs() {
   for log in "system" "syslog" "messages"; do
-    [ -f /var/log/${log} ] && cp -pR /var/log/${log} $DROP/logs && gzip -9 $DROP/logs/${log}
+    if [ -f /var/log/${log} ]; then
+      cp -pR /var/log/${log} $DROP/logs && gzip -9 $DROP/logs/${log}
+    fi
   done
 }
 
