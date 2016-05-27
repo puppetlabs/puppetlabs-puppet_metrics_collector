@@ -665,6 +665,7 @@ gather_enterprise_files() {
   local basemodulepath=$(${PUPPET_BIN_DIR?}/puppet master --configprint basemodulepath)
   local environmentpath=$(${PUPPET_BIN_DIR?}/puppet master --configprint environmentpath)
   local paths="${modulepath}:${basemodulepath}:${environmentpath}"
+  local excludes=""
   if [ "$FILESYNC" != "y" ]; then
     # Exclude code-staging if not capturing filesync data.
     local paths="${paths}:/etc/puppetlabs/code-staging"
@@ -693,7 +694,7 @@ gather_enterprise_files() {
     IFS=':'
     for path in $paths; do
       if [ -n "$path" ] ; then
-        local excludes="${excludes} --exclude=${path}"
+        excludes="${excludes} --exclude=${path}"
       fi
     done
     IFS="$IFS_SAVE"
