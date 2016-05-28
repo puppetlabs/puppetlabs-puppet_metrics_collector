@@ -331,6 +331,25 @@ get_ini_field() {
   "${PUPPET_BIN_DIR?}/ruby" -e "${t_extract_field?}"
 }
 
+# Use ruby timeout since bash timeout is not available on all platforms
+with_timeout() {
+  local timeout=$1
+  shift
+
+  # Pass arguments to run as an array so that Process.spawn() will execute the
+  # command without creating a subshell. Ruby script passed to stdin.
+  "${PUPPET_BIN_DIR?}/ruby" -rtimeout -- - "$@" <<EOscript
+pid = Process.spawn(*ARGV, pgroup: true)
+begin
+  Timeout.timeout(${timeout}) { Process.wait pid }
+rescue Timeout::Error
+  puts 'Timeout ${timeout} seconds has expired.'
+  puts "Sending TERM signal to process group of pid #{pid}..."
+  Process.kill('TERM', -Process.getpgid(pid)) rescue Errno::ESRCH
+end
+EOscript
+}
+
 # This command is a modification of the utilities 'run'
 # command. It captures the output of a command specified by the first argument
 # and writes stdout and stderr to the specified file. If logging is enabled,
@@ -802,25 +821,6 @@ check_certificates() {
   if [ -f "${PUPPET_BIN_DIR?}/puppet" ] && [ "x$(${PUPPET_BIN_DIR?}/puppet master --configprint ca)" = "xtrue" ]; then
     run_diagnostic "${PUPPET_BIN_DIR?}/puppet cert list --all" "enterprise/certs.txt"
   fi
-}
-
-# Use ruby timeout since bash timeout is not available on all platforms
-with_timeout() {
-  local timeout=$1
-  shift
-
-  # Pass arguments to run as an array so that Process.spawn() will execute the
-  # command without creating a subshell. Ruby script passed to stdin.
-  "${PUPPET_BIN_DIR?}/ruby" -rtimeout -- - "$@" <<EOscript
-pid = Process.spawn(*ARGV, pgroup: true)
-begin
-  Timeout.timeout(${timeout}) { Process.wait pid }
-rescue Timeout::Error
-  puts 'Timeout ${timeout} seconds has expired.'
-  puts "Sending TERM signal to process group of pid #{pid}..."
-  Process.kill('TERM', -Process.getpgid(pid)) rescue Errno::ESRCH
-end
-EOscript
 }
 
 mco_commands() {
