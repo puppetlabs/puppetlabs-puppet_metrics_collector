@@ -680,69 +680,95 @@ other_logs() {
 
 #===[Puppet Enterprise checks]==================================================
 
+# Copy configuration from /etc/puppetlabs to support script output.
+#
+# Global Variables Used:
+#   DROP
+#   FILESYNC
+#
+# Arguments:
+#   None
+#
+# Returns:
+#   None
 gather_enterprise_files() {
-  # tar provides a convenient way to exclude things from a tarball.
-  # However, we don't actually want to double-tarball things.
-  # So, just untar it afterward.
+  local pe_config_files
+  local config_dir
 
-  #optionally exclude modules, redact /etc/puppet.conf
-  #z flag fails on solaris
-  #--exclude also fails on solaris. sweet.
-  local modulepath=$(${PUPPET_BIN_DIR?}/puppet master --configprint modulepath)
-  local basemodulepath=$(${PUPPET_BIN_DIR?}/puppet master --configprint basemodulepath)
-  local environmentpath=$(${PUPPET_BIN_DIR?}/puppet master --configprint environmentpath)
-  local paths="${modulepath}:${basemodulepath}:${environmentpath}"
-  local excludes=""
-  if [ "$FILESYNC" != "y" ]; then
-    # Exclude code-staging if not capturing filesync data.
-    local paths="${paths}:/etc/puppetlabs/code-staging"
+  # Whitelist of configuration files and directories to copy. Each entry is
+  # relative to /etc/puppetlabs.
+  pe_config_files=(
+    'activemq/activemq.xml'
+    'activemq/jetty.xml'
+    'activemq/log4j.properties'
+
+    'client-tools/orchestrator.conf'
+    'client-tools/puppet-access.conf'
+    'client-tools/puppet-code.conf'
+
+    'code/hiera.yaml'
+
+    'console-services/bootstrap.cfg'
+    'console-services/conf.d'
+    'console-services/logback.xml'
+    'console-services/rbac-certificate-whitelist'
+    'console-services/request-logging.xml'
+
+    'enterprise/conf.d'
+    'enterprise/hiera.yaml'
+
+    'installer/answers.install'
+
+    'mcollective/server.cfg'
+
+    'nginx/conf.d'
+    'nginx/nginx.conf'
+
+    'orchestration-services/bootstrap.cfg'
+    'orchestration-services/conf.d'
+    'orchestration-services/logback.xml'
+
+    'puppet/auth.conf'
+    'puppet/autosign.conf'
+    'puppet/classfier.yaml'
+    'puppet/fileserver.conf'
+    'puppet/hiera.yaml'
+    'puppet/puppet.conf'
+    'puppet/puppetdb.conf'
+    'puppet/routes.yaml'
+
+    'puppetdb/bootstrap.cfg'
+    'puppetdb/certificate-whitelist'
+    'puppetdb/conf.d'
+    'puppetdb/logback.xml'
+    'puppetdb/request-logging.xml'
+
+    'puppetserver/bootstrap.cfg'
+    'puppetserver/code-manager-request-logging.xml'
+    'puppetserver/conf.d'
+    'puppetserver/logback.xml'
+    'puppetserver/request-logging.xml'
+
+    'pxp-agent/modules'
+    'pxp-agent/pxp-agent.conf'
+
+    'r10k/r10k.yaml'
+  )
+
+  # Copy code-staging if filesync debugging is enabled.
+  if [[ "${FILESYNC?}" = 'y' ]]; then
+    pe_config_files=("${pe_config_files[@]}" 'code-staging')
   fi
-  local untar_path="enterprise/"
-  if [ ${PLATFORM_NAME?} = "solaris" ]; then
-    find /etc/puppetlabs/puppet -name *.pem > "$DROP/tar_excludes.txt"
-    echo "/etc/puppetlabs/puppet/modules" >> "$DROP/tar_excludes.txt"
-    echo "/etc/puppetlabs/puppet/manifests" >> "$DROP/tar_excludes.txt"
-    echo "/etc/puppetlabs/puppet/ssl/ca/private/ca.pass" >> "$DROP/tar_excludes.txt"
-    echo "/etc/puppetlabs/mcollective/credentials" >> "$DROP/tar_excludes.txt"
-    echo "/etc/puppetlabs/mcollective/ssl" >> "$DROP/tar_excludes.txt"
-    IFS_SAVE="$IFS"
-    IFS=':'
-    for path in $paths; do
-      if [ -n "$path" ] ; then
-        echo $path >> "$DROP/tar_excludes.txt"
-      fi
-    done
-    IFS="$IFS_SAVE"
-    mkdir -p $untar_path
-    tar -pcXf "$DROP/tar_excludes.txt" - /etc/puppetlabs | ( cd $untar_path; tar -pxf - 2> /dev/null )
-    rm -rf "$DROP/tar_excludes.txt"
-  else
-    IFS_SAVE="$IFS"
-    IFS=':'
-    for path in $paths; do
-      if [ -n "$path" ] ; then
-        excludes="${excludes} --exclude=${path}"
-      fi
-    done
-    IFS="$IFS_SAVE"
-    local tar_command="
-      tar -pc --exclude=/etc/puppetlabs/puppet/ssl/ca \
-              --exclude=/etc/puppetlabs/puppet/ssl/private_keys \
-              --exclude=/etc/puppetlabs/puppet/ssl/private \
-              --exclude=/etc/puppetlabs/puppet/modules \
-              --exclude=/etc/puppetlabs/puppet/manifests \
-              --exclude=/etc/puppetlabs/puppet/ssl/ca/private/ca.pass \
-              --exclude=/etc/puppetlabs/mcollective/credentials \
-              --exclude=/etc/puppetlabs/mcollective/ssl \
-              --exclude=/etc/puppetlabs/installer/database_info.* \
-              --exclude=/etc/puppetlabs/activemq/broker.pem \
-              --exclude=/etc/puppetlabs/activemq/credentials.properties \
-              $excludes \
-              --transform 's,,${untar_path},' \
-              -f - /etc/puppetlabs 2> /dev/null | tar -pxf -
-    "
-    eval $tar_command
-  fi
+
+  mkdir -p "${DROP?}/enterprise/etc/puppetlabs"
+  for f in "${pe_config_files[@]}"; do
+    if [[ -e "/etc/puppetlabs/${f}" ]]; then
+      config_dir=$(dirname "${f}")
+      mkdir -p "${DROP}/enterprise/etc/puppetlabs/${config_dir}"
+
+      cp -LpR "/etc/puppetlabs/${f}" "${DROP}/enterprise/etc/puppetlabs/${f}"
+    fi
+  done
 }
 
 # Display listings of the Puppet Enterprise files and module files
