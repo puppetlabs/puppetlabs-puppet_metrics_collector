@@ -22,6 +22,7 @@ readonly PUPPET_BIN_DIR='/opt/puppetlabs/puppet/bin'
 readonly SERVER_BIN_DIR='/opt/puppetlabs/server/bin'
 readonly SERVER_DATA_DIR='/opt/puppetlabs/server/data'
 readonly SCRIPT_NAME="$(basename "${0}")"
+readonly SCRIPT_VERSION='1.0.0'
 
 TIMESTAMP=$(date '+%Y%m%d%H%M%S')
 
@@ -935,6 +936,8 @@ get_puppetdb_summary_stats() {
 
 #===[Main]======================================================================
 
+display "Puppet Enterprise Support Script v${SCRIPT_VERSION}"
+
 # Default to no collection of filesync data
 FILESYNC=${FILESYNC:-n}
 
@@ -970,6 +973,7 @@ mkdir -p $DROP/{resources,system,system/etc,enterprise/{find,state},networking,l
 pushd $DROP &> /dev/null
 
 display 'Collecting information'
+display_newline
 
 netstat_checks
 selinux_checks
