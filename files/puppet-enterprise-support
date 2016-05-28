@@ -682,6 +682,9 @@ other_logs() {
 
 # Copy configuration from /etc/puppetlabs to support script output.
 #
+# Configuration keys with "password" in their names are redacted from the
+# copied files.
+#
 # Global Variables Used:
 #   DROP
 #   FILESYNC
@@ -767,6 +770,30 @@ gather_enterprise_files() {
       mkdir -p "${DROP}/enterprise/etc/puppetlabs/${config_dir}"
 
       cp -LpR "/etc/puppetlabs/${f}" "${DROP}/enterprise/etc/puppetlabs/${f}"
+    fi
+  done
+
+  # Redact passwords from copied config files.
+
+  if [[ -f "${DROP}/enterprise/etc/puppetlabs/activemq/activemq.xml" ]]; then
+    # A Regex which looks for an XML attribute names ending in "password", one
+    # per line, and redacts their values.
+    sed -i'' -e 's/^\(.*password="\)[^"]*\(.*\)/\1REDACTED\2/' \
+      "${DROP}/enterprise/etc/puppetlabs/activemq/activemq.xml"
+  fi
+
+  local files_to_redact
+  files_to_redact=(
+    "${DROP}/enterprise/etc/puppetlabs/mcollective/server.cfg"
+    "${DROP}/enterprise/etc/puppetlabs"/*/conf.d/*
+  )
+
+  for f in "${files_to_redact[@]}"; do
+    if [[ -f "${f}" ]]; then
+      # A regex which matches key names ending in "password", one per line, and
+      # redacts their values. Works for most pretty printed JSON, YAML, HOCON
+      # and INI formats.
+      sed -i'' -e 's/^\(.*password"\?\s*[=:]\).*/\1 "REDACTED"/' "${f}"
     fi
   done
 }
