@@ -931,6 +931,31 @@ get_puppetdb_summary_stats() {
   fi
 }
 
+# Write metadata to a JSON file
+#
+# This function writes out a metadata file which contains information about
+# which script version was run. This will help future generations reason about
+# support script output and parse data.
+#
+# Global Variables Used:
+#   DROP
+#   SCRIPT_VERSION
+#   TIMESTAMP
+#
+# Arguments:
+#   None
+#
+# Returns:
+#   None
+write_metadata() {
+  cat <<EOF > "${DROP?}/metadata.json"
+{
+  "version": "${SCRIPT_VERSION}",
+  "timestamp": "${TIMESTAMP}"
+}
+EOF
+}
+
 #===[Main]======================================================================
 
 display "Puppet Enterprise Support Script v${SCRIPT_VERSION}"
@@ -974,6 +999,8 @@ pushd $DROP &> /dev/null
 
 display 'Collecting information'
 display_newline
+
+write_metadata
 
 netstat_checks
 selinux_checks
