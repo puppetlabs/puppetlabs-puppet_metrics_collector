@@ -964,7 +964,7 @@ if [ "$DF" -lt "25600" ]; then
   fail "Not enough disk space in /var/tmp. This script needs 25MB or more to run."
 fi
 
-readonly TIMESTAMP=$(date '+%Y%m%d%H%M%S')
+readonly TIMESTAMP=$(date -u '+%Y%m%d%H%M%S')
 readonly DROP=/var/tmp/puppet_enterprise_support_${TIMESTAMP}
 
 display "Creating drop directory at ${DROP?}"
