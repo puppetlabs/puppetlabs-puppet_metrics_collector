@@ -24,9 +24,6 @@ readonly SERVER_DATA_DIR='/opt/puppetlabs/server/data'
 readonly SCRIPT_NAME="$(basename "${0}")"
 readonly SCRIPT_VERSION='1.0.0'
 
-TIMESTAMP=$(date '+%Y%m%d%H%M%S')
-
-DROP=/var/tmp/puppet_enterprise_support_${TIMESTAMP}
 
 #===[ Functions ]=======================================================
 
@@ -966,6 +963,9 @@ fi
 if [ "$DF" -lt "25600" ]; then
   fail "Not enough disk space in /var/tmp. This script needs 25MB or more to run."
 fi
+
+readonly TIMESTAMP=$(date '+%Y%m%d%H%M%S')
+readonly DROP=/var/tmp/puppet_enterprise_support_${TIMESTAMP}
 
 display "Creating drop directory at ${DROP?}"
 
