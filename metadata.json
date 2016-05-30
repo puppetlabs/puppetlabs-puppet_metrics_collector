@@ -1,6 +1,6 @@
 {
   "name": "puppetlabs-pe_support_script",
-  "version": "2016.2.0",
+  "version": "1.0.0",
   "author": "puppetlabs",
   "summary": "Provides the enterprise support command.",
   "license": "Puppet Enterprise Software License Agreement",
@@ -10,7 +10,13 @@
   "dependencies": [
     {
       "name":"puppetlabs-pe_manager",
-      "version_requirement":">= 2016.2.0"
+      "version_requirement": ">= 0.1.0"
+    }
+  ],
+  "requirements": [
+    {
+      "name": "pe",
+      "version_requirement": ">= 2016.2.0 < 2016.3.0"
     }
   ],
   "operatingsystem_support": [
@@ -32,7 +38,8 @@
       "operatingsystem": "Ubuntu",
       "operatingsystemrelease": [
         "12.04",
-        "14.04"
+        "14.04",
+        "16.04"
       ]
     }
   ]
