@@ -965,7 +965,7 @@ if [ "$DF" -lt "25600" ]; then
 fi
 
 readonly TIMESTAMP=$(date -u '+%Y%m%d%H%M%S')
-readonly DROP=/var/tmp/puppet_enterprise_support_${TIMESTAMP}
+readonly DROP="/var/tmp/puppet_enterprise_support_${PLATFORM_HOSTNAME_SHORT}_${TIMESTAMP}"
 
 display "Creating drop directory at ${DROP?}"
 
