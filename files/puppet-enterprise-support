@@ -661,11 +661,25 @@ pe_logs() {
   cp -LpR /var/log/puppetlabs/* "${DROP}/logs"
 }
 
+# Copy puppet agent state directory
+#
+# Global Variables Used:
+#   DROP
+#   PUPPET_BIN_DIR
+#
+# Arguments:
+#   None
+#
+# Returns:
+#   None
 get_state() {
-  mkdir -p "${DROP}/enterprise/puppetserver_state/"
-  t_puppet_state_dir=$("${PUPPET_BIN_DIR}/puppet" config print --section=agent statedir)
-  t_state_dir="${t_puppet_state_dir:=/opt/puppetlabs/puppet/cache/state/}"
-  cp -LpR "${t_state_dir}" "${DROP}/enterprise/puppetserver_state/"
+  local configured_state_dir
+  local state_dir
+
+  configured_state_dir=$("${PUPPET_BIN_DIR}/puppet" config print --section=agent statedir)
+  state_dir="${configured_state_dir:=/opt/puppetlabs/puppet/cache/state/}"
+
+  cp -LpR "${state_dir}" "${DROP?}/enterprise/state"
 }
 
 other_logs() {
@@ -994,7 +1008,7 @@ readonly DROP="/var/tmp/puppet_enterprise_support_${PLATFORM_HOSTNAME_SHORT}_${T
 
 display "Creating drop directory at ${DROP?}"
 
-mkdir -p $DROP/{resources,system,system/etc,enterprise/{find,state},networking,logs}
+mkdir -p $DROP/{resources,system,system/etc,enterprise/find,networking,logs}
 pushd $DROP &> /dev/null
 
 display 'Collecting information'
