@@ -271,6 +271,9 @@ detect_platform() {
       ;;
   esac
 
+  # Ensure PLATFORM_HOSTNAME_SHORT only contains one namespace segment.
+  PLATFORM_HOSTNAME_SHORT=$(echo "${PLATFORM_HOSTNAME_SHORT}" | cut -d. -f1)
+
   # Now that global variables are set, flag them as readonly.
   readonly PLATFORM_NAME
   readonly PLATFORM_RELEASE
