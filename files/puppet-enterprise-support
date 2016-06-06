@@ -1067,7 +1067,7 @@ display_newline
 display "Support data is located at ${support_archive?}.gz"
 display_newline
 display "Current Puppet Enterprise customers:"
-display "Please submit ${support_archive?}.gz to Puppet Support at the Box upload site you've been invited to."
+display "Please submit ${support_archive?}.gz to Puppet Support using the upload site you've been invited to."
 display_newline
 display_newline
 
