@@ -1,10 +1,7 @@
 test_name 'PE-15434 - - Run Support Script' do
-  # NOTE: This can be removed once PE-15117 lands.
-  meep_module_dir = '/opt/puppetlabs/server/data/enterprise/modules'
-
   step 'Run Support Script' do
     hosts.each do |host|
-      result = on(host, puppet('enterprise support', modulepath: meep_module_dir))
+      result = on(host, puppet('enterprise support'))
       output_tarball = result.stdout.match(/^Support data is located at (.*)$/).captures.first
 
       stage_dir = create_tmpdir_on(host)
