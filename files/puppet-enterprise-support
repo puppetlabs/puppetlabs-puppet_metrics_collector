@@ -922,6 +922,20 @@ console_status() {
   run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --connect-timeout 5 --max-time 60 http://127.0.0.1:4432/status/v1/services?level=debug" "enterprise/console_status.json"
 }
 
+# Collects output from the Puppet Server status endpoint
+#
+# Global Variables Used:
+#   PUPPET_BIN_DIR
+#
+# Arguments:
+#   None
+#
+# Returns:
+#   None
+puppetserver_status() {
+  run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --connect-timeout 5 --max-time 60 -k https://127.0.0.1:8140/status/v1/services?level=debug" "enterprise/puppetserver_status.json"
+}
+
 get_rbac_directory_settings_info() {
     local t_rbac_info_query="SELECT row_to_json(row) FROM ( SELECT \
 id, display_name, help_link, type, hostname, port, ssl, login, \
@@ -1050,6 +1064,7 @@ check_r10k
 mco_commands
 activemq_limits
 console_status
+puppetserver_status
 get_rbac_directory_settings_info
 filesync_state
 get_puppetdb_summary_stats
