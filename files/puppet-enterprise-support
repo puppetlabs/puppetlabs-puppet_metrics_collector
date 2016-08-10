@@ -842,13 +842,33 @@ module_listing() {
   fi
 }
 
-# Check r10k version
+# Check r10k version and deployment status
+#
+# Global Variables Used:
+#   PUPPET_BIN_DIR
+#
+# Arguments:
+#   None
+#
+# Returns:
+#   None
 check_r10k() {
-  if [ -x "${PUPPET_BIN_DIR?}/gem" ]; then
-    run_diagnostic "${PUPPET_BIN_DIR?}/gem list | $PLATFORM_EGREP r10k" "enterprise/r10k_gem_version.txt"
+  local r10k_config=""
+
+  if [[ -x "${PUPPET_BIN_DIR?}/gem" ]]; then
+    run_diagnostic "${PUPPET_BIN_DIR}/gem list r10k" "enterprise/r10k_gem_version.txt"
   fi
-  if [ -x "${PUPPET_BIN_DIR}/r10k" ] && [ -e /etc/puppetlabs/r10k/r10k.yaml ]; then
-    run_diagnostic "${PUPPET_BIN_DIR}/r10k deploy display -p --detail" "enterprise/r10k_deploy_display.txt"
+
+  if [[ -e /opt/puppetlabs/server/data/code-manager/r10k.yaml ]]; then
+    # Code Manager
+    r10k_config=/opt/puppetlabs/server/data/code-manager/r10k.yaml
+  elif [[ -e /etc/puppetlabs/r10k/r10k.yaml ]]; then
+    # Custom r10k config
+    r10k_config=/etc/puppetlabs/r10k/r10k.yaml
+  fi
+
+  if [[ -x "${PUPPET_BIN_DIR}/r10k" ]] && [[ -n "${r10k_config}" ]]; then
+    run_diagnostic "${PUPPET_BIN_DIR}/r10k deploy display -p --detail -c ${r10k_config}" "enterprise/r10k_deploy_display.txt"
   fi
 }
 
