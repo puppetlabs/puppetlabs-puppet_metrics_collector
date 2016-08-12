@@ -956,6 +956,26 @@ puppetserver_status() {
   run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --connect-timeout 5 --max-time 60 -k https://127.0.0.1:8140/status/v1/services?level=debug" "enterprise/puppetserver_status.json"
 }
 
+# Collects output from the Puppet Server environments endpoint
+#
+# Global Variables Used:
+#   PUPPET_BIN_DIR
+#
+# Arguments:
+#   None
+#
+# Returns:
+#   None
+puppetserver_environments() {
+  local agent_cert
+  local agent_key
+
+  agent_cert=$(${PUPPET_BIN_DIR}/puppet config print --section agent hostcert)
+  agent_key=$(${PUPPET_BIN_DIR}/puppet config print --section agent hostprivkey)
+
+  run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --connect-timeout 5 --max-time 60 --cert ${agent_cert} --key ${agent_key} -k https://127.0.0.1:8140/puppet/v3/environments" "enterprise/puppetserver_environments.json"
+}
+
 get_rbac_directory_settings_info() {
     local t_rbac_info_query="SELECT row_to_json(row) FROM ( SELECT \
 id, display_name, help_link, type, hostname, port, ssl, login, \
@@ -1085,6 +1105,7 @@ mco_commands
 activemq_limits
 console_status
 puppetserver_status
+puppetserver_environments
 get_rbac_directory_settings_info
 filesync_state
 get_puppetdb_summary_stats
