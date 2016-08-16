@@ -1,3 +1,24 @@
+## Release 1.1.0
+
+### Summary
+
+Feature release of the Support Script bundled with PE 2016.4.0.
+
+### Features
+
+  - Support Script gathers output from the Puppet Server `status/v1/services`
+    endpoint at debug level. This information is useful for troubleshooting
+    Puppet Server performance issues.
+
+  - Support Script gathers output from the Puppet Server `puppet/v3/environments`
+    endpoint. This information is useful for troubleshooting modulepath and
+    class synchronization issues.
+
+### Bug Fixes
+
+  - R10k checks now use the proper configuration file if Code Manager is enabled.
+
+
 ## Release 1.0.0
 
 ### Summary
