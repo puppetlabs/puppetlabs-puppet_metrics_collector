@@ -723,6 +723,7 @@ gather_enterprise_files() {
     'client-tools/orchestrator.conf'
     'client-tools/puppet-access.conf'
     'client-tools/puppet-code.conf'
+    'client-tools/puppetdb.conf'
 
     'code/hiera.yaml'
 
@@ -745,6 +746,7 @@ gather_enterprise_files() {
     'orchestration-services/bootstrap.cfg'
     'orchestration-services/conf.d'
     'orchestration-services/logback.xml'
+    'orchestration-services/request-logging.xml'
 
     'puppet/auth.conf'
     'puppet/autosign.conf'
