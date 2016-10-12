@@ -11,7 +11,6 @@ require 'rubocop/rake_task'
 
 # Coverage from puppetlabs-spec-helper requires rcov which
 # doesn't work in anything since 1.8.7
-Rake::Task[:coverage].clear
 Rake::Task[:lint].clear
 
 exclude_paths = [
