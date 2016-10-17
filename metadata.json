@@ -7,12 +7,7 @@
   "source": "https://github.com/puppetlabs/pe_support_script",
   "project_page": "https://github.com/puppetlabs/pe_support_script",
   "issues_url": "",
-  "dependencies": [
-    {
-      "name":"puppetlabs-pe_manager",
-      "version_requirement": ">= 0.1.0"
-    }
-  ],
+  "dependencies": [],
   "requirements": [
     {
       "name": "pe",

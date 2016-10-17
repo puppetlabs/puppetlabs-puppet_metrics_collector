@@ -1,7 +1,3 @@
 fixtures:
-  repositories:
-    pe_manager:
-      repo: "git@github.com:puppetlabs/puppetlabs-pe_manager.git"
-      ref: origin/2016.2.x
   symlinks:
     pe_support_script: "#{source_dir}"
