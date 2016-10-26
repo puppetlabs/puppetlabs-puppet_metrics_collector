@@ -1,9 +1,12 @@
-source "https://rubygems.org"
+source "http://rubygems.delivery.puppetlabs.net"
 
 group :test do
   gem "rake"
-  gem "beaker"
-  gem "beaker-pe", '>= 0.4.0'
+  gem "beaker", "~> 3.2"
+  gem "beaker-pe", "~> 1.4"
+  gem "scooter", "~> 3.2"
+  gem "beaker-pe-large-environments", "~> 0.1.8"
+
   gem "puppet", ENV['PUPPET_VERSION'] || '~> 4.1'
   gem "rspec", '< 3.2.0'
   gem "rspec-puppet", '~> 2.0'

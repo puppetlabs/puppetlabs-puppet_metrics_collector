@@ -1,6 +1,6 @@
 test_name 'PE-15434 - - Run Support Script' do
-  step 'Run Support Script' do
-    hosts.each do |host|
+  hosts.each do |host|
+    step "Run Support Script on #{host.name} : #{host['roles'].join(',')}" do
       result = on(host, puppet('enterprise support'))
       output_tarball = result.stdout.match(/^Support data is located at (.*)$/).captures.first
 
