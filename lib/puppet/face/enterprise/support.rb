@@ -17,6 +17,16 @@ EOS
         exit 1
       end
 
+      os_family = %x{/opt/puppetlabs/puppet/bin/facter os.family}.chomp.strip
+      unless ['redhat', 'debian', 'suse'].include? os_family.downcase
+        Puppet.err <<-EOS
+The puppet enterprise support command isn't implemented for #{os_family}
+platforms at this time.
+EOS
+
+        exit 1
+      end
+
       support_module = File.expand_path(File.join(File.dirname(__FILE__), '../../../..'))
       support_script = File.join(support_module, 'lib/puppet_x/puppetlabs/support_script/v1/puppet-enterprise-support.sh')
 
