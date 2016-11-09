@@ -524,18 +524,16 @@ db_size_from_fs() {
 }
 
 db_size_checks() {
-  if is_package_installed 'pe-postgresql-server'; then
-    # Check size of databases, both from the filesystem's perspective and the
-    # database's perspective
-    local database_names=$(get_all_database_names)
-    for db in $database_names; do
-      # Find size via psql
-      db_size_from_psql $db
+  # Check size of databases, both from the filesystem's perspective and the
+  # database's perspective
+  local database_names=$(get_all_database_names)
+  for db in $database_names; do
+    # Find size via psql
+    db_size_from_psql $db
 
-      # Find size via filesystem
-      db_size_from_fs $db
-    done
-  fi
+    # Find size via filesystem
+    db_size_from_fs $db
+  done
 }
 
 free_checks() {
@@ -926,7 +924,6 @@ mco_commands() {
 }
 
 activemq_limits() {
-if is_package_installed pe-activemq; then
   echo "File descriptors in use by pe-activemq:" > $DROP/enterprise/activemq_resource_limits
   if cmd lsof; then
     run_diagnostic "lsof -u pe-activemq | wc -l" "enterprise/activemq_resource_limits"
@@ -936,7 +933,6 @@ if is_package_installed pe-activemq; then
 
   echo -e "\n\nResource limits for pe-activemq:\n" >> $DROP/enterprise/activemq_resource_limits
   run_diagnostic "su -s /bin/bash pe-activemq -c 'ulimit -a'" "enterprise/activemq_resource_limits"
-fi
 }
 
 # Curls the status of the console
@@ -1079,8 +1075,6 @@ netstat_checks
 selinux_checks
 iptables_checks
 df_checks
-db_size_checks
-db_relation_size_checks
 facter_checks
 etc_checks
 hostname_checks
@@ -1089,12 +1083,9 @@ gather_enterprise_files
 get_umask
 list_pe_and_module_files
 os_checks
-module_listing
-module_changes
 package_listing
 ps_checks
 free_checks
-check_certificates
 list_all_services
 grab_env_vars
 can_contact_master
@@ -1102,15 +1093,35 @@ pe_logs
 get_state
 other_logs
 ifconfig_output
-check_r10k
-mco_commands
-activemq_limits
-console_status
-puppetserver_status
-puppetserver_environments
-get_rbac_directory_settings_info
-filesync_state
-get_puppetdb_summary_stats
+
+if is_package_installed 'pe-puppetserver'; then
+  module_listing
+  module_changes
+  check_certificates
+  check_r10k
+  mco_commands
+  puppetserver_status
+  puppetserver_environments
+  filesync_state
+fi
+
+if is_package_installed 'pe-console-services'; then
+  console_status
+fi
+
+if is_package_installed 'pe-postgresql-server'; then
+  db_size_checks
+  db_relation_size_checks
+  get_rbac_directory_settings_info
+fi
+
+if is_package_installed 'pe-puppetdb'; then
+  get_puppetdb_summary_stats
+fi
+
+if is_package_installed 'pe-activemq'; then
+  activemq_limits
+fi
 
 support_archive="${DROP?}.tar"
 tar cvf ${support_archive?} -C $(dirname $DROP) $(basename $DROP) &> /dev/null
