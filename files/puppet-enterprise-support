@@ -996,7 +996,7 @@ filesync_state() {
 get_puppetdb_summary_stats() {
   if [ -d /etc/puppetlabs/puppetdb ]; then
       local q_puppetdb_plaintext_port="$(get_ini_field '/etc/puppetlabs/puppetdb/conf.d/jetty.ini' 'port')"
-      run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error -X GET http://127.0.0.1:${q_puppetdb_plaintext_port}/pdb/admin/v1/summary-stats" "enterprise/puppetdb_summary_stats.json"
+      run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --connect-timeout 5 --max-time 60 -X GET http://127.0.0.1:${q_puppetdb_plaintext_port}/pdb/admin/v1/summary-stats" "enterprise/puppetdb_summary_stats.json"
   fi
 }
 
