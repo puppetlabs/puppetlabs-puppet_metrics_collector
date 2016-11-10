@@ -1046,11 +1046,11 @@ package_listing() {
   pkg_file=enterprise/packages.txt
   case "${PLATFORM_PACKAGING?}" in
     rpm)
-      run_diagnostic "rpm -qa | $PLATFORM_EGREP '^pe-.*'" $pkg_file
+      run_diagnostic "rpm -qa | $PLATFORM_EGREP '^pe-|^puppet'" $pkg_file
     ;;
 
     dpkg)
-      run_diagnostic "dpkg-query -W -f '\${Package}\n' | $PLATFORM_EGREP '^pe-.*$'" $pkg_file
+      run_diagnostic "dpkg-query -W -f '\${Package}\n' | $PLATFORM_EGREP '^pe-|^puppet'" $pkg_file
     ;;
 
     pkgadd)
