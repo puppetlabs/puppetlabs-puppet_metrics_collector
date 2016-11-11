@@ -706,6 +706,7 @@ other_logs() {
 # Global Variables Used:
 #   DROP
 #   FILESYNC
+#   SERVER_DATA_DIR
 #
 # Arguments:
 #   None
@@ -715,6 +716,7 @@ other_logs() {
 gather_enterprise_files() {
   local pe_config_files
   local config_dir
+  local postgres_config
 
   # Whitelist of configuration files and directories to copy. Each entry is
   # relative to /etc/puppetlabs.
@@ -798,6 +800,15 @@ gather_enterprise_files() {
   if [[ -f '/var/lib/peadmin/.mcollective' ]]; then
     mkdir -p "${DROP}/enterprise/etc/puppetlabs/peadmin"
     cp -Lp '/var/lib/peadmin/.mcollective' "${DROP}/enterprise/etc/puppetlabs/peadmin/client.cfg"
+  fi
+
+  # Collect Postgres configuration if present
+
+  # NOTE: Echo is used here so that the glob, *, is properly expanded.
+  postgres_config=$(echo "${SERVER_DATA_DIR?}"/postgresql/*/data/postgresql.conf)
+  if [[ -f "${postgres_config}" ]]; then
+    mkdir -p "${DROP}/enterprise/etc/puppetlabs/postgres"
+    cp -Lp "${postgres_config}" "${DROP}/enterprise/etc/puppetlabs/postgres"
   fi
 
   # Redact passwords from copied config files.
