@@ -660,6 +660,11 @@ grab_env_vars() {
 
 pe_logs() {
   cp -LpR /var/log/puppetlabs/* "${DROP}/logs"
+
+  if [[ -d '/var/lib/peadmin/.mcollective.d' ]]; then
+    mkdir -p "${DROP}/logs/peadmin"
+    cp -LpR /var/lib/peadmin/.mcollective.d/client.log* "${DROP}/logs/peadmin"
+  fi
 }
 
 # Copy puppet agent state directory
@@ -788,6 +793,13 @@ gather_enterprise_files() {
     fi
   done
 
+  # Collect MCollective client configuration if present
+
+  if [[ -f '/var/lib/peadmin/.mcollective' ]]; then
+    mkdir -p "${DROP}/enterprise/etc/puppetlabs/peadmin"
+    cp -Lp '/var/lib/peadmin/.mcollective' "${DROP}/enterprise/etc/puppetlabs/peadmin/client.cfg"
+  fi
+
   # Redact passwords from copied config files.
 
   if [[ -f "${DROP}/enterprise/etc/puppetlabs/activemq/activemq.xml" ]]; then
@@ -799,6 +811,7 @@ gather_enterprise_files() {
 
   local files_to_redact
   files_to_redact=(
+    "${DROP}/enterprise/etc/puppetlabs/peadmin/client.cfg"
     "${DROP}/enterprise/etc/puppetlabs/mcollective/server.cfg"
     "${DROP}/enterprise/etc/puppetlabs"/*/conf.d/*
   )
@@ -815,7 +828,7 @@ gather_enterprise_files() {
 
 # Display listings of the Puppet Enterprise files and module files
 list_pe_and_module_files() {
-  local enterprise_dirs="/etc/puppetlabs /opt/puppetlabs"
+  local enterprise_dirs="/etc/puppetlabs /opt/puppetlabs /var/lib/peadmin"
   local modulepath=$(${PUPPET_BIN_DIR?}/puppet master --configprint modulepath)
   local basemodulepath=$(${PUPPET_BIN_DIR?}/puppet master --configprint basemodulepath)
   local environmentpath=$(${PUPPET_BIN_DIR?}/puppet master --configprint environmentpath)
