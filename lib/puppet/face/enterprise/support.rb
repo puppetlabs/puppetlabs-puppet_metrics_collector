@@ -20,7 +20,7 @@ EOS
       support_module = File.expand_path(File.join(File.dirname(__FILE__), '../../../..'))
       support_script = File.join(support_module, 'files/puppet-enterprise-support')
 
-      Kernel.exec support_script
+      Kernel.exec('/bin/bash', support_script)
     end
   end
 end
