@@ -1,3 +1,32 @@
+## Release 2.0.0
+
+### Summary
+
+Major release of the Support Script bundled with PE 2016.5.0.
+
+### Features
+
+  - The support script is now distributed to agent nodes via pluginsync.
+    This is made possible by changes in PE 2016.5.0 which migrated other PE
+    modules to the `puppet infrastructure` subcommand, which allows the
+    support script to take sole ownership of the `puppet enterprise`
+    subcommand.
+
+  - All improvements and bugfixes from version 1.2.0.
+
+### Breaking Changes
+
+  - This version of the module requires PE 2016.5.0 or newer.
+
+  - In order to support pluginsync, the support script has moved from:
+
+      files/puppet-enterprise-support
+
+    to:
+
+      lib/puppet_x/puppetlabs/support_script/v1/puppet-enterprise-support.sh
+
+
 ## Release 1.2.0
 
 ### Summary
