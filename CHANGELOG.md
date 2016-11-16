@@ -1,3 +1,28 @@
+## Release 1.2.0
+
+### Summary
+
+Feature release of the Support Script bundled with PE 2016.4.3.
+
+### Features
+
+  - Support Script gathers MCollective peadmin client configuration and logs
+    from: /var/lib/peadmin
+
+  - Support Script gathers PostgreSQL settings from:
+
+      /opt/puppetlabs/server/data/postgresql/<version>/data/postgresql.conf
+
+### Bug Fixes
+
+  - A one minute timeout has been added to the check that gathers output
+    from the PuppetDB summary-stats endpoint. For large databases, this
+    operation can take tens of minutes.
+
+  - Support script checks against PE server components are now conditional
+    on the packages that provide those components being installed.
+
+
 ## Release 1.1.0
 
 ### Summary

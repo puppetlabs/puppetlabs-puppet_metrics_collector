@@ -22,7 +22,7 @@ readonly PUPPET_BIN_DIR='/opt/puppetlabs/puppet/bin'
 readonly SERVER_BIN_DIR='/opt/puppetlabs/server/bin'
 readonly SERVER_DATA_DIR='/opt/puppetlabs/server/data'
 readonly SCRIPT_NAME="$(basename "${0}")"
-readonly SCRIPT_VERSION='1.1.0'
+readonly SCRIPT_VERSION='1.2.0'
 
 
 #===[ Functions ]=======================================================
@@ -524,18 +524,16 @@ db_size_from_fs() {
 }
 
 db_size_checks() {
-  if is_package_installed 'pe-postgresql-server'; then
-    # Check size of databases, both from the filesystem's perspective and the
-    # database's perspective
-    local database_names=$(get_all_database_names)
-    for db in $database_names; do
-      # Find size via psql
-      db_size_from_psql $db
+  # Check size of databases, both from the filesystem's perspective and the
+  # database's perspective
+  local database_names=$(get_all_database_names)
+  for db in $database_names; do
+    # Find size via psql
+    db_size_from_psql $db
 
-      # Find size via filesystem
-      db_size_from_fs $db
-    done
-  fi
+    # Find size via filesystem
+    db_size_from_fs $db
+  done
 }
 
 free_checks() {
@@ -662,6 +660,11 @@ grab_env_vars() {
 
 pe_logs() {
   cp -LpR /var/log/puppetlabs/* "${DROP}/logs"
+
+  if [[ -d '/var/lib/peadmin/.mcollective.d' ]]; then
+    mkdir -p "${DROP}/logs/peadmin"
+    cp -LpR /var/lib/peadmin/.mcollective.d/client.log* "${DROP}/logs/peadmin"
+  fi
 }
 
 # Copy puppet agent state directory
@@ -703,6 +706,7 @@ other_logs() {
 # Global Variables Used:
 #   DROP
 #   FILESYNC
+#   SERVER_DATA_DIR
 #
 # Arguments:
 #   None
@@ -712,6 +716,7 @@ other_logs() {
 gather_enterprise_files() {
   local pe_config_files
   local config_dir
+  local postgres_config
 
   # Whitelist of configuration files and directories to copy. Each entry is
   # relative to /etc/puppetlabs.
@@ -790,6 +795,22 @@ gather_enterprise_files() {
     fi
   done
 
+  # Collect MCollective client configuration if present
+
+  if [[ -f '/var/lib/peadmin/.mcollective' ]]; then
+    mkdir -p "${DROP}/enterprise/etc/puppetlabs/peadmin"
+    cp -Lp '/var/lib/peadmin/.mcollective' "${DROP}/enterprise/etc/puppetlabs/peadmin/client.cfg"
+  fi
+
+  # Collect Postgres configuration if present
+
+  # NOTE: Echo is used here so that the glob, *, is properly expanded.
+  postgres_config=$(echo "${SERVER_DATA_DIR?}"/postgresql/*/data/postgresql.conf)
+  if [[ -f "${postgres_config}" ]]; then
+    mkdir -p "${DROP}/enterprise/etc/puppetlabs/postgres"
+    cp -Lp "${postgres_config}" "${DROP}/enterprise/etc/puppetlabs/postgres"
+  fi
+
   # Redact passwords from copied config files.
 
   if [[ -f "${DROP}/enterprise/etc/puppetlabs/activemq/activemq.xml" ]]; then
@@ -801,6 +822,7 @@ gather_enterprise_files() {
 
   local files_to_redact
   files_to_redact=(
+    "${DROP}/enterprise/etc/puppetlabs/peadmin/client.cfg"
     "${DROP}/enterprise/etc/puppetlabs/mcollective/server.cfg"
     "${DROP}/enterprise/etc/puppetlabs"/*/conf.d/*
   )
@@ -817,7 +839,7 @@ gather_enterprise_files() {
 
 # Display listings of the Puppet Enterprise files and module files
 list_pe_and_module_files() {
-  local enterprise_dirs="/etc/puppetlabs /opt/puppetlabs"
+  local enterprise_dirs="/etc/puppetlabs /opt/puppetlabs /var/lib/peadmin"
   local modulepath=$(${PUPPET_BIN_DIR?}/puppet master --configprint modulepath)
   local basemodulepath=$(${PUPPET_BIN_DIR?}/puppet master --configprint basemodulepath)
   local environmentpath=$(${PUPPET_BIN_DIR?}/puppet master --configprint environmentpath)
@@ -908,7 +930,11 @@ package_listing() {
 }
 
 check_certificates() {
-  if [ -f "${PUPPET_BIN_DIR?}/puppet" ] && [ "x$(${PUPPET_BIN_DIR?}/puppet master --configprint ca)" = "xtrue" ]; then
+  local cadir
+
+  cadir=$("${PUPPET_BIN_DIR?}/puppet" config print --section master cadir)
+
+  if [[ -e "${cadir}" ]]; then
     run_diagnostic "${PUPPET_BIN_DIR?}/puppet cert list --all" "enterprise/certs.txt"
   fi
 }
@@ -926,7 +952,6 @@ mco_commands() {
 }
 
 activemq_limits() {
-if is_package_installed pe-activemq; then
   echo "File descriptors in use by pe-activemq:" > $DROP/enterprise/activemq_resource_limits
   if cmd lsof; then
     run_diagnostic "lsof -u pe-activemq | wc -l" "enterprise/activemq_resource_limits"
@@ -936,7 +961,6 @@ if is_package_installed pe-activemq; then
 
   echo -e "\n\nResource limits for pe-activemq:\n" >> $DROP/enterprise/activemq_resource_limits
   run_diagnostic "su -s /bin/bash pe-activemq -c 'ulimit -a'" "enterprise/activemq_resource_limits"
-fi
 }
 
 # Curls the status of the console
@@ -1000,7 +1024,7 @@ filesync_state() {
 get_puppetdb_summary_stats() {
   if [ -d /etc/puppetlabs/puppetdb ]; then
       local q_puppetdb_plaintext_port="$(get_ini_field '/etc/puppetlabs/puppetdb/conf.d/jetty.ini' 'port')"
-      run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error -X GET http://127.0.0.1:${q_puppetdb_plaintext_port}/pdb/admin/v1/summary-stats" "enterprise/puppetdb_summary_stats.json"
+      run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --connect-timeout 5 --max-time 60 -X GET http://127.0.0.1:${q_puppetdb_plaintext_port}/pdb/admin/v1/summary-stats" "enterprise/puppetdb_summary_stats.json"
   fi
 }
 
@@ -1079,8 +1103,6 @@ netstat_checks
 selinux_checks
 iptables_checks
 df_checks
-db_size_checks
-db_relation_size_checks
 facter_checks
 etc_checks
 hostname_checks
@@ -1089,12 +1111,9 @@ gather_enterprise_files
 get_umask
 list_pe_and_module_files
 os_checks
-module_listing
-module_changes
 package_listing
 ps_checks
 free_checks
-check_certificates
 list_all_services
 grab_env_vars
 can_contact_master
@@ -1102,15 +1121,38 @@ pe_logs
 get_state
 other_logs
 ifconfig_output
-check_r10k
-mco_commands
-activemq_limits
-console_status
-puppetserver_status
-puppetserver_environments
-get_rbac_directory_settings_info
-filesync_state
-get_puppetdb_summary_stats
+
+if is_package_installed 'pe-puppetserver'; then
+  module_listing
+  module_changes
+  check_certificates
+  check_r10k
+  puppetserver_status
+  puppetserver_environments
+  filesync_state
+fi
+
+if is_package_installed 'pe-console-services'; then
+  console_status
+fi
+
+if is_package_installed 'pe-postgresql-server'; then
+  db_size_checks
+  db_relation_size_checks
+  get_rbac_directory_settings_info
+fi
+
+if is_package_installed 'pe-puppetdb'; then
+  get_puppetdb_summary_stats
+fi
+
+if [[ -d /var/lib/peadmin ]]; then
+  mco_commands
+fi
+
+if is_package_installed 'pe-activemq'; then
+  activemq_limits
+fi
 
 support_archive="${DROP?}.tar"
 tar cvf ${support_archive?} -C $(dirname $DROP) $(basename $DROP) &> /dev/null
