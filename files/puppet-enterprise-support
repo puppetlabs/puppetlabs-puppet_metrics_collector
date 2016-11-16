@@ -1127,7 +1127,6 @@ if is_package_installed 'pe-puppetserver'; then
   module_changes
   check_certificates
   check_r10k
-  mco_commands
   puppetserver_status
   puppetserver_environments
   filesync_state
@@ -1145,6 +1144,10 @@ fi
 
 if is_package_installed 'pe-puppetdb'; then
   get_puppetdb_summary_stats
+fi
+
+if [[ -d /var/lib/peadmin ]]; then
+  mco_commands
 fi
 
 if is_package_installed 'pe-activemq'; then
