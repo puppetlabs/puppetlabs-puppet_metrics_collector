@@ -5,7 +5,7 @@ test_name 'PE-15434 - - Install pe_support_script Module' do
   controllers = hosts.reject {|h| not_controller(h) }
 
   step 'Re-install module from project source' do
-    copy_module_to(controllers,
+    copy_module_to(controllers + hosts_as('compile_master'),
       module_name: 'pe_support_script',
       source: proj_root,
       target_module_path: puppet_module_dir)
