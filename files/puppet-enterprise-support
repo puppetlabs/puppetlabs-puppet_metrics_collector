@@ -930,7 +930,11 @@ package_listing() {
 }
 
 check_certificates() {
-  if [ -f "${PUPPET_BIN_DIR?}/puppet" ] && [ "x$(${PUPPET_BIN_DIR?}/puppet master --configprint ca)" = "xtrue" ]; then
+  local cadir
+
+  cadir=$("${PUPPET_BIN_DIR?}/puppet" config print --section master cadir)
+
+  if [[ -e "${cadir}" ]]; then
     run_diagnostic "${PUPPET_BIN_DIR?}/puppet cert list --all" "enterprise/certs.txt"
   fi
 }
