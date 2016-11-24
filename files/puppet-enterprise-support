@@ -368,12 +368,19 @@ EOscript
 #
 run_diagnostic() {
   local timeout=''
+  local user=''
+  local prefix_command=''
+
   # Parse options
   while :
   do
     case "$1" in
       --timeout)
         timeout=$2
+        shift 2
+        ;;
+      --user)
+        user=$2
         shift 2
         ;;
       *)
@@ -385,12 +392,12 @@ run_diagnostic() {
   local t_run_diagnostic__command="${1?}"
   local t_run_diagnostic__outfile="${DROP}/${2?}"
 
-  display " ** Collecting output of \"${t_run_diagnostic__command?}\""
+  display " ** Collecting output of: ${t_run_diagnostic__command?}"
   display_newline
 
   if [ -n "$timeout" ] ; then
     if [ -x "${PUPPET_BIN_DIR?}/ruby" ] ; then
-      local prefix_command="with_timeout $timeout "
+      prefix_command="with_timeout $timeout "
     else
       display " ** Warning: --timeout X passed, but PE ruby is not present.  Ignoring timeout flag."
       display_newline
@@ -399,6 +406,9 @@ run_diagnostic() {
 
   if is_noop; then
     return 0
+  elif [[ -n "${user}" ]]; then
+    ( eval "${prefix_command:-}su - ${user} -s ${SHELL} -c \"${t_run_diagnostic__command//\"/\\\"}\" 2>&1" ) >> $t_run_diagnostic__outfile
+    return $?
   else
     ( eval "${prefix_command:-}${t_run_diagnostic__command?} 2>&1" ) >> $t_run_diagnostic__outfile
     return $?
@@ -482,7 +492,7 @@ ifconfig_output() {
 #===[Resource checks]===========================================================
 
 get_all_database_names() {
-  echo "$(sudo -H -u pe-postgres ${SERVER_BIN_DIR?}/psql -t -c 'select datname from pg_catalog.pg_database;' | awk '{print $1}' | grep -v '^template')"
+  echo $(su - pe-postgres -s ${SHELL} -c "${SERVER_BIN_DIR?}/psql -t -c 'select datname from pg_catalog.pg_database;'" | awk '{print $1}' | grep -v '^template')
 }
 
 df_checks() {
@@ -502,27 +512,27 @@ db_relation_size_checks() {
   # Inspired by https://wiki.postgresql.org/wiki/Disk_Usage#Finding_the_size_of_your_biggest_relations
   local database_names=$(get_all_database_names)
   for db in $database_names; do
-    local command="sudo -H -u pe-postgres ${SERVER_BIN_DIR?}/psql $db -c \
+    local command="${SERVER_BIN_DIR?}/psql $db -c \
 \"SELECT '$db' as dbname, nspname || '.' || relname AS relation, \
 pg_size_pretty(pg_relation_size(C.oid)) AS size FROM pg_class C \
 LEFT JOIN pg_namespace N ON (N.oid = C.relnamespace) \
 WHERE nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast') \
 ORDER BY pg_relation_size(C.oid) DESC;\""
-    run_diagnostic "${command?}" "resources/db_relation_sizes.txt"
+    run_diagnostic --user pe-postgres "${command?}" "resources/db_relation_sizes.txt"
   done
 }
 
 db_size_from_psql() {
   local db=$1
   local drop_file=resources/db_sizes_from_psql.txt
-  local command="sudo -H -u pe-postgres ${SERVER_BIN_DIR?}/psql -c \"SELECT '$db' AS dbname, pg_size_pretty(pg_database_size('$db'));\""
-  run_diagnostic "${command?}" "$drop_file"
+  local command="${SERVER_BIN_DIR?}/psql -c \"SELECT '$db' AS dbname, pg_size_pretty(pg_database_size('$db'));\""
+  run_diagnostic --user pe-postgres "${command?}" "$drop_file"
 }
 
 db_size_from_fs() {
   local db=$1
   local drop_file=resources/db_sizes_from_du.txt
-  local oid=$(sudo -H -u pe-postgres "${SERVER_BIN_DIR?}/psql" -t -c "SELECT oid FROM pg_database WHERE datname='$db';")
+  local oid=$(su - pe-postgres -s ${SHELL} -c "${SERVER_BIN_DIR?}/psql -t -c \"SELECT oid FROM pg_database WHERE datname='$db';\"")
 
   run_diagnostic "echo -e -n '${db}\t' ; find ${SERVER_DATA_DIR}/postgresql/ -name ${oid} -print0 | xargs -0 du -sh " "$drop_file"
 }
@@ -970,7 +980,7 @@ activemq_limits() {
   fi
 
   echo -e "\n\nResource limits for pe-activemq:\n" >> $DROP/enterprise/activemq_resource_limits
-  run_diagnostic "su -s /bin/bash pe-activemq -c 'ulimit -a'" "enterprise/activemq_resource_limits"
+  run_diagnostic --user pe-activemq "ulimit -a" "enterprise/activemq_resource_limits"
 }
 
 # Curls the status of the console
@@ -1019,7 +1029,7 @@ connect_timeout, base_dn, user_rdn, user_display_name_attr, user_email_attr, \
 user_lookup_attr, group_rdn, group_object_class, group_name_attr, \
 group_member_attr, group_lookup_attr FROM directory_settings) row;"
 
-    run_diagnostic "sudo -u pe-postgres ${SERVER_BIN_DIR?}/psql -d pe-rbac -c \"${t_rbac_info_query}\"" "enterprise/rbac_directory_settings.json"
+    run_diagnostic --user pe-postgres "${SERVER_BIN_DIR?}/psql -d pe-rbac -c \"${t_rbac_info_query}\"" "enterprise/rbac_directory_settings.json"
 }
 
 filesync_state() {
