@@ -449,6 +449,10 @@ hostname_checks() {
       echo $mapped_hostname > $DROP/networking/mapped_hostname_from_guessed_ip_address.txt
     fi
   fi
+
+  # This symlink allows SOScleaner to redact hostnames in support script output:
+  #   https://github.com/RedHatGov/soscleaner
+  ln -s "networking/hostname_output.txt" "${DROP}/hostname"
 }
 
 can_contact_master() {
@@ -574,6 +578,13 @@ etc_checks() {
   cp -p /etc/resolv.conf $DROP/system/etc
   cp -p /etc/nsswitch.conf $DROP/system/etc
   cp -p /etc/hosts $DROP/system/etc
+
+
+  # This symlink allows SOScleaner to redact hostnames in support script output:
+  #   https://github.com/RedHatGov/soscleaner
+  mkdir "${DROP}/etc"
+  ln -s ../system/etc/hosts "${DROP}/etc/hosts"
+
   case "${PLATFORM_NAME?}" in
     debian|ubuntu)
       CONFDIR="/etc/default"
