@@ -579,7 +579,6 @@ etc_checks() {
   cp -p /etc/nsswitch.conf $DROP/system/etc
   cp -p /etc/hosts $DROP/system/etc
 
-
   # This symlink allows SOScleaner to redact hostnames in support script output:
   #   https://github.com/RedHatGov/soscleaner
   mkdir "${DROP}/etc"
