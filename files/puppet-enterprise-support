@@ -16,6 +16,11 @@
 # This program runs diagnostics for Puppet Enterprise. Run this file to
 # run the diagnostics and data aggregation.
 
+if [[ -n "${BEAKER_TESTING}" ]]; then
+  # Enable command tracing and strict failures during tests.
+  set -xeuo pipefail
+fi
+
 
 #===[ Global variables ]================================================
 readonly PUPPET_BIN_DIR='/opt/puppetlabs/puppet/bin'
