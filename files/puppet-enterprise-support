@@ -860,6 +860,12 @@ gather_enterprise_files() {
       sed -i'' -e 's/^\(.*password"\?\s*[=:]\).*/\1 "REDACTED"/' "${f}"
     fi
   done
+
+  # Ensure enterprise/conf.d/... is executable to simplify cleanup
+  # via `rm -rf` when tarballs are extracted.
+  if [[ -d "${DROP}/enterprise/etc/puppetlabs/enterprise" ]]; then
+    find "${DROP}/enterprise/etc/puppetlabs/enterprise" -type d -exec chmod u+x {} +
+  fi
 }
 
 # Display listings of the Puppet Enterprise files and module files
