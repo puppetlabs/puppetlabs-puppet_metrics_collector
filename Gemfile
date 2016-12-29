@@ -1,7 +1,7 @@
 source "https://rubygems.org"
 
 group :test do
-  gem "rake"
+  gem "rake", "~> 10.0" # Pinned for compat with RSpec 3.2.x
   gem "beaker"
   gem "beaker-pe", '>= 0.4.0'
   gem "puppet", ENV['PUPPET_VERSION'] || '~> 4.1'
