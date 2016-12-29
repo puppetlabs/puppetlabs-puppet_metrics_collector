@@ -1116,8 +1116,9 @@ readonly DROP="/var/tmp/puppet_enterprise_support_${PLATFORM_HOSTNAME_SHORT}_${T
 
 display "Creating drop directory at ${DROP?}"
 
-mkdir -p $DROP/{resources,system,system/etc,enterprise/find,networking,logs}
-pushd $DROP &> /dev/null
+mkdir -p "${DROP}"/{resources,system,system/etc,enterprise/find,networking,logs}
+chmod 0700 "${DROP}"
+pushd "${DROP}" &> /dev/null
 
 display 'Collecting information'
 display_newline
@@ -1179,20 +1180,19 @@ if is_package_installed 'pe-activemq'; then
   activemq_limits
 fi
 
-support_archive="${DROP?}.tar"
-tar cvf ${support_archive?} -C $(dirname $DROP) $(basename $DROP) &> /dev/null
-gzip -f9 ${support_archive?}
+support_archive="${DROP?}.tar.gz"
+(umask 0077 && tar cf - -C $(dirname "${DROP}") $(basename "${DROP}")|gzip -f9 > "${support_archive?}")
 
 popd &> /dev/null
-rm -rf $DROP
+rm -rf "${DROP}"
 
 
 display 'Data collected, ready for submission'
 display_newline
-display "Support data is located at ${support_archive?}.gz"
+display "Support data is located at ${support_archive?}"
 display_newline
 display "Current Puppet Enterprise customers:"
-display "Please submit ${support_archive?}.gz to Puppet Support using the upload site you've been invited to."
+display "Please submit ${support_archive?} to Puppet Support using the upload site you've been invited to."
 display_newline
 display_newline
 
