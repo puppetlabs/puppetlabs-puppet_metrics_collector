@@ -16,6 +16,11 @@
 # This program runs diagnostics for Puppet Enterprise. Run this file to
 # run the diagnostics and data aggregation.
 
+if [[ -n "${BEAKER_TESTING}" ]]; then
+  # Enable command tracing and strict failures during tests.
+  set -xeuo pipefail
+fi
+
 
 #===[ Global variables ]================================================
 readonly PUPPET_BIN_DIR='/opt/puppetlabs/puppet/bin'
@@ -368,12 +373,19 @@ EOscript
 #
 run_diagnostic() {
   local timeout=''
+  local user=''
+  local prefix_command=''
+
   # Parse options
   while :
   do
     case "$1" in
       --timeout)
         timeout=$2
+        shift 2
+        ;;
+      --user)
+        user=$2
         shift 2
         ;;
       *)
@@ -385,12 +397,12 @@ run_diagnostic() {
   local t_run_diagnostic__command="${1?}"
   local t_run_diagnostic__outfile="${DROP}/${2?}"
 
-  display " ** Collecting output of \"${t_run_diagnostic__command?}\""
+  display " ** Collecting output of: ${t_run_diagnostic__command?}"
   display_newline
 
   if [ -n "$timeout" ] ; then
     if [ -x "${PUPPET_BIN_DIR?}/ruby" ] ; then
-      local prefix_command="with_timeout $timeout "
+      prefix_command="with_timeout $timeout "
     else
       display " ** Warning: --timeout X passed, but PE ruby is not present.  Ignoring timeout flag."
       display_newline
@@ -399,6 +411,9 @@ run_diagnostic() {
 
   if is_noop; then
     return 0
+  elif [[ -n "${user}" ]]; then
+    ( eval "${prefix_command:-}su - ${user} -s ${SHELL} -c \"${t_run_diagnostic__command//\"/\\\"}\" 2>&1" ) >> $t_run_diagnostic__outfile
+    return $?
   else
     ( eval "${prefix_command:-}${t_run_diagnostic__command?} 2>&1" ) >> $t_run_diagnostic__outfile
     return $?
@@ -449,6 +464,10 @@ hostname_checks() {
       echo $mapped_hostname > $DROP/networking/mapped_hostname_from_guessed_ip_address.txt
     fi
   fi
+
+  # This symlink allows SOScleaner to redact hostnames in support script output:
+  #   https://github.com/RedHatGov/soscleaner
+  ln -s "networking/hostname_output.txt" "${DROP}/hostname"
 }
 
 can_contact_master() {
@@ -478,7 +497,7 @@ ifconfig_output() {
 #===[Resource checks]===========================================================
 
 get_all_database_names() {
-  echo "$(sudo -H -u pe-postgres ${SERVER_BIN_DIR?}/psql -t -c 'select datname from pg_catalog.pg_database;' | awk '{print $1}' | grep -v '^template')"
+  echo $(su - pe-postgres -s ${SHELL} -c "${SERVER_BIN_DIR?}/psql -t -c 'select datname from pg_catalog.pg_database;'" | awk '{print $1}' | grep -v '^template')
 }
 
 df_checks() {
@@ -498,27 +517,27 @@ db_relation_size_checks() {
   # Inspired by https://wiki.postgresql.org/wiki/Disk_Usage#Finding_the_size_of_your_biggest_relations
   local database_names=$(get_all_database_names)
   for db in $database_names; do
-    local command="sudo -H -u pe-postgres ${SERVER_BIN_DIR?}/psql $db -c \
+    local command="${SERVER_BIN_DIR?}/psql $db -c \
 \"SELECT '$db' as dbname, nspname || '.' || relname AS relation, \
 pg_size_pretty(pg_relation_size(C.oid)) AS size FROM pg_class C \
 LEFT JOIN pg_namespace N ON (N.oid = C.relnamespace) \
 WHERE nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast') \
 ORDER BY pg_relation_size(C.oid) DESC;\""
-    run_diagnostic "${command?}" "resources/db_relation_sizes.txt"
+    run_diagnostic --user pe-postgres "${command?}" "resources/db_relation_sizes.txt"
   done
 }
 
 db_size_from_psql() {
   local db=$1
   local drop_file=resources/db_sizes_from_psql.txt
-  local command="sudo -H -u pe-postgres ${SERVER_BIN_DIR?}/psql -c \"SELECT '$db' AS dbname, pg_size_pretty(pg_database_size('$db'));\""
-  run_diagnostic "${command?}" "$drop_file"
+  local command="${SERVER_BIN_DIR?}/psql -c \"SELECT '$db' AS dbname, pg_size_pretty(pg_database_size('$db'));\""
+  run_diagnostic --user pe-postgres "${command?}" "$drop_file"
 }
 
 db_size_from_fs() {
   local db=$1
   local drop_file=resources/db_sizes_from_du.txt
-  local oid=$(sudo -H -u pe-postgres "${SERVER_BIN_DIR?}/psql" -t -c "SELECT oid FROM pg_database WHERE datname='$db';")
+  local oid=$(su - pe-postgres -s ${SHELL} -c "${SERVER_BIN_DIR?}/psql -t -c \"SELECT oid FROM pg_database WHERE datname='$db';\"")
 
   run_diagnostic "echo -e -n '${db}\t' ; find ${SERVER_DATA_DIR}/postgresql/ -name ${oid} -print0 | xargs -0 du -sh " "$drop_file"
 }
@@ -574,6 +593,12 @@ etc_checks() {
   cp -p /etc/resolv.conf $DROP/system/etc
   cp -p /etc/nsswitch.conf $DROP/system/etc
   cp -p /etc/hosts $DROP/system/etc
+
+  # This symlink allows SOScleaner to redact hostnames in support script output:
+  #   https://github.com/RedHatGov/soscleaner
+  mkdir "${DROP}/etc"
+  ln -s ../system/etc/hosts "${DROP}/etc/hosts"
+
   case "${PLATFORM_NAME?}" in
     debian|ubuntu)
       CONFDIR="/etc/default"
@@ -633,7 +658,7 @@ os_checks() {
 }
 
 ps_checks() {
-  run_diagnostic "ps -ef" "system/ps_ef.txt"
+  run_diagnostic "ps aux" "system/ps_aux.txt"
   $(ps -e f &> /dev/null) && run_diagnostic "ps -e f" "system/ps_tree.txt"
 }
 
@@ -658,8 +683,55 @@ grab_env_vars() {
   run_diagnostic "env" "system/env.txt"
 }
 
+
+# Copy PE service logs to support script output.
+#
+# Captures /var/log/puppetlabs along with journalctl output
+# for each PE service.
+#
+# Global Variables Used:
+#   DROP
+#
+# Arguments:
+#   None
+#
+# Returns:
+#   None
 pe_logs() {
-  cp -LpR /var/log/puppetlabs/* "${DROP}/logs"
+  local pe_services
+  local agent_services
+
+  cp -LpR /var/log/puppetlabs/* "${DROP?}/logs"
+
+  pe_services=(
+    'nginx'
+    'puppetserver'
+    'puppetdb'
+    'activemq'
+    'console-services'
+    'orchestration-services'
+    'postgresql'
+  )
+
+  agent_services=(
+    'puppet'
+    'pxp-agent'
+    'mcollective'
+  )
+
+  if cmd journalctl; then
+    # journalctl always exits with code 1 if a unit hasn't logged any output.
+    # Therefore, we mask the exit code with `|| true` so that tests pass.
+    for s in "${pe_services[@]}"; do
+      if [[ -d "${DROP}/logs/${s}" ]]; then
+        run_diagnostic "journalctl --full --unit=pe-${s} || true" "logs/${s}/${s}-journalctl.log"
+      fi
+    done
+
+    for s in "${agent_services[@]}"; do
+      run_diagnostic "journalctl --full --unit=${s} || true" "logs/${s}-journalctl.log"
+    done
+  fi
 
   if [[ -d '/var/lib/peadmin/.mcollective.d' ]]; then
     mkdir -p "${DROP}/logs/peadmin"
@@ -835,11 +907,17 @@ gather_enterprise_files() {
       sed -i'' -e 's/^\(.*password"\?\s*[=:]\).*/\1 "REDACTED"/' "${f}"
     fi
   done
+
+  # Ensure enterprise/conf.d/... is executable to simplify cleanup
+  # via `rm -rf` when tarballs are extracted.
+  if [[ -d "${DROP}/enterprise/etc/puppetlabs/enterprise" ]]; then
+    find "${DROP}/enterprise/etc/puppetlabs/enterprise" -type d -exec chmod u+x {} +
+  fi
 }
 
 # Display listings of the Puppet Enterprise files and module files
 list_pe_and_module_files() {
-  local enterprise_dirs="/etc/puppetlabs /opt/puppetlabs /var/lib/peadmin"
+  local enterprise_dirs="/etc/puppetlabs /opt/puppetlabs /var/lib/peadmin /var/log/puppetlabs"
   local modulepath=$(${PUPPET_BIN_DIR?}/puppet master --configprint modulepath)
   local basemodulepath=$(${PUPPET_BIN_DIR?}/puppet master --configprint basemodulepath)
   local environmentpath=$(${PUPPET_BIN_DIR?}/puppet master --configprint environmentpath)
@@ -866,7 +944,7 @@ module_listing() {
   fi
 }
 
-# Check r10k version and deployment status
+# Check r10k deployment status
 #
 # Global Variables Used:
 #   PUPPET_BIN_DIR
@@ -878,10 +956,6 @@ module_listing() {
 #   None
 check_r10k() {
   local r10k_config=""
-
-  if [[ -x "${PUPPET_BIN_DIR?}/gem" ]]; then
-    run_diagnostic "${PUPPET_BIN_DIR}/gem list r10k" "enterprise/r10k_gem_version.txt"
-  fi
 
   if [[ -e /opt/puppetlabs/server/data/code-manager/r10k.yaml ]]; then
     # Code Manager
@@ -929,6 +1003,27 @@ package_listing() {
   esac
 }
 
+# List gem versions used by puppet and puppetserver
+#
+# Global Variables Used:
+#   PUPPET_BIN_DIR
+#   SERVER_BIN_DIR
+#
+# Arguments:
+#   None
+#
+# Returns:
+#   None
+gem_listing() {
+  if [[ -x "${PUPPET_BIN_DIR?}/gem" ]]; then
+    run_diagnostic "${PUPPET_BIN_DIR}/gem list --local" "enterprise/puppet_gems.txt"
+  fi
+
+  if [[ -x "${SERVER_BIN_DIR?}/puppetserver" ]]; then
+    run_diagnostic "${SERVER_BIN_DIR}/puppetserver gem list --local" "enterprise/puppetserver_gems.txt"
+  fi
+}
+
 check_certificates() {
   local cadir
 
@@ -960,12 +1055,26 @@ activemq_limits() {
   fi
 
   echo -e "\n\nResource limits for pe-activemq:\n" >> $DROP/enterprise/activemq_resource_limits
-  run_diagnostic "su -s /bin/bash pe-activemq -c 'ulimit -a'" "enterprise/activemq_resource_limits"
+  run_diagnostic --user pe-activemq "ulimit -a" "enterprise/activemq_resource_limits"
 }
 
 # Curls the status of the console
 console_status() {
   run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --connect-timeout 5 --max-time 60 http://127.0.0.1:4432/status/v1/services?level=debug" "enterprise/console_status.json"
+}
+
+# Collects output from the Orchestration Services status endpoint
+#
+# Global Variables Used:
+#   PUPPET_BIN_DIR
+#
+# Arguments:
+#   None
+#
+# Returns:
+#   None
+orchestration_status() {
+  run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --connect-timeout 5 --max-time 60 -k https://127.0.0.1:8143/status/v1/services?level=debug" "enterprise/orchestration_status.json"
 }
 
 # Collects output from the Puppet Server status endpoint
@@ -1009,7 +1118,27 @@ connect_timeout, base_dn, user_rdn, user_display_name_attr, user_email_attr, \
 user_lookup_attr, group_rdn, group_object_class, group_name_attr, \
 group_member_attr, group_lookup_attr FROM directory_settings) row;"
 
-    run_diagnostic "sudo -u pe-postgres ${SERVER_BIN_DIR?}/psql -d pe-rbac -c \"${t_rbac_info_query}\"" "enterprise/rbac_directory_settings.json"
+    run_diagnostic --user pe-postgres "${SERVER_BIN_DIR?}/psql -d pe-rbac -c \"${t_rbac_info_query}\"" "enterprise/rbac_directory_settings.json"
+}
+
+# Check for thundering herds
+#
+# This function runs a database query that checks the
+# distribution of agent run start times by using the
+# PuppetDB reports table.
+#
+# Global Variables Used:
+#   SERVER_BIN_DIR
+#
+# Arguments:
+#   None
+#
+# Returns:
+#   None
+check_thundering_herd() {
+  local thundering_herd_query="select date_part('month', start_time) as month, date_part('day', start_time) as day, date_part('hour', start_time) as hour, date_part('minute', start_time) as minute, count(*) from reports where start_time between now() - interval '7 days' and now() GROUP BY date_part('month', start_time), date_part('day', start_time), date_part('hour', start_time), date_part('minute', start_time) ORDER BY date_part('month', start_time) DESC, date_part('day', start_time) DESC, date_part( 'hour', start_time ) DESC, date_part('minute', start_time) DESC;"
+
+  run_diagnostic --user pe-postgres "${SERVER_BIN_DIR?}/psql -d pe-puppetdb -c \"${thundering_herd_query}\"" "enterprise/thundering_herd_query.txt"
 }
 
 filesync_state() {
@@ -1091,8 +1220,9 @@ readonly DROP="/var/tmp/puppet_enterprise_support_${PLATFORM_HOSTNAME_SHORT}_${T
 
 display "Creating drop directory at ${DROP?}"
 
-mkdir -p $DROP/{resources,system,system/etc,enterprise/find,networking,logs}
-pushd $DROP &> /dev/null
+mkdir -p "${DROP}"/{resources,system,system/etc,enterprise/find,networking,logs}
+chmod 0700 "${DROP}"
+pushd "${DROP}" &> /dev/null
 
 display 'Collecting information'
 display_newline
@@ -1112,6 +1242,7 @@ get_umask
 list_pe_and_module_files
 os_checks
 package_listing
+gem_listing
 ps_checks
 free_checks
 list_all_services
@@ -1136,10 +1267,15 @@ if is_package_installed 'pe-console-services'; then
   console_status
 fi
 
+if is_package_installed 'pe-orchestration-services'; then
+  orchestration_status
+fi
+
 if is_package_installed 'pe-postgresql-server'; then
   db_size_checks
   db_relation_size_checks
   get_rbac_directory_settings_info
+  check_thundering_herd
 fi
 
 if is_package_installed 'pe-puppetdb'; then
@@ -1154,20 +1290,19 @@ if is_package_installed 'pe-activemq'; then
   activemq_limits
 fi
 
-support_archive="${DROP?}.tar"
-tar cvf ${support_archive?} -C $(dirname $DROP) $(basename $DROP) &> /dev/null
-gzip -f9 ${support_archive?}
+support_archive="${DROP?}.tar.gz"
+(umask 0077 && tar cf - -C $(dirname "${DROP}") $(basename "${DROP}")|gzip -f9 > "${support_archive?}")
 
 popd &> /dev/null
-rm -rf $DROP
+rm -rf "${DROP}"
 
 
 display 'Data collected, ready for submission'
 display_newline
-display "Support data is located at ${support_archive?}.gz"
+display "Support data is located at ${support_archive?}"
 display_newline
 display "Current Puppet Enterprise customers:"
-display "Please submit ${support_archive?}.gz to Puppet Support using the upload site you've been invited to."
+display "Please submit ${support_archive?} to Puppet Support using the upload site you've been invited to."
 display_newline
 display_newline
 

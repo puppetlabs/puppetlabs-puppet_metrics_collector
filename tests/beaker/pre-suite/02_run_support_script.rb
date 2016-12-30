@@ -1,7 +1,7 @@
 test_name 'PE-15434 - - Run Support Script' do
   hosts.each do |host|
     step "Run Support Script on #{host.name} : #{host['roles'].join(',')}" do
-      result = on(host, puppet('enterprise support'))
+      result = on(host, puppet('enterprise support', 'ENV' => {'BEAKER_TESTING' => '1'}))
       output_tarball = result.stdout.match(/^Support data is located at (.*)$/).captures.first
 
       stage_dir = create_tmpdir_on(host)
