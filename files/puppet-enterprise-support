@@ -1063,6 +1063,20 @@ console_status() {
   run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --connect-timeout 5 --max-time 60 http://127.0.0.1:4432/status/v1/services?level=debug" "enterprise/console_status.json"
 }
 
+# Collects output from the Orchestration Services status endpoint
+#
+# Global Variables Used:
+#   PUPPET_BIN_DIR
+#
+# Arguments:
+#   None
+#
+# Returns:
+#   None
+orchestration_status() {
+  run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --connect-timeout 5 --max-time 60 -k https://127.0.0.1:8143/status/v1/services?level=debug" "enterprise/orchestration_status.json"
+}
+
 # Collects output from the Puppet Server status endpoint
 #
 # Global Variables Used:
@@ -1251,6 +1265,10 @@ fi
 
 if is_package_installed 'pe-console-services'; then
   console_status
+fi
+
+if is_package_installed 'pe-orchestration-services'; then
+  orchestration_status
 fi
 
 if is_package_installed 'pe-postgresql-server'; then
