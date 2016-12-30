@@ -658,7 +658,7 @@ os_checks() {
 }
 
 ps_checks() {
-  run_diagnostic "ps -ef" "system/ps_ef.txt"
+  run_diagnostic "ps aux" "system/ps_aux.txt"
   $(ps -e f &> /dev/null) && run_diagnostic "ps -e f" "system/ps_tree.txt"
 }
 
