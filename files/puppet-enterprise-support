@@ -917,7 +917,7 @@ gather_enterprise_files() {
 
 # Display listings of the Puppet Enterprise files and module files
 list_pe_and_module_files() {
-  local enterprise_dirs="/etc/puppetlabs /opt/puppetlabs /var/lib/peadmin"
+  local enterprise_dirs="/etc/puppetlabs /opt/puppetlabs /var/lib/peadmin /var/log/puppetlabs"
   local modulepath=$(${PUPPET_BIN_DIR?}/puppet master --configprint modulepath)
   local basemodulepath=$(${PUPPET_BIN_DIR?}/puppet master --configprint basemodulepath)
   local environmentpath=$(${PUPPET_BIN_DIR?}/puppet master --configprint environmentpath)
