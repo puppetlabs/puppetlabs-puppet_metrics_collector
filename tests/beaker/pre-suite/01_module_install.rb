@@ -10,6 +10,12 @@ test_name 'PE-15434 - - Install pe_support_script Module' do
       source: proj_root,
       target_module_path: puppet_module_dir)
 
+    # Stub out the checksum file to prevent `puppet module changes` from
+    # throwing an error.
+    copy_file_to_remote(controllers + hosts_as('compile_master'),
+      [puppet_module_dir, 'pe_support_script', 'checksums.json'].join('/'),
+      '{}')
+
     copy_module_to(controllers,
       module_name: 'pe_support_script',
       source: proj_root,
