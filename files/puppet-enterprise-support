@@ -1107,6 +1107,26 @@ group_member_attr, group_lookup_attr FROM directory_settings) row;"
     run_diagnostic --user pe-postgres "${SERVER_BIN_DIR?}/psql -d pe-rbac -c \"${t_rbac_info_query}\"" "enterprise/rbac_directory_settings.json"
 }
 
+# Check for thundering herds
+#
+# This function runs a database query that checks the
+# distribution of agent run start times by using the
+# PuppetDB reports table.
+#
+# Global Variables Used:
+#   SERVER_BIN_DIR
+#
+# Arguments:
+#   None
+#
+# Returns:
+#   None
+check_thundering_herd() {
+  local thundering_herd_query="select date_part('month', start_time) as month, date_part('day', start_time) as day, date_part('hour', start_time) as hour, date_part('minute', start_time) as minute, count(*) from reports where start_time between now() - interval '7 days' and now() GROUP BY date_part('month', start_time), date_part('day', start_time), date_part('hour', start_time), date_part('minute', start_time) ORDER BY date_part('month', start_time) DESC, date_part('day', start_time) DESC, date_part( 'hour', start_time ) DESC, date_part('minute', start_time) DESC;"
+
+  run_diagnostic --user pe-postgres "${SERVER_BIN_DIR?}/psql -d pe-puppetdb -c \"${thundering_herd_query}\"" "enterprise/thundering_herd_query.txt"
+}
+
 filesync_state() {
   if [ -x /opt/puppetlabs/server/data/puppetserver/filesync ]; then
     # If explicitly requested, grab filesync data.
@@ -1237,6 +1257,7 @@ if is_package_installed 'pe-postgresql-server'; then
   db_size_checks
   db_relation_size_checks
   get_rbac_directory_settings_info
+  check_thundering_herd
 fi
 
 if is_package_installed 'pe-puppetdb'; then
