@@ -1007,6 +1007,27 @@ package_listing() {
   esac
 }
 
+# List gem versions used by puppet and puppetserver
+#
+# Global Variables Used:
+#   PUPPET_BIN_DIR
+#   SERVER_BIN_DIR
+#
+# Arguments:
+#   None
+#
+# Returns:
+#   None
+gem_listing() {
+  if [[ -x "${PUPPET_BIN_DIR?}/gem" ]]; then
+    run_diagnostic "${PUPPET_BIN_DIR}/gem list --local" "enterprise/puppet_gems.txt"
+  fi
+
+  if [[ -x "${SERVER_BIN_DIR?}/puppetserver" ]]; then
+    run_diagnostic "${SERVER_BIN_DIR}/puppetserver gem list --local" "enterprise/puppetserver_gems.txt"
+  fi
+}
+
 check_certificates() {
   local cadir
 
@@ -1191,6 +1212,7 @@ get_umask
 list_pe_and_module_files
 os_checks
 package_listing
+gem_listing
 ps_checks
 free_checks
 list_all_services
