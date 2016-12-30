@@ -1,4 +1,8 @@
+require 'beaker/host_prebuilt_steps'
+
 test_name 'PE-15434 - - Install pe_support_script Module' do
+  extend Beaker::HostPrebuiltSteps
+
   proj_root = File.expand_path(File.join(File.dirname(__FILE__), '../../../'))
   puppet_module_dir = '/opt/puppetlabs/puppet/modules'
   meep_module_dir = '/opt/puppetlabs/server/data/enterprise/modules'
