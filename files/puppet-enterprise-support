@@ -944,7 +944,7 @@ module_listing() {
   fi
 }
 
-# Check r10k version and deployment status
+# Check r10k deployment status
 #
 # Global Variables Used:
 #   PUPPET_BIN_DIR
@@ -956,10 +956,6 @@ module_listing() {
 #   None
 check_r10k() {
   local r10k_config=""
-
-  if [[ -x "${PUPPET_BIN_DIR?}/gem" ]]; then
-    run_diagnostic "${PUPPET_BIN_DIR}/gem list r10k" "enterprise/r10k_gem_version.txt"
-  fi
 
   if [[ -e /opt/puppetlabs/server/data/code-manager/r10k.yaml ]]; then
     # Code Manager
