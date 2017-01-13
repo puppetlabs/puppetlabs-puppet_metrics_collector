@@ -739,6 +739,26 @@ pe_logs() {
   fi
 }
 
+# Copy PE metrics to support script output
+#
+# Captures data produced by the pe_metric_curl_cron_jobs
+# module.
+#
+# Global Variables Used:
+#   DROP
+#
+# Arguments:
+#   None
+#
+# Returns:
+#   None
+pe_metrics() {
+  if [[ -d /opt/puppetlabs/pe_metric_curl_cron_jobs ]]; then
+    mkdir -p "${DROP}/metrics"
+    cp -LpR /opt/puppetlabs/pe_metric_curl_cron_jobs "${DROP}/metrics/"
+  fi
+}
+
 # Copy puppet agent state directory
 #
 # Global Variables Used:
@@ -1249,6 +1269,7 @@ list_all_services
 grab_env_vars
 can_contact_master
 pe_logs
+pe_metrics
 get_state
 other_logs
 ifconfig_output
