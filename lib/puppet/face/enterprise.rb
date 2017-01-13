@@ -8,6 +8,11 @@ Puppet::Face.define(:enterprise, '1.0.0') do
   description <<-'EOT'
     This subcommand uses Puppet to collect information about your Puppet 
     Enterprise installation for support.
+
+    **NOTE:** If you are looking for "puppet enterprise configure", that
+              command has moved to:
+
+              puppet infrastructure configure
   EOT
 
   action :help do
