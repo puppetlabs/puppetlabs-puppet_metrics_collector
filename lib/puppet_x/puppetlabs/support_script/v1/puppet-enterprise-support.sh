@@ -27,7 +27,7 @@ readonly PUPPET_BIN_DIR='/opt/puppetlabs/puppet/bin'
 readonly SERVER_BIN_DIR='/opt/puppetlabs/server/bin'
 readonly SERVER_DATA_DIR='/opt/puppetlabs/server/data'
 readonly SCRIPT_NAME="$(basename "${0}")"
-readonly SCRIPT_VERSION='1.2.0'
+readonly SCRIPT_VERSION='1.3.0'
 
 
 #===[ Functions ]=======================================================
@@ -739,6 +739,26 @@ pe_logs() {
   fi
 }
 
+# Copy PE metrics to support script output
+#
+# Captures data produced by the pe_metric_curl_cron_jobs
+# module.
+#
+# Global Variables Used:
+#   DROP
+#
+# Arguments:
+#   None
+#
+# Returns:
+#   None
+pe_metrics() {
+  if [[ -d /opt/puppetlabs/pe_metric_curl_cron_jobs ]]; then
+    mkdir -p "${DROP}/metrics"
+    cp -LpR /opt/puppetlabs/pe_metric_curl_cron_jobs "${DROP}/metrics/"
+  fi
+}
+
 # Copy puppet agent state directory
 #
 # Global Variables Used:
@@ -788,7 +808,8 @@ other_logs() {
 gather_enterprise_files() {
   local pe_config_files
   local config_dir
-  local postgres_config
+  local postgres_datadir
+  local postgres_config_files
 
   # Whitelist of configuration files and directories to copy. Each entry is
   # relative to /etc/puppetlabs.
@@ -876,12 +897,20 @@ gather_enterprise_files() {
 
   # Collect Postgres configuration if present
 
-  # NOTE: Echo is used here so that the glob, *, is properly expanded.
-  postgres_config=$(echo "${SERVER_DATA_DIR?}"/postgresql/*/data/postgresql.conf)
-  if [[ -f "${postgres_config}" ]]; then
-    mkdir -p "${DROP}/enterprise/etc/puppetlabs/postgres"
-    cp -Lp "${postgres_config}" "${DROP}/enterprise/etc/puppetlabs/postgres"
-  fi
+  # NOTE: Echo is used here so that the glob, *, is fully expanded.
+  postgres_datadir=$(echo "${SERVER_DATA_DIR?}"/postgresql/*/data)
+  postgres_config_files=(
+    'postgresql.conf'
+    'postmaster.opts'
+    'pg_ident.conf'
+    'pg_hba.conf'
+  )
+  for f in "${postgres_config_files[@]}"; do
+    if [[ -f "${postgres_datadir}/${f}" ]]; then
+      mkdir -p "${DROP}/enterprise/etc/puppetlabs/postgres"
+      cp -Lp "${postgres_datadir}/${f}" "${DROP}/enterprise/etc/puppetlabs/postgres/"
+    fi
+  done
 
   # Redact passwords from copied config files.
 
@@ -1111,6 +1140,27 @@ puppetserver_environments() {
   run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --connect-timeout 5 --max-time 60 --cert ${agent_cert} --key ${agent_key} -k https://127.0.0.1:8140/puppet/v3/environments" "enterprise/puppetserver_environments.json"
 }
 
+# Gather current database settings
+#
+# This function runs a database query that gets the current effective
+# value of PostgreSQL settings. This output can be compared against
+# config files like postgresql.conf.
+#
+# Global Variables Used:
+#   DROP
+#   SERVER_BIN_DIR
+#
+# Arguments:
+#   None
+#
+# Returns:
+#   None
+get_db_settings() {
+  local postgres_settings_query="select * from pg_settings;"
+
+  run_diagnostic --user pe-postgres "${SERVER_BIN_DIR?}/psql -x -c \"${postgres_settings_query}\"" "enterprise/postgres_settings.txt"
+}
+
 get_rbac_directory_settings_info() {
     local t_rbac_info_query="SELECT row_to_json(row) FROM ( SELECT \
 id, display_name, help_link, type, hostname, port, ssl, login, \
@@ -1249,6 +1299,7 @@ list_all_services
 grab_env_vars
 can_contact_master
 pe_logs
+pe_metrics
 get_state
 other_logs
 ifconfig_output
@@ -1274,6 +1325,7 @@ fi
 if is_package_installed 'pe-postgresql-server'; then
   db_size_checks
   db_relation_size_checks
+  get_db_settings
   get_rbac_directory_settings_info
   check_thundering_herd
 fi
@@ -1302,6 +1354,13 @@ display_newline
 display "Support data is located at ${support_archive?}"
 display_newline
 display "Current Puppet Enterprise customers:"
+display_newline
+display "We recommend that you examine the collected data before forwarding to Puppet,"
+display "as it may contain sensitive information that you will wish to redact."
+display "An overview of data collected by this tool can be found at:"
+display_newline
+display "  https://docs.puppet.com/pe/latest/overview_getting_support.html#the-pe-support-script"
+display_newline
 display "Please submit ${support_archive?} to Puppet Support using the upload site you've been invited to."
 display_newline
 display_newline
