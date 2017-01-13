@@ -1140,6 +1140,27 @@ puppetserver_environments() {
   run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --connect-timeout 5 --max-time 60 --cert ${agent_cert} --key ${agent_key} -k https://127.0.0.1:8140/puppet/v3/environments" "enterprise/puppetserver_environments.json"
 }
 
+# Gather current database settings
+#
+# This function runs a database query that gets the current effective
+# value of PostgreSQL settings. This output can be compared against
+# config files like postgresql.conf.
+#
+# Global Variables Used:
+#   DROP
+#   SERVER_BIN_DIR
+#
+# Arguments:
+#   None
+#
+# Returns:
+#   None
+get_db_settings() {
+  local postgres_settings_query="select * from pg_settings;"
+
+  run_diagnostic --user pe-postgres "${SERVER_BIN_DIR?}/psql -x -c \"${postgres_settings_query}\"" "enterprise/postgres_settings.txt"
+}
+
 get_rbac_directory_settings_info() {
     local t_rbac_info_query="SELECT row_to_json(row) FROM ( SELECT \
 id, display_name, help_link, type, hostname, port, ssl, login, \
@@ -1304,6 +1325,7 @@ fi
 if is_package_installed 'pe-postgresql-server'; then
   db_size_checks
   db_relation_size_checks
+  get_db_settings
   get_rbac_directory_settings_info
   check_thundering_herd
 fi
