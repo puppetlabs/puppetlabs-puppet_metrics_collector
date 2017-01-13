@@ -1,3 +1,19 @@
+## Release 2.1.0
+
+### Summary
+
+Feature release of the Support Script bundled with PE 2016.5.2.
+
+### Features
+
+  - All improvements and bugfixes from version 1.3.0.
+
+### Bug Fixes
+
+  - Support script help now includes a note that some old enterprise 
+    subcommands moved to the puppet infrastructure command.
+
+
 ## Release 2.0.0
 
 ### Summary
