@@ -131,3 +131,40 @@ Keep in mind the following guidelines when developing the support script:
 [shell-guide]: https://google.github.io/styleguide/shell.xml
 [shellcheck]: https://www.shellcheck.net/
 
+### Testing
+
+The support script is currently tested using a Beaker acceptance suite
+which runs the script against a PE installation on each supported master
+platform. ["Bash Strict Mode"][strict-mode] is enabled when the script is
+run as part of an acceptance test. This extra layer of checking catches
+the use of undeclared variables or diagnostic functions that are failing
+due to incorrect input or missing guard statements.
+
+To run the acceptance suite, first use Bundler to install dependencies
+such as Beaker:
+
+    bundle install --path=.bundle/lib
+
+And ensure that a copy of the [acceptance testing key][acceptance-key]
+is available at:
+
+    ~/.ssh/id_rsa-acceptance
+
+Then, execute the test helper under the `ext/` directory:
+
+    ./ext/run_acceptance_tests.sh
+
+The wrapper defaults to testing against the latest LTS nightly build.
+Other PE builds can be tested by passing an X.Y version number to the helper:
+
+    ./ext/run_acceptance_tests.sh 2017.2
+
+The helper will launch parallel tests for every PE configuration described
+by files in the tests/beaker/configs/ directory. Tests can take over ten
+minutes to run, but when they've finished a Python webserver will be launched
+to display the results:
+
+  http://localhost:8000
+
+[strict-mode]: http://redsymbol.net/articles/unofficial-bash-strict-mode/
+[acceptance-key]: https://confluence.puppetlabs.com/display/QE/SSH+access+to+vmpooler+VMs
