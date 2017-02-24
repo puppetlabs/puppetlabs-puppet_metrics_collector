@@ -69,6 +69,9 @@ The recommended approach for familiarizing yourself with the support
 script code is to start at the end with the main section and then
 search up for the implementation of diagnostic functions of interest.
 
+The [docs/archive_layout.md](docs/archive_layout.md) file contains
+an overview of the files included in support script output.
+
 
 ## Limitations
 
