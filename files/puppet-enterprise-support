@@ -667,11 +667,14 @@ list_all_services() {
     solaris)
       run_diagnostic "svcs -a" "system/services.txt"
     ;;
-    rhel|centos|sles)
-      run_diagnostic "chkconfig --list" "system/services.txt"
-    ;;
-    debian|ubuntu)
-      # no chkconfig here. thanks debian.
+    rhel|centos|sles|debian|ubuntu)
+      if (pidof systemd &> /dev/null); then
+        run_diagnostic "systemctl list-units" "system/services.txt"
+      else
+        if cmd chkconfig; then
+          run_diagnostic "chkconfig --list" "system/services.txt"
+        fi
+      fi
     ;;
     *)
       # unsupported platform
