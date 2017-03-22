@@ -449,19 +449,31 @@ iptables_checks() {
   fi
 }
 
+# Record hostname info and test DNS resolution
+#
+# Global Variables Used:
+#   PLATFORM_HOSTNAME
+#   PLATFORM_NAME
+#   DROP
+#
+# Arguments:
+#   None
+#
+# Returns:
+#   None
 hostname_checks() {
   local ipaddress
   local mapped_hostname
 
-  echo ${PLATFORM_HOSTNAME?} > $DROP/networking/hostname_output.txt
+  echo "${PLATFORM_HOSTNAME?}" > "${DROP?}/networking/hostname_output.txt"
 
   # this part doesn't work so well if your hostname is mapped to 127.0.x.1 in /etc/hosts
 
   # See if hostname resolves
   # This won't work on solaris
-  if ! [ ${PLATFORM_NAME?} = "solaris" ]; then
-    ipaddress=`ping  -t1 -c1 ${PLATFORM_HOSTNAME?} | awk -F\( '{print $2}' | awk -F\) '{print $1}' | head -1`
-    echo $ipaddress > $DROP/networking/guessed_ip_address.txt
+  if ! [ "${PLATFORM_NAME?}" = "solaris" ]; then
+    ipaddress=$(ping  -t1 -c1 "${PLATFORM_HOSTNAME}" | awk -F\( '{print $2}' | awk -F\) '{print $1}' | head -1)
+    echo "${ipaddress}" > "${DROP}/networking/guessed_ip_address.txt"
 
     mapped_hostname=$(getent hosts "${ipaddress}" | awk '{print $2}')
     echo "${mapped_hostname}" > "${DROP}/networking/mapped_hostname_from_guessed_ip_address.txt"
