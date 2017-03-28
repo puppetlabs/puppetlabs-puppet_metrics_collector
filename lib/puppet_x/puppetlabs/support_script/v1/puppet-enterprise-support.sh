@@ -420,6 +420,20 @@ run_diagnostic() {
   fi
 }
 
+# Join elements of an array with a delimiter.
+#
+# Arguments:
+# 1: Character Delimiter
+# 2: Array of Strings
+#
+# Returns: String
+#
+function join() { 
+  local IFS="$1"
+  shift
+  echo "$*"
+}
+
 #===[Networking checks]=========================================================
 
 netstat_checks() {
@@ -449,20 +463,34 @@ iptables_checks() {
   fi
 }
 
+# Record hostname info and test DNS resolution
+#
+# Global Variables Used:
+#   PLATFORM_HOSTNAME
+#   PLATFORM_NAME
+#   DROP
+#
+# Arguments:
+#   None
+#
+# Returns:
+#   None
 hostname_checks() {
-  echo ${PLATFORM_HOSTNAME?} > $DROP/networking/hostname_output.txt
+  local ipaddress
+  local mapped_hostname
+
+  echo "${PLATFORM_HOSTNAME?}" > "${DROP?}/networking/hostname_output.txt"
 
   # this part doesn't work so well if your hostname is mapped to 127.0.x.1 in /etc/hosts
 
   # See if hostname resolves
   # This won't work on solaris
-  if ! [ ${PLATFORM_NAME?} = "solaris" ]; then
-    ipaddress=`ping  -t1 -c1 ${PLATFORM_HOSTNAME?} | awk -F\( '{print $2}' | awk -F\) '{print $1}' | head -1`
-    echo $ipaddress > $DROP/networking/guessed_ip_address.txt
-    if cmd tracepath; then
-      mapped_hostname=`tracepath $ipaddress | head -1 | awk '{print $2}'`
-      echo $mapped_hostname > $DROP/networking/mapped_hostname_from_guessed_ip_address.txt
-    fi
+  if ! [ "${PLATFORM_NAME?}" = "solaris" ]; then
+    ipaddress=$(ping  -t1 -c1 "${PLATFORM_HOSTNAME}" | awk -F\( '{print $2}' | awk -F\) '{print $1}' | head -1)
+    echo "${ipaddress}" > "${DROP}/networking/guessed_ip_address.txt"
+
+    mapped_hostname=$(getent hosts "${ipaddress}" | awk '{print $2}')
+    echo "${mapped_hostname}" > "${DROP}/networking/mapped_hostname_from_guessed_ip_address.txt"
   fi
 
   # This symlink allows SOScleaner to redact hostnames in support script output:
@@ -667,11 +695,14 @@ list_all_services() {
     solaris)
       run_diagnostic "svcs -a" "system/services.txt"
     ;;
-    rhel|centos|sles)
-      run_diagnostic "chkconfig --list" "system/services.txt"
-    ;;
-    debian|ubuntu)
-      # no chkconfig here. thanks debian.
+    rhel|centos|sles|debian|ubuntu)
+      if (pidof systemd &> /dev/null); then
+        run_diagnostic "systemctl list-units" "system/services.txt"
+      else
+        if cmd chkconfig; then
+          run_diagnostic "chkconfig --list" "system/services.txt"
+        fi
+      fi
     ;;
     *)
       # unsupported platform
@@ -1216,6 +1247,7 @@ get_puppetdb_summary_stats() {
 # Global Variables Used:
 #   DROP
 #   SCRIPT_VERSION
+#   TICKET
 #   TIMESTAMP
 #
 # Arguments:
@@ -1227,6 +1259,7 @@ write_metadata() {
   cat <<EOF > "${DROP?}/metadata.json"
 {
   "version": "${SCRIPT_VERSION}",
+  "ticket": "${TICKET}",
   "timestamp": "${TIMESTAMP}"
 }
 EOF
@@ -1265,8 +1298,16 @@ if [ "$DF" -lt "25600" ]; then
   fail "Not enough disk space in /var/tmp. This script needs 25MB or more to run."
 fi
 
+# Optional support ticket parameter
+if [ -n "$1" ]; then
+  TICKET="$1"
+else
+  TICKET=
+fi
+
 readonly TIMESTAMP=$(date -u '+%Y%m%d%H%M%S')
-readonly DROP="/var/tmp/puppet_enterprise_support_${PLATFORM_HOSTNAME_SHORT}_${TIMESTAMP}"
+readonly DROPARRAY=('/var/tmp/puppet_enterprise_support' $TICKET $PLATFORM_HOSTNAME_SHORT $TIMESTAMP)
+readonly DROP=$(join '_' "${DROPARRAY[@]}")
 
 display "Creating drop directory at ${DROP?}"
 
