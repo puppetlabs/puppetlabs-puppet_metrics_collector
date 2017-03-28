@@ -7,20 +7,27 @@ Puppet::Face.define(:enterprise, '1.0.0') do
   action :support do
     summary "Collects information about your Puppet Enterprise installation for support"
 
+    option '--ticket TICKET' do
+      summary 'Optional support ticket.'
+      default_to { '' }
+    end
+
     when_invoked do |options|
       if Puppet.features.microsoft_windows?
         Puppet.err <<-EOS
-The puppet enterprise support command isn't implemented for Windows
-platforms at this time.
+The puppet enterprise support command isn't implemented for Windows platforms at this time.
 EOS
-
         exit 1
+      end
+
+      if options[:ticket] !~ /^[a-zA-Z0-9\-]+$/
+        options[:ticket] = ''
       end
 
       support_module = File.expand_path(File.join(File.dirname(__FILE__), '../../../..'))
       support_script = File.join(support_module, 'files/puppet-enterprise-support')
 
-      Kernel.exec('/bin/bash', support_script)
+      Kernel.exec('/bin/bash', support_script, options[:ticket])
     end
   end
 end

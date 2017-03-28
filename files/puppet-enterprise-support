@@ -420,6 +420,20 @@ run_diagnostic() {
   fi
 }
 
+# Join elements of an array with a delimiter.
+#
+# Arguments:
+# 1: Character Delimiter
+# 2: Array of Strings
+#
+# Returns: String
+#
+function join() { 
+  local IFS="$1"
+  shift
+  echo "$*"
+}
+
 #===[Networking checks]=========================================================
 
 netstat_checks() {
@@ -1233,6 +1247,7 @@ get_puppetdb_summary_stats() {
 # Global Variables Used:
 #   DROP
 #   SCRIPT_VERSION
+#   TICKET
 #   TIMESTAMP
 #
 # Arguments:
@@ -1244,6 +1259,7 @@ write_metadata() {
   cat <<EOF > "${DROP?}/metadata.json"
 {
   "version": "${SCRIPT_VERSION}",
+  "ticket": "${TICKET}",
   "timestamp": "${TIMESTAMP}"
 }
 EOF
@@ -1282,8 +1298,16 @@ if [ "$DF" -lt "25600" ]; then
   fail "Not enough disk space in /var/tmp. This script needs 25MB or more to run."
 fi
 
+# Optional support ticket parameter
+if [ -n "$1" ]; then
+  TICKET="$1"
+else
+  TICKET=
+fi
+
 readonly TIMESTAMP=$(date -u '+%Y%m%d%H%M%S')
-readonly DROP="/var/tmp/puppet_enterprise_support_${PLATFORM_HOSTNAME_SHORT}_${TIMESTAMP}"
+readonly DROPARRAY=('/var/tmp/puppet_enterprise_support' $TICKET $PLATFORM_HOSTNAME_SHORT $TIMESTAMP)
+readonly DROP=$(join '_' "${DROPARRAY[@]}")
 
 display "Creating drop directory at ${DROP?}"
 
