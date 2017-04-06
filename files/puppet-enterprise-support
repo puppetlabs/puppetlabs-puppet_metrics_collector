@@ -1180,6 +1180,11 @@ puppetserver_environments() {
     for d in $environmentdirs; do
       droppath="${DROP}/enterprise/etc/puppetlabs/code/$(basename "${d}")/${e}"
       if [[ -d "${d}/${e}" ]]; then
+        if [[ -e "${d}/${e}/environment.conf" ]]; then
+          mkdir -p "${droppath}"
+          cp -Lp "${d}/${e}/environment.conf" "${droppath}"
+        fi
+
         if [[ -e "${d}/${e}/hiera.yaml" ]]; then
           mkdir -p "${droppath}"
           cp -Lp "${d}/${e}/hiera.yaml" "${droppath}"
