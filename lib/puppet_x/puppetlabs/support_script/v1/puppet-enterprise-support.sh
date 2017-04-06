@@ -1046,11 +1046,11 @@ package_listing() {
   pkg_file=enterprise/packages.txt
   case "${PLATFORM_PACKAGING?}" in
     rpm)
-      run_diagnostic "rpm -qa | $PLATFORM_EGREP '^pe-.*'" $pkg_file
+      run_diagnostic "rpm -qa | $PLATFORM_EGREP '^pe-|^puppet'" $pkg_file
     ;;
 
     dpkg)
-      run_diagnostic "dpkg-query -W -f '\${Package}\n' | $PLATFORM_EGREP '^pe-.*$'" $pkg_file
+      run_diagnostic "dpkg-query -W -f '\${Package}\n' | $PLATFORM_EGREP '^pe-|^puppet'" $pkg_file
     ;;
 
     pkgadd)
@@ -1154,6 +1154,7 @@ puppetserver_status() {
 # Collects output from the Puppet Server environments endpoint
 #
 # Global Variables Used:
+#   DROP
 #   PUPPET_BIN_DIR
 #
 # Arguments:
@@ -1164,11 +1165,36 @@ puppetserver_status() {
 puppetserver_environments() {
   local agent_cert
   local agent_key
+  local environmentdirs
+  local environments
+  local droppath
 
-  agent_cert=$(${PUPPET_BIN_DIR}/puppet config print --section agent hostcert)
-  agent_key=$(${PUPPET_BIN_DIR}/puppet config print --section agent hostprivkey)
+  agent_cert=$("${PUPPET_BIN_DIR?}/puppet" config print --section agent hostcert)
+  agent_key=$("${PUPPET_BIN_DIR}/puppet" config print --section agent hostprivkey)
 
-  run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --connect-timeout 5 --max-time 60 --cert ${agent_cert} --key ${agent_key} -k https://127.0.0.1:8140/puppet/v3/environments" "enterprise/puppetserver_environments.json"
+  run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --fail --connect-timeout 5 --max-time 60 --cert ${agent_cert} --key ${agent_key} -k https://127.0.0.1:8140/puppet/v3/environments" "enterprise/puppetserver_environments.json" || return
+
+  environmentdirs=$("${PUPPET_BIN_DIR}/ruby" -rjson -e 'puts JSON.load(ARGF.read)["search_paths"].reject{|p| p.start_with?("data:")}.map{|p| p.sub(%r{^file://}, "")}.join(" ")' "${DROP?}/enterprise/puppetserver_environments.json")
+  environments=$("${PUPPET_BIN_DIR}/ruby" -rjson -e 'puts JSON.load(ARGF.read)["environments"].keys.join(" ")' "${DROP}/enterprise/puppetserver_environments.json")
+
+  for e in $environments; do
+    for d in $environmentdirs; do
+      droppath="${DROP}/enterprise/etc/puppetlabs/code/$(basename "${d}")/${e}"
+      if [[ -d "${d}/${e}" ]]; then
+        if [[ -e "${d}/${e}/environment.conf" ]]; then
+          mkdir -p "${droppath}"
+          cp -Lp "${d}/${e}/environment.conf" "${droppath}"
+        fi
+
+        if [[ -e "${d}/${e}/hiera.yaml" ]]; then
+          mkdir -p "${droppath}"
+          cp -Lp "${d}/${e}/hiera.yaml" "${droppath}"
+        fi
+
+        break
+      fi
+    done
+  done
 }
 
 # Gather current database settings
