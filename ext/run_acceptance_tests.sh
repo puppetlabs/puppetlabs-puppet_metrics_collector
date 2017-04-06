@@ -9,7 +9,7 @@
 #
 #     ./ext/run_acceptance_tests.sh 2017.1
 
-PE_TEST_SERIES=${1-"2016.4"}
+PE_TEST_SERIES=${1-"2017.2"}
 LATEST_GOOD_BUILD=$(curl -q "http://getpe.delivery.puppetlabs.net/latest/${PE_TEST_SERIES}")
 
 echo "Testing build: ${LATEST_GOOD_BUILD?}"
