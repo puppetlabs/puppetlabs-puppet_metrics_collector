@@ -1154,6 +1154,7 @@ puppetserver_status() {
 # Collects output from the Puppet Server environments endpoint
 #
 # Global Variables Used:
+#   DROP
 #   PUPPET_BIN_DIR
 #
 # Arguments:
@@ -1168,12 +1169,12 @@ puppetserver_environments() {
   local environments
   local droppath
 
-  agent_cert=$(${PUPPET_BIN_DIR}/puppet config print --section agent hostcert)
-  agent_key=$(${PUPPET_BIN_DIR}/puppet config print --section agent hostprivkey)
+  agent_cert=$("${PUPPET_BIN_DIR?}/puppet" config print --section agent hostcert)
+  agent_key=$("${PUPPET_BIN_DIR}/puppet" config print --section agent hostprivkey)
 
   run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --fail --connect-timeout 5 --max-time 60 --cert ${agent_cert} --key ${agent_key} -k https://127.0.0.1:8140/puppet/v3/environments" "enterprise/puppetserver_environments.json" || return
 
-  environmentdirs=$("${PUPPET_BIN_DIR}/ruby" -rjson -e 'puts JSON.load(ARGF.read)["search_paths"].reject{|p| p.start_with?("data:")}.map{|p| p.sub(%r{^file://}, "")}.join(" ")' "${DROP}/enterprise/puppetserver_environments.json")
+  environmentdirs=$("${PUPPET_BIN_DIR}/ruby" -rjson -e 'puts JSON.load(ARGF.read)["search_paths"].reject{|p| p.start_with?("data:")}.map{|p| p.sub(%r{^file://}, "")}.join(" ")' "${DROP?}/enterprise/puppetserver_environments.json")
   environments=$("${PUPPET_BIN_DIR}/ruby" -rjson -e 'puts JSON.load(ARGF.read)["environments"].keys.join(" ")' "${DROP}/enterprise/puppetserver_environments.json")
 
   for e in $environments; do
