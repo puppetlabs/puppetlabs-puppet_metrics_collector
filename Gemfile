@@ -1,12 +1,12 @@
 source "https://rubygems.org"
 
 group :test do
-  gem "rake", "~> 10.0" # Pinned for compat with RSpec 3.2.x
-  gem "beaker"
+  gem "rake", ">= 10.1"
+  gem "beaker", "~> 3.0"
   gem "beaker-abs", "~> 0.2"
-  gem "beaker-pe", '>= 0.4.0'
-  gem "puppet", ENV['PUPPET_VERSION'] || '~> 4.1'
-  gem "rspec", '< 3.2.0'
+  gem "beaker-pe", "~> 1.11"
+  gem "puppet", ENV['PUPPET_VERSION'] || "~> 4.5"
+  gem "rspec", "~> 3.4"
   gem "rspec-puppet", '~> 2.0'
   gem "puppetlabs_spec_helper"
   gem "metadata-json-lint"
