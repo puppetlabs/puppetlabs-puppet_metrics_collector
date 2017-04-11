@@ -1,3 +1,31 @@
+## Release 1.4.0
+
+### Summary
+
+Feature release of the Support Script bundled with PE 2016.4.4.
+
+### Features
+
+  - The `puppet enterprise support` command now takes an optional `--ticket`
+    flag that can be used to add a ticket number to the output filename
+    and metadata.
+
+  - Per-environment environment.conf and hiera.yaml files are now captured
+    to aid with the troubleshooting of directory environment settings and
+    Hiera 4/Hiera 5 features.
+
+  - The facter.conf file is now collected along with other items from
+    /etc/puppetlabs.
+
+### Bug Fixes
+
+  - Service status is now captured on OS versions that use systemd instead of
+    just RedHat SysV init.
+
+  - The puppet-agent package is now included in queries for the status
+    of PE packages.
+
+
 ## Release 1.3.0
 
 ### Summary
