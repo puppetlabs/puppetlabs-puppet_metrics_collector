@@ -2,7 +2,7 @@
 
 ### Summary
 
-Feature release of the Support Script bundled with PE 2016.5.2.
+Feature release of the Support Script bundled with PE 2016.5.2 and 2017.1.0.
 
 ### Features
 
@@ -10,7 +10,7 @@ Feature release of the Support Script bundled with PE 2016.5.2.
 
 ### Bug Fixes
 
-  - Support script help now includes a note that some old enterprise 
+  - Support script help now includes a note that some old enterprise
     subcommands moved to the puppet infrastructure command.
 
 
