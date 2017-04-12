@@ -865,6 +865,8 @@ gather_enterprise_files() {
     'enterprise/conf.d'
     'enterprise/hiera.yaml'
 
+    'facter/facter.conf'
+
     'installer/answers.install'
 
     'mcollective/server.cfg'
