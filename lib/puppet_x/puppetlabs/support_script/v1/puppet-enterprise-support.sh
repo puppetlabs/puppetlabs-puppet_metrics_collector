@@ -1139,6 +1139,23 @@ orchestration_status() {
   run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --connect-timeout 5 --max-time 60 -k https://127.0.0.1:8143/status/v1/services?level=debug" "enterprise/orchestration_status.json"
 }
 
+# Collects inventory from the Orchestration Services api if an API token is available
+#
+# Global Variables Used:
+#   PUPPET_BIN_DIR
+#   HOME
+#
+# Arguments:
+#   None
+#
+# Returns:
+#   None
+orchestration_inventory() {
+  if [[ -e ${HOME}/.puppetlabs/token ]]; then
+    run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --connect-timeout 5 --max-time 60 -k -H X-Authentication:$(cat ${HOME}/.puppetlabs/token) https://127.0.0.1:8143/orchestrator/v1/api/inventory" "enterprise/orchestration_inventory.json"
+  fi
+}
+
 # Collects output from the Puppet Server status endpoint
 #
 # Global Variables Used:
@@ -1261,8 +1278,9 @@ filesync_state() {
 
 get_puppetdb_summary_stats() {
   if [ -d /etc/puppetlabs/puppetdb ]; then
-      local q_puppetdb_plaintext_port="$(get_ini_field '/etc/puppetlabs/puppetdb/conf.d/jetty.ini' 'port')"
-      run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --connect-timeout 5 --max-time 60 -X GET http://127.0.0.1:${q_puppetdb_plaintext_port}/pdb/admin/v1/summary-stats" "enterprise/puppetdb_summary_stats.json"
+    local q_puppetdb_plaintext_port="$(get_ini_field '/etc/puppetlabs/puppetdb/conf.d/jetty.ini' 'port')"
+    run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --connect-timeout 5 --max-time 60 -X GET http://127.0.0.1:${q_puppetdb_plaintext_port}/pdb/admin/v1/summary-stats" "enterprise/puppetdb_summary_stats.json"
+    run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --connect-timeout 5 --max-time 60 -X GET http://127.0.0.1:${q_puppetdb_plaintext_port}/pdb/query/v4 --data-urlencode 'query=nodes[certname] {deactivated is null and expired is null}'" "enterprise/puppetdb_nodes.json"
   fi
 }
 
@@ -1389,6 +1407,7 @@ fi
 
 if is_package_installed 'pe-orchestration-services'; then
   orchestration_status
+  orchestration_inventory
 fi
 
 if is_package_installed 'pe-postgresql-server'; then
