@@ -6,6 +6,9 @@ Feature release of the Support Script bundled with PE 2017.2.0.
 
 ### Features
 
+  - A list of active nodes is gathered from the Orchestrator inventory
+    API along with the PuppetDB nodes dataset.
+
   - All improvements and bugfixes from version 1.4.0.
 
 
