@@ -1152,7 +1152,7 @@ orchestration_status() {
 #   None
 orchestration_inventory() {
   if [[ -e ${HOME}/.puppetlabs/token ]]; then
-    run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --connect-timeout 5 --max-time 60 -k -H X-Authentication:$(cat ${HOME}/.puppetlabs/token) https://127.0.0.1:8143/orchestrator/v1/inventory" "enterprise/orchestration_inventory.json"
+    run_diagnostic "${PUPPET_BIN_DIR?}/curl --silent --show-error --connect-timeout 5 --max-time 60 -k -H X-Authentication:$(cat "${HOME?}/.puppetlabs/token") https://127.0.0.1:8143/orchestrator/v1/inventory" "enterprise/orchestration_inventory.json"
   fi
 }
 
