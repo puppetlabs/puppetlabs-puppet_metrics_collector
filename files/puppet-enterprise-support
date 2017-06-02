@@ -569,7 +569,11 @@ get_umask() {
 }
 
 facter_checks() {
-  run_diagnostic "${PUPPET_BIN_DIR?}/puppet facts" "system/facter_output.txt"
+  run_diagnostic "${PUPPET_BIN_DIR?}/puppet facts --debug --color=false" "system/facter_output.txt"
+  split -l $(($(grep --color=never -nh "^{$" "$DROP"/system/facter_output.txt |cut -d ':' -f 1)- 1)) "$DROP"/system/facter_output.txt "$DROP"/system/facter_output
+  mv "$DROP"/system/facter_outputaa "$DROP"/system/facter_output.debug.log
+  mv "$DROP"/system/facter_outputab "$DROP"/system/facter_output.json
+  rm "$DROP"/system/facter_output.txt
 }
 
 etc_checks() {
