@@ -1003,6 +1003,7 @@ list_pe_and_module_files() {
 module_listing() {
   if [ -f "${PUPPET_BIN_DIR?}/puppet" ]; then
     run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list" "enterprise/modules.txt"
+    run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list --render-as yaml" "enterprise/modules.yaml"
   fi
 }
 
@@ -1038,7 +1039,7 @@ module_changes() {
     pe_module_path="/opt/puppetlabs/puppet/modules"
     for module in $(ls "${pe_module_path?}"); do
       echo "${module?}:" >> "${DROP}/enterprise/module_changes.txt"
-      run_diagnostic "${PUPPET_BIN_DIR?}/puppet module changes ${pe_module_path?}/${module?}" "enterprise/module_changes.txt"
+      run_diagnostic "${PUPPET_BIN_DIR?}/puppet module changes ${pe_module_path?}/${module?} --render-as yaml" "enterprise/module_changes.txt"
     done
   fi
 }
