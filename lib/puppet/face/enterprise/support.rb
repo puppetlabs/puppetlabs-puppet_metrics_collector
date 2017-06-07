@@ -7,6 +7,10 @@ Puppet::Face.define(:enterprise, '1.0.0') do
   action :support do
     summary "Collects information about your Puppet Enterprise installation for support"
 
+    option '--classifier' do
+      summary 'Toggle to pull classification data.'
+    end
+
     option '--dir DIRECTORY' do
       summary 'Optional output directory.'
       default_to { '' }
@@ -34,6 +38,10 @@ EOS
       end
 
       support_script_parameters = []
+
+      if options[:classifier]
+        support_script_parameters.push("-c")
+      end
 
       if options[:dir] != ''
         support_script_parameters.push("-d#{options[:dir]}")
