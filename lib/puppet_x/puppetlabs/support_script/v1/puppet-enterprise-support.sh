@@ -614,7 +614,11 @@ get_umask() {
 }
 
 facter_checks() {
-  run_diagnostic "${PUPPET_BIN_DIR?}/puppet facts" "system/facter_output.txt"
+  run_diagnostic "${PUPPET_BIN_DIR?}/puppet facts --debug --color=false" "system/facter_output.txt"
+  split -l $(($(grep --color=never -nh "^{$" "$DROP"/system/facter_output.txt |cut -d ':' -f 1)- 1)) "$DROP"/system/facter_output.txt "$DROP"/system/facter_output
+  mv "$DROP"/system/facter_outputaa "$DROP"/system/facter_output.debug.log
+  mv "$DROP"/system/facter_outputab "$DROP"/system/facter_output.json
+  rm "$DROP"/system/facter_output.txt
 }
 
 etc_checks() {
@@ -817,6 +821,9 @@ other_logs() {
       cp -pR /var/log/${log} $DROP/logs && gzip -9 $DROP/logs/${log}
     fi
   done
+  if [ -x /bin/dmesg ]; then
+    /bin/dmesg > "$DROP"/logs/dmesg.txt
+  fi
 }
 
 #===[Puppet Enterprise checks]==================================================
@@ -1003,6 +1010,7 @@ list_pe_and_module_files() {
 module_listing() {
   if [ -f "${PUPPET_BIN_DIR?}/puppet" ]; then
     run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list" "enterprise/modules.txt"
+    run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list --render-as yaml" "enterprise/modules.yaml"
   fi
 }
 
@@ -1038,7 +1046,7 @@ module_changes() {
     pe_module_path="/opt/puppetlabs/puppet/modules"
     for module in $(ls "${pe_module_path?}"); do
       echo "${module?}:" >> "${DROP}/enterprise/module_changes.txt"
-      run_diagnostic "${PUPPET_BIN_DIR?}/puppet module changes ${pe_module_path?}/${module?}" "enterprise/module_changes.txt"
+      run_diagnostic "${PUPPET_BIN_DIR?}/puppet module changes ${pe_module_path?}/${module?} --render-as yaml" "enterprise/module_changes.txt"
     done
   fi
 }
@@ -1334,14 +1342,33 @@ case "${PLATFORM_NAME?}" in
 esac
 
 # Verify space for drop files
+if [[ -d /var/log/puppetlabs ]]; then
+  LOGDIR_SIZE=$(du -s /var/log/puppetlabs/ | cut -f 1)
+else
+  LOGDIR_SIZE=0
+fi
+
+if [[ -d /opt/puppetlabs/pe_metric_curl_cron_jobs ]]; then
+  METRICS_SIZE=$(du -s /opt/puppetlabs/pe_metric_curl_cron_jobs | cut -f 1)
+else
+  METRICS_SIZE=0
+fi
+
 if [ "x${PLATFORM_NAME?}" = "xsolaris" ]; then
   DF=$(df -b /var/tmp | $PLATFORM_EGREP -v Filesystem | awk '{print $2}')
 else
   DF=$(df -Pk /var/tmp | $PLATFORM_EGREP -v Filesystem | awk '{print $4}')
 fi
 
-if [ "$DF" -lt "25600" ]; then
-  fail "Not enough disk space in /var/tmp. This script needs 25MB or more to run."
+# Look for at least enough size for the logs, metrics, and 25MB of overhead
+# We multiply by 2 since we make a copy before compressing.  Although the 
+# compressed copy should be significantly smaller, there is no way to know
+# the ratio for certain, so we err on the side of caution
+TARGET_SIZE=$((LOGDIR_SIZE + METRICS_SIZE + 25600))
+TARGET_SIZE=$((TARGET_SIZE * 2))
+
+if [ "$DF" -lt $TARGET_SIZE ]; then
+  fail "Not enough disk space in /var/tmp. This script needs $((TARGET_SIZE / 1024)) MB or more to run."
 fi
 
 # Optional support ticket parameter
