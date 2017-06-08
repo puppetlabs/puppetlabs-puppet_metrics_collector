@@ -821,6 +821,9 @@ other_logs() {
       cp -pR /var/log/${log} $DROP/logs && gzip -9 $DROP/logs/${log}
     fi
   done
+  if [ -x /bin/dmesg ]; then
+    /bin/dmesg > "$DROP"/logs/dmesg.txt
+  fi
 }
 
 #===[Puppet Enterprise checks]==================================================
