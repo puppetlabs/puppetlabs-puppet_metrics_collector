@@ -990,7 +990,7 @@ list_pe_and_module_files() {
 # Gather all modules installed on the modulepath
 module_listing() {
   if [ -f "${PUPPET_BIN_DIR?}/puppet" ]; then
-    run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list" "enterprise/modules.txt"
+    run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list --color=false" "enterprise/modules.txt"
     run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list --render-as yaml" "enterprise/modules.yaml"
   fi
 }
