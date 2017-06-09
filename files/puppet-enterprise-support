@@ -639,42 +639,23 @@ etc_checks() {
       CONFDIR="/etc/sysconfig"
     ;;
   esac
-  if [ -f $CONFDIR/mcollective ]; then
-    cp -p $CONFDIR/mcollective $DROP/system/etc
-  fi
-  if [ -f $CONFDIR/pe-activemq ]; then
-    cp -p $CONFDIR/pe-activemq $DROP/system/etc
-  fi
-  if [ -f $CONFDIR/pe-console-services ]; then
-    cp -p $CONFDIR/pe-console-services $DROP/system/etc
-  fi
-  if [ -f $CONFDIR/pe-nginx ]; then
-    cp -p $CONFDIR/pe-nginx $DROP/system/etc
-  fi
-  if [ -f $CONFDIR/pe-orchestration-services ]; then
-    cp -p $CONFDIR/pe-orchestration-services $DROP/system/etc
-  fi
-  if [ -d $CONFDIR/pe-pgsql ]; then
-    cp -Rp $CONFDIR/pe-pgsql $DROP/system/etc
-  fi
-  if [ -f $CONFDIR/pe-puppetdb ]; then
-    cp -p $CONFDIR/pe-puppetdb $DROP/system/etc
-  fi
-  if [ -f $CONFDIR/pe-puppetserver ]; then
-    cp -p $CONFDIR/pe-puppetserver $DROP/system/etc
-  fi
-  if [ -f $CONFDIR/pe-razor-server ]; then
-    cp -p $CONFDIR/pe-razor-server $DROP/system/etc
-  fi
-  if [ -d $CONFDIR/pgsql ]; then
-    cp -Rp $CONFDIR/pgsql $DROP/system/etc
-  fi
-  if [ -f $CONFDIR/puppet ]; then
-    cp -p $CONFDIR/puppet $DROP/system/etc
-  fi
-  if [ -f $CONFDIR/pxp-agent ]; then
-    cp -p $CONFDIR/pxp-agent $DROP/system/etc
-  fi
+
+  for f in mcollective \
+    pe-activemq \
+    pe-console-services \
+    pe-nginx \
+    pe-orchestration-services \
+    pe-pgsql \
+    pe-puppetdb \
+    pe-puppetserver \
+    pe-razor-server \
+    pgsql \
+    puppet \
+    pxp-agent; do
+    if [ -f $CONFDIR/$f ]; then
+      cp -p $CONFDIR/$f "$DROP"/system/etc
+    fi
+  done
 }
 
 os_checks() {
