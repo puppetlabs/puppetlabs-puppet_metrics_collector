@@ -631,6 +631,12 @@ etc_checks() {
   mkdir "${DROP}/etc"
   ln -s ../system/etc/hosts "${DROP}/etc/hosts"
 
+  for f in "/etc/yum.conf" "/etc/yum.repos.d" "/etc/apt/apt.conf.d" "/etc/apt/sources.list.d"; do
+    if [ -e $f ]; then
+      cp --parents -Lr $f "$DROP"/system
+    fi
+  done
+
   case "${PLATFORM_NAME?}" in
     debian|ubuntu)
       CONFDIR="/etc/default"
