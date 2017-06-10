@@ -8,6 +8,8 @@
   "project_page": "https://github.com/puppetlabs/pe_support_script",
   "issues_url": "",
   "dependencies": [],
+  "dependencies": [
+  ],
   "requirements": [
     {
       "name": "pe",

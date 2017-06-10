@@ -631,6 +631,12 @@ etc_checks() {
   mkdir "${DROP}/etc"
   ln -s ../system/etc/hosts "${DROP}/etc/hosts"
 
+  for f in "/etc/yum.conf" "/etc/yum.repos.d" "/etc/apt/apt.conf.d" "/etc/apt/sources.list.d"; do
+    if [ -e $f ]; then
+      cp --parents -Lr $f "$DROP"/system
+    fi
+  done
+
   case "${PLATFORM_NAME?}" in
     debian|ubuntu)
       CONFDIR="/etc/default"
@@ -639,42 +645,23 @@ etc_checks() {
       CONFDIR="/etc/sysconfig"
     ;;
   esac
-  if [ -f $CONFDIR/mcollective ]; then
-    cp -p $CONFDIR/mcollective $DROP/system/etc
-  fi
-  if [ -f $CONFDIR/pe-activemq ]; then
-    cp -p $CONFDIR/pe-activemq $DROP/system/etc
-  fi
-  if [ -f $CONFDIR/pe-console-services ]; then
-    cp -p $CONFDIR/pe-console-services $DROP/system/etc
-  fi
-  if [ -f $CONFDIR/pe-nginx ]; then
-    cp -p $CONFDIR/pe-nginx $DROP/system/etc
-  fi
-  if [ -f $CONFDIR/pe-orchestration-services ]; then
-    cp -p $CONFDIR/pe-orchestration-services $DROP/system/etc
-  fi
-  if [ -d $CONFDIR/pe-pgsql ]; then
-    cp -Rp $CONFDIR/pe-pgsql $DROP/system/etc
-  fi
-  if [ -f $CONFDIR/pe-puppetdb ]; then
-    cp -p $CONFDIR/pe-puppetdb $DROP/system/etc
-  fi
-  if [ -f $CONFDIR/pe-puppetserver ]; then
-    cp -p $CONFDIR/pe-puppetserver $DROP/system/etc
-  fi
-  if [ -f $CONFDIR/pe-razor-server ]; then
-    cp -p $CONFDIR/pe-razor-server $DROP/system/etc
-  fi
-  if [ -d $CONFDIR/pgsql ]; then
-    cp -Rp $CONFDIR/pgsql $DROP/system/etc
-  fi
-  if [ -f $CONFDIR/puppet ]; then
-    cp -p $CONFDIR/puppet $DROP/system/etc
-  fi
-  if [ -f $CONFDIR/pxp-agent ]; then
-    cp -p $CONFDIR/pxp-agent $DROP/system/etc
-  fi
+
+  for f in mcollective \
+    pe-activemq \
+    pe-console-services \
+    pe-nginx \
+    pe-orchestration-services \
+    pe-pgsql \
+    pe-puppetdb \
+    pe-puppetserver \
+    pe-razor-server \
+    pgsql \
+    puppet \
+    pxp-agent; do
+    if [ -f $CONFDIR/$f ]; then
+      cp -p $CONFDIR/$f "$DROP"/system/etc
+    fi
+  done
 }
 
 os_checks() {
@@ -1009,7 +996,7 @@ list_pe_and_module_files() {
 # Gather all modules installed on the modulepath
 module_listing() {
   if [ -f "${PUPPET_BIN_DIR?}/puppet" ]; then
-    run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list" "enterprise/modules.txt"
+    run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list --color=false" "enterprise/modules.txt"
     run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list --render-as yaml" "enterprise/modules.yaml"
   fi
 }
