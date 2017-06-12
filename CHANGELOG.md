@@ -57,11 +57,38 @@ Major release of the Support Script bundled with PE 2016.5.0.
       lib/puppet_x/puppetlabs/support_script/v1/puppet-enterprise-support.sh
 
 
+## Release 1.5.0
+
+### Summary
+
+Feature release of the Support Script bundled with PE 2016.4.6.
+
+### Features
+
+  - Information on installed modules is now captured in YAML format.
+
+  - Output from dmesg is captured along with system logs.
+
+  - Disk space checks now take the size of log and metrics data
+    into account.
+
+  - Package manager configuration related to PE is now captured.
+
+### Removals
+
+  - Ubuntu 12.04 has been dropped from the test matrices. This follows the
+    removal of 12.04 as a supported platform in PE 2016.4.5.
+
+### Bug Fixes
+
+  - Debug logs have been restored to Facter output.
+
+
 ## Release 1.4.0
 
 ### Summary
 
-Feature release of the Support Script bundled with PE 2016.4.4.
+Feature release of the Support Script bundled with PE 2016.4.5.
 
 ### Features
 
