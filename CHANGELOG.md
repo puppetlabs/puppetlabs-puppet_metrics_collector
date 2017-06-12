@@ -2,7 +2,7 @@
 
 ### Summary
 
-Feature release of the Support Script bundled with PE 2016.4.4.
+Feature release of the Support Script bundled with PE 2016.4.5.
 
 ### Features
 
