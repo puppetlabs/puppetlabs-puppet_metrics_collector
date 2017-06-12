@@ -27,7 +27,7 @@ readonly PUPPET_BIN_DIR='/opt/puppetlabs/puppet/bin'
 readonly SERVER_BIN_DIR='/opt/puppetlabs/server/bin'
 readonly SERVER_DATA_DIR='/opt/puppetlabs/server/data'
 readonly SCRIPT_NAME="$(basename "${0}")"
-readonly SCRIPT_VERSION='1.4.0'
+readonly SCRIPT_VERSION='1.5.0'
 
 
 #===[ Functions ]=======================================================
