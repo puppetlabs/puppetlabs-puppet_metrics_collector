@@ -7,8 +7,7 @@ test_name 'PE-15434 - - Run Support Script' do
       stage_dir = create_tmpdir_on(host)
       on(host, "tar xzf #{output_tarball} -C #{stage_dir}")
 
-      # Save path to extracted data in host object so that tests
-      # can inspect it.
+      # Save path to extracted data in host object so that tests can inspect it.
       host['support_script_output'] = File.join(stage_dir, File.basename(output_tarball, '.tar.gz'))
     end
   end
