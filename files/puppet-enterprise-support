@@ -371,6 +371,9 @@ EOscript
 #
 #  run_diagnostic "/usr/sbin/sestatus" "system/selinux.txt"
 #
+# Global Variables Used:
+#   DROP
+#   PUPPET_BIN_DIR
 #
 run_diagnostic() {
   local timeout=''
@@ -396,7 +399,7 @@ run_diagnostic() {
   done
 
   local t_run_diagnostic__command="${1?}"
-  local t_run_diagnostic__outfile="${DROP}/${2?}"
+  local t_run_diagnostic__outfile="${DROP?}/${2?}"
 
   display " ** Collecting output of: ${t_run_diagnostic__command?}"
   display_newline
@@ -480,7 +483,7 @@ hostname_checks() {
   local ipaddress
   local mapped_hostname
 
-  echo "${PLATFORM_HOSTNAME?}" > "${DROP}/networking/hostname_output.txt"
+  echo "${PLATFORM_HOSTNAME?}" > "${DROP?}/networking/hostname_output.txt"
 
   # this part doesn't work so well if your hostname is mapped to 127.0.x.1 in /etc/hosts
 
@@ -508,7 +511,7 @@ can_contact_master() {
     fi
 
     if $PING $(${PUPPET_BIN_DIR?}/puppet agent --configprint server) &> /dev/null; then
-      echo "Master is alive." > "${DROP}/networking/puppet_ping.txt"
+      echo "Master is alive." > "${DROP?}/networking/puppet_ping.txt"
     else
       echo "Master is unreachable." > "${DROP}/networking/puppet_ping.txt"
     fi
@@ -611,19 +614,19 @@ selinux_checks() {
 }
 
 get_umask() {
-  umask > "${DROP}/system/umask.txt"
+  umask > "${DROP?}/system/umask.txt"
 }
 
 facter_checks() {
   run_diagnostic "${PUPPET_BIN_DIR?}/puppet facts --debug --color=false" "system/facter_output.txt"
-  split -l $(($(grep --color=never -nh "^{$" "$DROP"/system/facter_output.txt |cut -d ':' -f 1)- 1)) "$DROP"/system/facter_output.txt "$DROP"/system/facter_output
+  split -l $(($(grep --color=never -nh "^{$" "${DROP?}/system/facter_output.txt" |cut -d ':' -f 1)- 1)) "$DROP"/system/facter_output.txt "$DROP"/system/facter_output
   mv "$DROP"/system/facter_outputaa "$DROP"/system/facter_output.debug.log
   mv "$DROP"/system/facter_outputab "$DROP"/system/facter_output.json
   rm "$DROP"/system/facter_output.txt
 }
 
 etc_checks() {
-  cp -p /etc/resolv.conf "${DROP}/system/etc"
+  cp -p /etc/resolv.conf "${DROP?}/system/etc"
   cp -p /etc/nsswitch.conf "${DROP}/system/etc"
   cp -p /etc/hosts "${DROP}/system/etc"
 
@@ -668,7 +671,7 @@ etc_checks() {
 os_checks() {
   if [ ${PLATFORM_NAME?} = "solaris" ]; then
     # Probably want more information than this here
-    echo "Solaris" > "${DROP}/system/os_checks.txt"
+    echo "Solaris" > "${DROP?}/system/os_checks.txt"
   elif cmd lsb_release; then
     run_diagnostic "lsb_release -a" "system/lsb_release.txt"
   fi
@@ -724,7 +727,7 @@ pe_logs() {
   local pe_services
   local agent_services
 
-  cp -LpR /var/log/puppetlabs/* "${DROP}/logs"
+  cp -LpR /var/log/puppetlabs/* "${DROP?}/logs"
 
   pe_services=(
     'nginx'
@@ -777,7 +780,7 @@ pe_logs() {
 #   None
 pe_metrics() {
   if [[ -d /opt/puppetlabs/pe_metric_curl_cron_jobs ]]; then
-    mkdir -p "${DROP}/metrics"
+    mkdir -p "${DROP?}/metrics"
     cp -LpR /opt/puppetlabs/pe_metric_curl_cron_jobs "${DROP}/metrics/"
   fi
 }
@@ -797,16 +800,16 @@ get_state() {
   local configured_state_dir
   local state_dir
 
-  configured_state_dir=$("${PUPPET_BIN_DIR}/puppet" config print --section=agent statedir)
+  configured_state_dir=$("${PUPPET_BIN_DIR?}/puppet" config print --section=agent statedir)
   state_dir="${configured_state_dir:=/opt/puppetlabs/puppet/cache/state/}"
 
-  cp -LpR "${state_dir}" "${DROP}/enterprise/state"
+  cp -LpR "${state_dir}" "${DROP?}/enterprise/state"
 }
 
 other_logs() {
   for log in "system" "syslog" "messages"; do
     if [ -f /var/log/${log} ]; then
-      cp -pR /var/log/${log} "${DROP}/logs" && gzip -9 "${DROP}/logs/${log}"
+      cp -pR /var/log/${log} "${DROP?}/logs" && gzip -9 "${DROP}/logs/${log}"
     fi
   done
   if [ -x /bin/dmesg ]; then
@@ -906,7 +909,7 @@ gather_enterprise_files() {
     pe_config_files=("${pe_config_files[@]}" 'code-staging')
   fi
 
-  mkdir -p "${DROP}/enterprise/etc/puppetlabs"
+  mkdir -p "${DROP?}/enterprise/etc/puppetlabs"
   for f in "${pe_config_files[@]}"; do
     if [[ -e "/etc/puppetlabs/${f}" ]]; then
       config_dir=$(dirname "${f}")
@@ -987,7 +990,7 @@ list_pe_and_module_files() {
   for dir in ${enterprise_dirs}; do
     dir_desc=$(echo "${dir}" | sed 's,\/,_,g')
     if [ -d "${dir}" ]; then
-      find "${dir}" -ls > "${DROP}/enterprise/find/${dir_desc}.txt"
+      find "${dir}" -ls > "${DROP?}/enterprise/find/${dir_desc}.txt"
     else
       echo "No directory ${dir}" > "${DROP}/enterprise/find/${dir_desc}.txt"
     fi
@@ -1033,7 +1036,7 @@ module_changes() {
   if [ -f "${PUPPET_BIN_DIR?}/puppet" ]; then
     pe_module_path="/opt/puppetlabs/puppet/modules"
     for module in $(ls "${pe_module_path?}"); do
-      echo "${module?}:" >> "${DROP}/enterprise/module_changes.txt"
+      echo "${module?}:" >> "${DROP?}/enterprise/module_changes.txt"
       run_diagnostic "${PUPPET_BIN_DIR?}/puppet module changes ${pe_module_path?}/${module?} --render-as yaml" "enterprise/module_changes.txt"
     done
   fi
@@ -1099,13 +1102,13 @@ mco_commands() {
       run_diagnostic --timeout 15 "su - ${mco_user?} -c 'mco ping'" "enterprise/mco_ping_$mco_user.txt"
       run_diagnostic --timeout 15 "su - ${mco_user?} -c 'mco inventory ${PLATFORM_HOSTNAME}'" "/enterprise/mco_inventory_${mco_user}.txt"
     else
-      echo "No such user: '${mco_user}'." > "${DROP}/enterprise/mco_$mco_user.txt"
+      echo "No such user: '${mco_user}'." > "${DROP?}/enterprise/mco_$mco_user.txt"
     fi
   fi
 }
 
 activemq_limits() {
-  echo "File descriptors in use by pe-activemq:" > "${DROP}/enterprise/activemq_resource_limits"
+  echo "File descriptors in use by pe-activemq:" > "${DROP?}/enterprise/activemq_resource_limits"
   if cmd lsof; then
     run_diagnostic "lsof -u pe-activemq | wc -l" "enterprise/activemq_resource_limits"
   else
@@ -1172,7 +1175,7 @@ puppetserver_environments() {
 
   run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --fail --connect-timeout 5 --max-time 60 --cert ${agent_cert} --key ${agent_key} -k https://127.0.0.1:8140/puppet/v3/environments" "enterprise/puppetserver_environments.json" || return
 
-  environmentdirs=$("${PUPPET_BIN_DIR}/ruby" -rjson -e 'puts JSON.load(ARGF.read)["search_paths"].reject{|p| p.start_with?("data:")}.map{|p| p.sub(%r{^file://}, "")}.join(" ")' "${DROP}/enterprise/puppetserver_environments.json")
+  environmentdirs=$("${PUPPET_BIN_DIR}/ruby" -rjson -e 'puts JSON.load(ARGF.read)["search_paths"].reject{|p| p.start_with?("data:")}.map{|p| p.sub(%r{^file://}, "")}.join(" ")' "${DROP?}/enterprise/puppetserver_environments.json")
   environments=$("${PUPPET_BIN_DIR}/ruby" -rjson -e 'puts JSON.load(ARGF.read)["environments"].keys.join(" ")' "${DROP}/enterprise/puppetserver_environments.json")
 
   for e in $environments; do
@@ -1250,7 +1253,7 @@ filesync_state() {
   if [ -x /opt/puppetlabs/server/data/puppetserver/filesync ]; then
     # If explicitly requested, grab filesync data.
     if [ "$FILESYNC" = "y" ]; then
-      cp -Rp /opt/puppetlabs/server/data/puppetserver/filesync "${DROP}/enterprise"
+      cp -Rp /opt/puppetlabs/server/data/puppetserver/filesync "${DROP?}/enterprise"
     fi
   fi
 }
@@ -1281,7 +1284,7 @@ get_puppetdb_summary_stats() {
 # Returns:
 #   None
 write_metadata() {
-  cat <<EOF > "${DROP}/metadata.json"
+  cat <<EOF > "${DROP?}/metadata.json"
 {
   "version": "${SCRIPT_VERSION}",
   "output_directory": "${OUTPUT_DIRECTORY}",
