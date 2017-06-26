@@ -9,8 +9,7 @@ test_name 'PE-15434 - - Run Support Script' do
       # for unzipping tarballs or the -C flag when extracting.
       on(host, "cd #{stage_dir} && gunzip -c #{output_tarball}|tar xf -")
 
-      # Save path to extracted data in host object so that tests
-      # can inspect it.
+      # Save path to extracted data in host object so that tests can inspect it.
       host['support_script_output'] = File.join(stage_dir, File.basename(output_tarball, '.tar.gz'))
     end
   end

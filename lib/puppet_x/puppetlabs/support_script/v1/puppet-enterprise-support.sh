@@ -26,6 +26,7 @@ fi
 readonly PUPPET_BIN_DIR='/opt/puppetlabs/puppet/bin'
 readonly SERVER_BIN_DIR='/opt/puppetlabs/server/bin'
 readonly SERVER_DATA_DIR='/opt/puppetlabs/server/data'
+readonly DEFAULT_OUTPUT_DIRECTORY='/var/tmp'
 readonly SCRIPT_NAME="$(basename "${0}")"
 readonly SCRIPT_VERSION='2.3.0'
 
@@ -370,6 +371,9 @@ EOscript
 #
 #  run_diagnostic "/usr/sbin/sestatus" "system/selinux.txt"
 #
+# Global Variables Used:
+#   DROP
+#   PUPPET_BIN_DIR
 #
 run_diagnostic() {
   local timeout=''
@@ -395,7 +399,7 @@ run_diagnostic() {
   done
 
   local t_run_diagnostic__command="${1?}"
-  local t_run_diagnostic__outfile="${DROP}/${2?}"
+  local t_run_diagnostic__outfile="${DROP?}/${2?}"
 
   display " ** Collecting output of: ${t_run_diagnostic__command?}"
   display_newline
@@ -507,12 +511,12 @@ can_contact_master() {
     fi
 
     if $PING $(${PUPPET_BIN_DIR?}/puppet agent --configprint server) &> /dev/null; then
-      echo "Master is alive." > $DROP/networking/puppet_ping.txt
+      echo "Master is alive." > "${DROP?}/networking/puppet_ping.txt"
     else
-      echo "Master is unreachable." > $DROP/networking/puppet_ping.txt
+      echo "Master is unreachable." > "${DROP}/networking/puppet_ping.txt"
     fi
   else
-    echo "No puppet found, master status is unknown." > $DROP/networking/puppet_ping.txt
+    echo "No puppet found, master status is unknown." > "${DROP}/networking/puppet_ping.txt"
   fi
 }
 
@@ -610,21 +614,21 @@ selinux_checks() {
 }
 
 get_umask() {
-  umask > $DROP/system/umask.txt
+  umask > "${DROP?}/system/umask.txt"
 }
 
 facter_checks() {
   run_diagnostic "${PUPPET_BIN_DIR?}/puppet facts --debug --color=false" "system/facter_output.txt"
-  split -l $(($(grep --color=never -nh "^{$" "$DROP"/system/facter_output.txt |cut -d ':' -f 1)- 1)) "$DROP"/system/facter_output.txt "$DROP"/system/facter_output
+  split -l $(($(grep --color=never -nh "^{$" "${DROP?}/system/facter_output.txt" |cut -d ':' -f 1)- 1)) "$DROP"/system/facter_output.txt "$DROP"/system/facter_output
   mv "$DROP"/system/facter_outputaa "$DROP"/system/facter_output.debug.log
   mv "$DROP"/system/facter_outputab "$DROP"/system/facter_output.json
   rm "$DROP"/system/facter_output.txt
 }
 
 etc_checks() {
-  cp -p /etc/resolv.conf $DROP/system/etc
-  cp -p /etc/nsswitch.conf $DROP/system/etc
-  cp -p /etc/hosts $DROP/system/etc
+  cp -p /etc/resolv.conf "${DROP?}/system/etc"
+  cp -p /etc/nsswitch.conf "${DROP}/system/etc"
+  cp -p /etc/hosts "${DROP}/system/etc"
 
   # This symlink allows SOScleaner to redact hostnames in support script output:
   #   https://github.com/RedHatGov/soscleaner
@@ -659,7 +663,7 @@ etc_checks() {
     puppet \
     pxp-agent; do
     if [ -f $CONFDIR/$f ]; then
-      cp -p $CONFDIR/$f "$DROP"/system/etc
+      cp -p $CONFDIR/$f "${DROP}/system/etc"
     fi
   done
 }
@@ -667,7 +671,7 @@ etc_checks() {
 os_checks() {
   if [ ${PLATFORM_NAME?} = "solaris" ]; then
     # Probably want more information than this here
-    echo "Solaris" > $DROP/system/os_checks.txt
+    echo "Solaris" > "${DROP?}/system/os_checks.txt"
   elif cmd lsb_release; then
     run_diagnostic "lsb_release -a" "system/lsb_release.txt"
   fi
@@ -776,7 +780,7 @@ pe_logs() {
 #   None
 pe_metrics() {
   if [[ -d /opt/puppetlabs/pe_metric_curl_cron_jobs ]]; then
-    mkdir -p "${DROP}/metrics"
+    mkdir -p "${DROP?}/metrics"
     cp -LpR /opt/puppetlabs/pe_metric_curl_cron_jobs "${DROP}/metrics/"
   fi
 }
@@ -796,7 +800,7 @@ get_state() {
   local configured_state_dir
   local state_dir
 
-  configured_state_dir=$("${PUPPET_BIN_DIR}/puppet" config print --section=agent statedir)
+  configured_state_dir=$("${PUPPET_BIN_DIR?}/puppet" config print --section=agent statedir)
   state_dir="${configured_state_dir:=/opt/puppetlabs/puppet/cache/state/}"
 
   cp -LpR "${state_dir}" "${DROP?}/enterprise/state"
@@ -805,7 +809,7 @@ get_state() {
 other_logs() {
   for log in "system" "syslog" "messages"; do
     if [ -f /var/log/${log} ]; then
-      cp -pR /var/log/${log} $DROP/logs && gzip -9 $DROP/logs/${log}
+      cp -pR /var/log/${log} "${DROP?}/logs" && gzip -9 "${DROP}/logs/${log}"
     fi
   done
   if [ -x /bin/dmesg ]; then
@@ -986,9 +990,9 @@ list_pe_and_module_files() {
   for dir in ${enterprise_dirs}; do
     dir_desc=$(echo "${dir}" | sed 's,\/,_,g')
     if [ -d "${dir}" ]; then
-      find "${dir}" -ls > $DROP/enterprise/find/${dir_desc}.txt
+      find "${dir}" -ls > "${DROP?}/enterprise/find/${dir_desc}.txt"
     else
-      echo "No directory ${dir}" > $DROP/enterprise/find/${dir_desc}.txt
+      echo "No directory ${dir}" > "${DROP}/enterprise/find/${dir_desc}.txt"
     fi
   done
 }
@@ -1032,7 +1036,7 @@ module_changes() {
   if [ -f "${PUPPET_BIN_DIR?}/puppet" ]; then
     pe_module_path="/opt/puppetlabs/puppet/modules"
     for module in $(ls "${pe_module_path?}"); do
-      echo "${module?}:" >> "${DROP}/enterprise/module_changes.txt"
+      echo "${module?}:" >> "${DROP?}/enterprise/module_changes.txt"
       run_diagnostic "${PUPPET_BIN_DIR?}/puppet module changes ${pe_module_path?}/${module?} --render-as yaml" "enterprise/module_changes.txt"
     done
   fi
@@ -1098,20 +1102,20 @@ mco_commands() {
       run_diagnostic --timeout 15 "su - ${mco_user?} -c 'mco ping'" "enterprise/mco_ping_$mco_user.txt"
       run_diagnostic --timeout 15 "su - ${mco_user?} -c 'mco inventory ${PLATFORM_HOSTNAME}'" "/enterprise/mco_inventory_${mco_user}.txt"
     else
-      echo "No such user: '${mco_user}'." > "${DROP}/enterprise/mco_$mco_user.txt"
+      echo "No such user: '${mco_user}'." > "${DROP?}/enterprise/mco_$mco_user.txt"
     fi
   fi
 }
 
 activemq_limits() {
-  echo "File descriptors in use by pe-activemq:" > $DROP/enterprise/activemq_resource_limits
+  echo "File descriptors in use by pe-activemq:" > "${DROP?}/enterprise/activemq_resource_limits"
   if cmd lsof; then
     run_diagnostic "lsof -u pe-activemq | wc -l" "enterprise/activemq_resource_limits"
   else
-    echo "lsof: command not found" >> $DROP/enterprise/activemq_resource_limits
+    echo "lsof: command not found" >> "${DROP}/enterprise/activemq_resource_limits"
   fi
 
-  echo -e "\n\nResource limits for pe-activemq:\n" >> $DROP/enterprise/activemq_resource_limits
+  echo -e "\n\nResource limits for pe-activemq:\n" >> "${DROP}/enterprise/activemq_resource_limits"
   run_diagnostic --user pe-activemq "ulimit -a" "enterprise/activemq_resource_limits"
 }
 
@@ -1266,7 +1270,7 @@ filesync_state() {
   if [ -x /opt/puppetlabs/server/data/puppetserver/filesync ]; then
     # If explicitly requested, grab filesync data.
     if [ "$FILESYNC" = "y" ]; then
-      cp -Rp /opt/puppetlabs/server/data/puppetserver/filesync "$DROP/enterprise"
+      cp -Rp /opt/puppetlabs/server/data/puppetserver/filesync "${DROP?}/enterprise"
     fi
   fi
 }
@@ -1306,9 +1310,39 @@ write_metadata() {
 EOF
 }
 
+# Parameter Processing
+#
+# Optional support ticket parameter
+# Optional output path parameter
+# Global Variables Used:
+#  DEFAULT_OUTPUT_DIRECTORY
+#  OUTPUT_DIRECTORY
+#  TICKET
+#
+# Arguments:
+#   $@
+read_params() {
+  OUTPUT_DIRECTORY="$DEFAULT_OUTPUT_DIRECTORY"
+  TICKET=
+  local OPTARG opt
+  while getopts ":d:t:" opt; do
+    case $opt in
+      d) OUTPUT_DIRECTORY="$OPTARG"
+        ;;
+      t) TICKET="$OPTARG"
+        ;;
+      \?) echo "Invalid option -$OPTARG" >&2
+        ;;
+    esac
+  done
+}
+
 #===[Main]======================================================================
 
 display "Puppet Enterprise Support Script v${SCRIPT_VERSION}"
+
+# Read command line parameters
+read_params "$@"
 
 # Default to no collection of filesync data
 FILESYNC=${FILESYNC:-n}
@@ -1328,6 +1362,15 @@ case "${PLATFORM_NAME?}" in
     ;;
 esac
 
+# Verify directory for drop files
+if [ -d "$OUTPUT_DIRECTORY" ]; then 
+  if [ -L "$OUTPUT_DIRECTORY" ]; then
+    fail "Output directory $OUTPUT_DIRECTORY cannot be a symlink."
+  fi
+else
+ fail "Output directory $OUTPUT_DIRECTORY does not exist."
+fi
+
 # Verify space for drop files
 if [[ -d /var/log/puppetlabs ]]; then
   LOGDIR_SIZE=$(du -s /var/log/puppetlabs/ | cut -f 1)
@@ -1342,9 +1385,9 @@ else
 fi
 
 if [ "x${PLATFORM_NAME?}" = "xsolaris" ]; then
-  DF=$(df -b /var/tmp | $PLATFORM_EGREP -v Filesystem | awk '{print $2}')
+  DF=$(df -b "$OUTPUT_DIRECTORY" | $PLATFORM_EGREP -v Filesystem | awk '{print $2}')
 else
-  DF=$(df -Pk /var/tmp | $PLATFORM_EGREP -v Filesystem | awk '{print $4}')
+  DF=$(df -Pk "$OUTPUT_DIRECTORY" | $PLATFORM_EGREP -v Filesystem | awk '{print $4}')
 fi
 
 # Look for at least enough size for the logs, metrics, and 25MB of overhead
@@ -1355,21 +1398,14 @@ TARGET_SIZE=$((LOGDIR_SIZE + METRICS_SIZE + 25600))
 TARGET_SIZE=$((TARGET_SIZE * 2))
 
 if [ "$DF" -lt $TARGET_SIZE ]; then
-  fail "Not enough disk space in /var/tmp. This script needs $((TARGET_SIZE / 1024)) MB or more to run."
-fi
-
-# Optional support ticket parameter
-if [ -n "$1" ]; then
-  TICKET="$1"
-else
-  TICKET=
+  fail "Not enough disk space in $OUTPUT_DIRECTORY. This script needs $((TARGET_SIZE / 1024)) MB or more to run."
 fi
 
 readonly TIMESTAMP=$(date -u '+%Y%m%d%H%M%S')
-readonly DROPARRAY=('/var/tmp/puppet_enterprise_support' $TICKET $PLATFORM_HOSTNAME_SHORT $TIMESTAMP)
+readonly DROPARRAY=("$OUTPUT_DIRECTORY/puppet_enterprise_support" "$TICKET" "$PLATFORM_HOSTNAME_SHORT" "$TIMESTAMP")
 readonly DROP=$(join '_' "${DROPARRAY[@]}")
 
-display "Creating drop directory at ${DROP?}"
+display "Creating output directory at ${DROP}"
 
 mkdir -p "${DROP}"/{resources,system,system/etc,enterprise/find,networking,logs}
 chmod 0700 "${DROP}"
@@ -1444,8 +1480,10 @@ if is_package_installed 'pe-activemq'; then
   activemq_limits
 fi
 
-support_archive="${DROP?}.tar.gz"
-(umask 0077 && tar cf - -C $(dirname "${DROP}") $(basename "${DROP}")|gzip -f9 > "${support_archive?}")
+tar_change_directory=$(dirname "${DROP}")
+tar_directory=$(basename "${DROP}")
+support_archive="${DROP}.tar.gz"
+(umask 0077 && tar cf - -C "${tar_change_directory?}" "${tar_directory?}" | gzip -f9 > "${support_archive?}")
 
 popd &> /dev/null
 rm -rf "${DROP}"
@@ -1453,7 +1491,7 @@ rm -rf "${DROP}"
 
 display 'Data collected, ready for submission'
 display_newline
-display "Support data is located at ${support_archive?}"
+display "Support data is located at ${support_archive}"
 display_newline
 display "Current Puppet Enterprise customers:"
 display_newline
@@ -1463,7 +1501,7 @@ display "An overview of data collected by this tool can be found at:"
 display_newline
 display "  https://docs.puppet.com/pe/latest/overview_getting_support.html#the-pe-support-script"
 display_newline
-display "Please submit ${support_archive?} to Puppet Support using the upload site you've been invited to."
+display "Please submit ${support_archive} to Puppet Support using the upload site you've been invited to."
 display_newline
 display_newline
 

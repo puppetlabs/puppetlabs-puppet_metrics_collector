@@ -18,14 +18,15 @@ export BEAKER_PE_DIR="http://enterprise.delivery.puppetlabs.net/${PE_TEST_SERIES
 export BEAKER_PE_VER="${LATEST_GOOD_BUILD}"
 
 execute_beaker() {
-  # Changing preserve-hosts to "onfail" will leave VMs behind for debugging.
+  # Changing preserve-hosts from "never" to "onfail" will leave VMs behind for debugging.
   bundle exec beaker \
     --preserve-hosts never \
     --config "$1" \
     --debug \
     --keyfile ~/.ssh/id_rsa-acceptance \
-    --pre-suite tests/beaker/pre-suite | \
-  grep 'PE-15434' | while read line; do
+    --pre-suite tests/beaker/pre-suite \
+    --tests tests/beaker/tests | \
+  grep 'PE-' | while read line; do
     echo "${1}: ${line}"
   done
 }
