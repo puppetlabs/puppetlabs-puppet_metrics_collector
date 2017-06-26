@@ -1273,7 +1273,6 @@ get_puppetdb_summary_stats() {
 #
 # Global Variables Used:
 #   DROP
-#   OUTPUT_DIRECTORY
 #   SCRIPT_VERSION
 #   TICKET
 #   TIMESTAMP
@@ -1287,7 +1286,6 @@ write_metadata() {
   cat <<EOF > "${DROP?}/metadata.json"
 {
   "version": "${SCRIPT_VERSION}",
-  "output_directory": "${OUTPUT_DIRECTORY}",
   "ticket": "${TICKET}",
   "timestamp": "${TIMESTAMP}"
 }
