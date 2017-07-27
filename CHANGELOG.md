@@ -6,7 +6,6 @@ Feature release of the Support Script bundled with PE 2017.2.2. See release
 notes for version 1.5.0 for a list of improvements and bugfixes.
 
 
-
 ## Release 2.2.0
 
 ### Summary
@@ -64,6 +63,21 @@ Major release of the Support Script bundled with PE 2016.5.0.
     to:
 
       lib/puppet_x/puppetlabs/support_script/v1/puppet-enterprise-support.sh
+
+
+## Release 1.6.0
+
+### Summary
+
+Feature release of the Support Script bundled with PE 2016.4.7.
+
+### Features
+
+  - The `--dir` flag may be used to select a directory where support data is
+    gathered and the final archive produced.
+
+  - The `--classifier` flag may be passed to gather a dump of the PE Classifier
+    groups.
 
 
 ## Release 1.5.0
