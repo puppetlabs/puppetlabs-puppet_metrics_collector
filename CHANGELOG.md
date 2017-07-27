@@ -1,3 +1,18 @@
+## Release 1.6.0
+
+### Summary
+
+Feature release of the Support Script bundled with PE 2016.4.7.
+
+### Features
+
+  - The `--dir` flag may be used to select a directory where support data is
+    gathered and the final archive produced.
+
+  - The `--classifier` flag may be passed to gather a dump of the PE Classifier
+    groups.
+
+
 ## Release 1.5.0
 
 ### Summary
