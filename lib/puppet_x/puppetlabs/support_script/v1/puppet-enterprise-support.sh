@@ -1042,16 +1042,37 @@ module_changes() {
   fi
 }
 
+# Print an ASCII bar for readability
+bar() {
+  for (( i=0; i<$1; i++ )); do
+    printf "="
+  done
+
+  printf "\n"
+}
+
 # Gather all packages that are part of the Puppet Enterprise installation
 package_listing() {
   pkg_file=enterprise/packages.txt
+  pkg_verify_file="${DROP}/enterprise/packages_verify.txt"
   case "${PLATFORM_PACKAGING?}" in
     rpm)
       run_diagnostic "rpm -qa | $PLATFORM_EGREP '^pe-|^puppet'" $pkg_file
+      for pkg in $(rpm -qa | $PLATFORM_EGREP '^pe-|^puppet'); do
+        printf "\n%s\n" "$pkg" >> "$pkg_verify_file"
+        bar ${#pkg} >> "$pkg_verify_file"
+        rpm -V "$pkg" >> "$pkg_verify_file" || true
+      done
     ;;
 
     dpkg)
       run_diagnostic "dpkg-query -W -f '\${Package}\n' | $PLATFORM_EGREP '^pe-|^puppet'" $pkg_file
+      for pkg in $(dpkg-query -W -f '${Package}\n' | $PLATFORM_EGREP '^pe-|^puppet'); do
+        printf "\n%s\n" "$pkg" >> "$pkg_verify_file"
+        bar ${#pkg} >> "$pkg_verify_file"
+        dpkg -V "$pkg" >> "$pkg_verify_file" || true
+      done
+
     ;;
 
     pkgadd)
