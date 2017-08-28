@@ -1296,9 +1296,22 @@ filesync_state() {
   fi
 }
 
-get_puppetdb_summary_stats() {
+# Collects output from the PuppetDB status endpoints
+#
+# Global Variables Used:
+#   PUPPET_BIN_DIR
+#
+# Arguments:
+#   None
+#
+# Returns:
+#   None
+puppetdb_status() {
+  local q_puppetdb_plaintext_port
+
   if [ -d /etc/puppetlabs/puppetdb ]; then
-    local q_puppetdb_plaintext_port="$(get_ini_field '/etc/puppetlabs/puppetdb/conf.d/jetty.ini' 'port')"
+    q_puppetdb_plaintext_port="$(get_ini_field '/etc/puppetlabs/puppetdb/conf.d/jetty.ini' 'port')"
+    run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --connect-timeout 5 --max-time 60 -X GET http://127.0.0.1:${q_puppetdb_plaintext_port}/status/v1/services?level=debug" "enterprise/puppetdb_status.json"
     run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --connect-timeout 5 --max-time 60 -X GET http://127.0.0.1:${q_puppetdb_plaintext_port}/pdb/admin/v1/summary-stats" "enterprise/puppetdb_summary_stats.json"
     run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --connect-timeout 5 --max-time 60 -X GET http://127.0.0.1:${q_puppetdb_plaintext_port}/pdb/query/v4 --data-urlencode 'query=nodes[certname] {deactivated is null and expired is null}'" "enterprise/puppetdb_nodes.json"
   fi
@@ -1504,7 +1517,7 @@ if is_package_installed 'pe-postgresql-server'; then
 fi
 
 if is_package_installed 'pe-puppetdb'; then
-  get_puppetdb_summary_stats
+  puppetdb_status
 fi
 
 if [[ -d /var/lib/peadmin ]]; then
