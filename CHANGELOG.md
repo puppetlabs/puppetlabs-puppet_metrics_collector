@@ -1,3 +1,17 @@
+## Release 1.7.0
+
+### Summary
+
+Feature release of the Support Script bundled with PE 2016.4.8.
+
+### Features
+
+  - rpm and deb verification functions are to report difference between
+    installed files and PE packages.
+
+  - Output is gathered from the PuppetDB /status endpoint.
+
+
 ## Release 1.6.0
 
 ### Summary
