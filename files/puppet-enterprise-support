@@ -717,6 +717,7 @@ grab_env_vars() {
 #
 # Global Variables Used:
 #   DROP
+#   SERVER_DATA_DIR
 #
 # Arguments:
 #   None
@@ -726,6 +727,7 @@ grab_env_vars() {
 pe_logs() {
   local pe_services
   local agent_services
+  local pg_upgrade_logs
 
   cp -LpR /var/log/puppetlabs/* "${DROP?}/logs"
 
@@ -763,6 +765,24 @@ pe_logs() {
     mkdir -p "${DROP}/logs/peadmin"
     cp -LpR /var/lib/peadmin/.mcollective.d/client.log* "${DROP}/logs/peadmin"
   fi
+
+
+  # Logs left by pg_upgrade if migration of Postgres data fails.
+  # pg_upgrade # writes these to the directory it was run from
+  # which is set to $SERVER_DATA_DIR/postgresql by the pe_install
+  # module.
+  pg_upgrade_logs=(
+    'pg_upgrade_internal.log'
+    'pg_upgrade_server.log'
+    'pg_upgrade_utility.log'
+  )
+
+  for f in "${pg_upgrade_logs[@]}"; do
+    if [[ -f "${SERVER_DATA_DIR?}/postgresql/${f}" ]]; then
+      mkdir -p "${DROP}/logs/postgresql"
+      cp -Lp "${SERVER_DATA_DIR?}/postgresql/${f}" "${DROP}/logs/postgresql/${f}"
+    fi
+  done
 }
 
 # Copy PE metrics to support script output
