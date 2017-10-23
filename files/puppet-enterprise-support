@@ -837,7 +837,8 @@ other_logs() {
 gather_enterprise_files() {
   local pe_config_files
   local config_dir
-  local postgres_datadir
+  local postgres_datadirs
+  local postgres_drop_location
   local postgres_config_files
 
   # Whitelist of configuration files and directories to copy. Each entry is
@@ -928,18 +929,25 @@ gather_enterprise_files() {
 
   # Collect Postgres configuration if present
 
-  # NOTE: Echo is used here so that the glob, *, is fully expanded.
-  postgres_datadir=$(echo "${SERVER_DATA_DIR?}"/postgresql/*/data)
+  postgres_datadirs=(
+    "${SERVER_DATA_DIR?}"/postgresql/*/data
+  )
   postgres_config_files=(
     'postgresql.conf'
     'postmaster.opts'
     'pg_ident.conf'
     'pg_hba.conf'
   )
-  for f in "${postgres_config_files[@]}"; do
-    if [[ -f "${postgres_datadir}/${f}" ]]; then
-      mkdir -p "${DROP}/enterprise/etc/puppetlabs/postgres"
-      cp -Lp "${postgres_datadir}/${f}" "${DROP}/enterprise/etc/puppetlabs/postgres/"
+  for d in "${postgres_datadirs[@]}"; do
+    if [[ -e "${d}" ]]; then
+      postgres_drop_location="${DROP}/enterprise/etc/puppetlabs/postgres/$(basename "$(dirname "${d}")")"
+      mkdir -p "${postgres_drop_location}"
+
+      for f in "${postgres_config_files[@]}"; do
+        if [[ -f "${d}/${f}" ]]; then
+          cp -Lp "${d}/${f}" "${postgres_drop_location}/${f}"
+        fi
+      done
     fi
   done
 
