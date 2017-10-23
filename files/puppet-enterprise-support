@@ -1018,7 +1018,7 @@ list_pe_and_module_files() {
   for dir in ${enterprise_dirs}; do
     dir_desc=$(echo "${dir}" | sed 's,\/,_,g')
     if [ -d "${dir}" ]; then
-      find "${dir}" -ls > "${DROP?}/enterprise/find/${dir_desc}.txt"
+      find "${dir}" -ls | gzip -f9 > "${DROP?}/enterprise/find/${dir_desc}.txt.gz"
     else
       echo "No directory ${dir}" > "${DROP}/enterprise/find/${dir_desc}.txt"
     fi
