@@ -1057,6 +1057,10 @@ check_r10k() {
   if [[ -x "${PUPPET_BIN_DIR}/r10k" ]] && [[ -n "${r10k_config}" ]]; then
     run_diagnostic "${PUPPET_BIN_DIR}/r10k deploy display -p --detail -c ${r10k_config}" "enterprise/r10k_deploy_display.txt"
   fi
+
+  if [[ -x "/opt/puppetlabs/server/data/code-manager" ]]; then
+    run_diagnostic "du -h --max-depth=1 /opt/puppetlabs/server/data/code-manager/" "resources/r10k_cache_sizes_from_du.txt"
+  fi
 }
 
 # Gather all changes to the installed Puppet Enterprise modules
@@ -1300,6 +1304,8 @@ check_thundering_herd() {
 
 filesync_state() {
   if [ -x /opt/puppetlabs/server/data/puppetserver/filesync ]; then
+    run_diagnostic "du -h --max-depth=1 /opt/puppetlabs/server/data/puppetserver/filesync/" "resources/filesync_repo_sizes_from_du.txt"
+
     # If explicitly requested, grab filesync data.
     if [ "$FILESYNC" = "y" ]; then
       cp -Rp /opt/puppetlabs/server/data/puppetserver/filesync "${DROP?}/enterprise"
