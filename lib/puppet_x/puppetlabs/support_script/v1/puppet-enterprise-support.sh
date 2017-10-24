@@ -717,6 +717,7 @@ grab_env_vars() {
 #
 # Global Variables Used:
 #   DROP
+#   SERVER_DATA_DIR
 #
 # Arguments:
 #   None
@@ -726,6 +727,7 @@ grab_env_vars() {
 pe_logs() {
   local pe_services
   local agent_services
+  local pg_upgrade_logs
 
   cp -LpR /var/log/puppetlabs/* "${DROP?}/logs"
 
@@ -763,6 +765,24 @@ pe_logs() {
     mkdir -p "${DROP}/logs/peadmin"
     cp -LpR /var/lib/peadmin/.mcollective.d/client.log* "${DROP}/logs/peadmin"
   fi
+
+
+  # Logs left by pg_upgrade if migration of Postgres data fails.
+  # pg_upgrade # writes these to the directory it was run from
+  # which is set to $SERVER_DATA_DIR/postgresql by the pe_install
+  # module.
+  pg_upgrade_logs=(
+    'pg_upgrade_internal.log'
+    'pg_upgrade_server.log'
+    'pg_upgrade_utility.log'
+  )
+
+  for f in "${pg_upgrade_logs[@]}"; do
+    if [[ -f "${SERVER_DATA_DIR?}/postgresql/${f}" ]]; then
+      mkdir -p "${DROP}/logs/postgresql"
+      cp -Lp "${SERVER_DATA_DIR?}/postgresql/${f}" "${DROP}/logs/postgresql/${f}"
+    fi
+  done
 }
 
 # Copy PE metrics to support script output
@@ -837,7 +857,8 @@ other_logs() {
 gather_enterprise_files() {
   local pe_config_files
   local config_dir
-  local postgres_datadir
+  local postgres_datadirs
+  local postgres_drop_location
   local postgres_config_files
 
   # Whitelist of configuration files and directories to copy. Each entry is
@@ -928,18 +949,25 @@ gather_enterprise_files() {
 
   # Collect Postgres configuration if present
 
-  # NOTE: Echo is used here so that the glob, *, is fully expanded.
-  postgres_datadir=$(echo "${SERVER_DATA_DIR?}"/postgresql/*/data)
+  postgres_datadirs=(
+    "${SERVER_DATA_DIR?}"/postgresql/*/data
+  )
   postgres_config_files=(
     'postgresql.conf'
     'postmaster.opts'
     'pg_ident.conf'
     'pg_hba.conf'
   )
-  for f in "${postgres_config_files[@]}"; do
-    if [[ -f "${postgres_datadir}/${f}" ]]; then
-      mkdir -p "${DROP}/enterprise/etc/puppetlabs/postgres"
-      cp -Lp "${postgres_datadir}/${f}" "${DROP}/enterprise/etc/puppetlabs/postgres/"
+  for d in "${postgres_datadirs[@]}"; do
+    if [[ -e "${d}" ]]; then
+      postgres_drop_location="${DROP}/enterprise/etc/puppetlabs/postgres/$(basename "$(dirname "${d}")")"
+      mkdir -p "${postgres_drop_location}"
+
+      for f in "${postgres_config_files[@]}"; do
+        if [[ -f "${d}/${f}" ]]; then
+          cp -Lp "${d}/${f}" "${postgres_drop_location}/${f}"
+        fi
+      done
     fi
   done
 
@@ -990,7 +1018,7 @@ list_pe_and_module_files() {
   for dir in ${enterprise_dirs}; do
     dir_desc=$(echo "${dir}" | sed 's,\/,_,g')
     if [ -d "${dir}" ]; then
-      find "${dir}" -ls > "${DROP?}/enterprise/find/${dir_desc}.txt"
+      find "${dir}" -ls | gzip -f9 > "${DROP?}/enterprise/find/${dir_desc}.txt.gz"
     else
       echo "No directory ${dir}" > "${DROP}/enterprise/find/${dir_desc}.txt"
     fi
@@ -1028,6 +1056,10 @@ check_r10k() {
 
   if [[ -x "${PUPPET_BIN_DIR}/r10k" ]] && [[ -n "${r10k_config}" ]]; then
     run_diagnostic "${PUPPET_BIN_DIR}/r10k deploy display -p --detail -c ${r10k_config}" "enterprise/r10k_deploy_display.txt"
+  fi
+
+  if [[ -x "/opt/puppetlabs/server/data/code-manager" ]]; then
+    run_diagnostic "du -h --max-depth=1 /opt/puppetlabs/server/data/code-manager/" "resources/r10k_cache_sizes_from_du.txt"
   fi
 }
 
@@ -1289,6 +1321,8 @@ check_thundering_herd() {
 
 filesync_state() {
   if [ -x /opt/puppetlabs/server/data/puppetserver/filesync ]; then
+    run_diagnostic "du -h --max-depth=1 /opt/puppetlabs/server/data/puppetserver/filesync/" "resources/filesync_repo_sizes_from_du.txt"
+
     # If explicitly requested, grab filesync data.
     if [ "$FILESYNC" = "y" ]; then
       cp -Rp /opt/puppetlabs/server/data/puppetserver/filesync "${DROP?}/enterprise"
