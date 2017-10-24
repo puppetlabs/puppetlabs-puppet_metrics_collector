@@ -1466,9 +1466,9 @@ else
 fi
 
 if [ "x${PLATFORM_NAME?}" = "xsolaris" ]; then
-  DF=$(df -b "$OUTPUT_DIRECTORY" | $PLATFORM_EGREP -v Filesystem | awk '{print $2}')
+  DF=$(df -b "$OUTPUT_DIRECTORY" | tail -1 | awk '{print $2}')
 else
-  DF=$(df -Pk "$OUTPUT_DIRECTORY" | $PLATFORM_EGREP -v Filesystem | awk '{print $4}')
+  DF=$(df -Pk "$OUTPUT_DIRECTORY" | tail -n1 | awk '{print $4}')
 fi
 
 # Look for at least enough size for the logs, metrics, and 25MB of overhead
