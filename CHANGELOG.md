@@ -81,6 +81,32 @@ Major release of the Support Script bundled with PE 2016.5.0.
       lib/puppet_x/puppetlabs/support_script/v1/puppet-enterprise-support.sh
 
 
+## Release 1.8.0
+
+### Summary
+
+Feature and bugfix release of the Support Script bundled with PE 2016.4.9.
+
+### Features
+
+  - Support script collects logs left by `pg_upgrade` if Postgresql
+    migration fails.
+
+  - The disk space used by r10k caches and File Sync repositories is
+    measured and reported to `resources/`.
+
+  - The output of `find -ls` diagnostics is piped through gzip to reduce
+    space consumed by the support script during data collection.
+
+### Bug Fixes
+
+  - The check for free disk space no longer parses `df` output in a
+    mannner that is sensitive to the OS locale.
+
+  - Support script can collect Postgres configuration when multiple
+    `PG_DATA` directories are present due to a migration.
+
+
 ## Release 1.7.0
 
 ### Summary
