@@ -1,3 +1,12 @@
+## Release 2.6.0
+
+### Summary
+
+Feature and bugfix release of the Support Script bundled with PE 2017.2.5 and
+PE 2017.3.2. See release notes for version 1.8.0 for a list of improvements
+and bugfixes.
+
+
 ## Release 2.5.0
 
 ### Summary
