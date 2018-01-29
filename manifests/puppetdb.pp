@@ -1,9 +1,11 @@
+<<<<<<< HEAD
 class puppet_metrics_collector::puppetdb (
   Integer       $collection_frequency = $puppet_metrics_collector::collection_frequency,
   Integer       $retention_days       = $puppet_metrics_collector::retention_days,
   String        $metrics_ensure       = $puppet_metrics_collector::puppetdb_metrics_ensure,
   Array[String] $hosts                = $puppet_metrics_collector::puppetdb_hosts,
   Integer       $port                 = $puppet_metrics_collector::puppetdb_port,
+  Optional[String] $influxdb_host     = $puppet_metrics_collector::influxdb_host,
 ) {
   Puppet_metrics_collector::Pe_metric {
     output_dir     => $puppet_metrics_collector::output_dir,
@@ -185,5 +187,6 @@ class puppet_metrics_collector::puppetdb (
     metrics_port       => $_port,
     ssl                => $_ssl,
     additional_metrics => $additional_metrics,
+    influxdb_host      => $influxdb_host,
   }
 }
