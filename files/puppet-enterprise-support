@@ -787,8 +787,8 @@ pe_logs() {
 
 # Copy PE metrics to support script output
 #
-# Captures data produced by the pe_metric_curl_cron_jobs
-# module.
+# Captures data produced by the puppet_metrics_collector module, or its
+# predecessor, the pe_metric_curl_cron_jobs module.
 #
 # Global Variables Used:
 #   DROP
@@ -799,7 +799,10 @@ pe_logs() {
 # Returns:
 #   None
 pe_metrics() {
-  if [[ -d /opt/puppetlabs/pe_metric_curl_cron_jobs ]]; then
+  if [[ -d /opt/puppetlabs/puppet-metrics-collector ]]; then
+    mkdir -p "${DROP?}/metrics"
+    cp -LpR /opt/puppetlabs/puppet-metrics-collector "${DROP}/metrics/"
+  elif [[ -d /opt/puppetlabs/pe_metric_curl_cron_jobs ]]; then
     mkdir -p "${DROP?}/metrics"
     cp -LpR /opt/puppetlabs/pe_metric_curl_cron_jobs "${DROP}/metrics/"
   fi
