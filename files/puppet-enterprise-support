@@ -567,11 +567,7 @@ db_size_from_psql() {
 }
 
 db_size_from_fs() {
-  local db=$1
-  local drop_file=resources/db_sizes_from_du.txt
-  local oid=$(su - pe-postgres -s ${SHELL} -c "${SERVER_BIN_DIR?}/psql -t -c \"SELECT oid FROM pg_database WHERE datname='$db';\"")
-
-  run_diagnostic "echo -e -n '${db}\t' ; find ${SERVER_DATA_DIR}/postgresql/ -name ${oid} -print0 | xargs -0 du -sh " "$drop_file"
+  run_diagnostic "ls -d /opt/puppetlabs/server/data/postgresql/*/PG_9* /opt/puppetlabs/server/data/postgresql/*/data | xargs du -sh" "resources/db_sizes_from_du.txt"
 }
 
 db_size_checks() {
@@ -581,10 +577,9 @@ db_size_checks() {
   for db in $database_names; do
     # Find size via psql
     db_size_from_psql $db
-
-    # Find size via filesystem
-    db_size_from_fs $db
   done
+  # Find size via filesystem
+  db_size_from_fs
 }
 
 free_checks() {
