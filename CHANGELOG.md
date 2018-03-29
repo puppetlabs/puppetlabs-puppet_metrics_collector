@@ -225,7 +225,7 @@ Feature release of the Support Script bundled with PE 2016.4.3.
 
   - The output of the Orchestration Services status/ endpoint is collected.
 
-  - Metrics produced by the pe_metric_curl_cron_jobs module are collected
+  - Metrics produced by the pe\_metric\_curl\_cron\_jobs module are collected
     if available.
 
   - Additional configuration files are collected from PE Postgres along with
