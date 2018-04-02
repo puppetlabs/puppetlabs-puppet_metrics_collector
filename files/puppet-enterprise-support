@@ -1305,6 +1305,12 @@ check_thundering_herd() {
   run_diagnostic --user pe-postgres "${SERVER_BIN_DIR?}/psql -d pe-puppetdb -c \"${thundering_herd_query}\"" "enterprise/thundering_herd_query.txt"
 }
 
+# Pull the database statistics
+db_stat_checks() {
+  run_diagnostic --user pe-postgres "${SERVER_BIN_DIR}/psql -c 'select * from pg_stat_activity order by query_start'" "enterprise/db_stat_activity.txt"
+}
+
+
 filesync_state() {
   if [ -x /opt/puppetlabs/server/data/puppetserver/filesync ]; then
     run_diagnostic "du -h --max-depth=1 /opt/puppetlabs/server/data/puppetserver/filesync/" "resources/filesync_repo_sizes_from_du.txt"
@@ -1532,6 +1538,7 @@ if is_package_installed 'pe-postgresql-server'; then
   get_db_settings
   get_rbac_directory_settings_info
   check_thundering_herd
+  db_stat_checks
 fi
 
 if is_package_installed 'pe-puppetdb'; then
