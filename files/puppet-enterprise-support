@@ -1024,11 +1024,21 @@ list_pe_and_module_files() {
 }
 
 # Gather all modules installed on the modulepath
+# Expects enterprise/puppetserver_environments.json to already be in place from puppetserver_environments()
 module_listing() {
-  if [ -f "${PUPPET_BIN_DIR?}/puppet" ]; then
-    run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list --color=false" "enterprise/modules.txt"
-    run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list --render-as yaml" "enterprise/modules.yaml"
-  fi
+  local environments=$("${PUPPET_BIN_DIR}/ruby" -rjson -e 'puts JSON.load(ARGF.read)["environments"].keys.join(" ")' "${DROP}/enterprise/puppetserver_environments.json")
+
+  run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list --color=false" "enterprise/modules.txt"
+  run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list --render-as yaml" "enterprise/modules.yaml"
+
+  mkdir -p "${DROP}/enterprise/modules"
+  for env in $environments; do
+    if [ "$env" == "production" ]; then
+      continue
+    fi
+    run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list --color=false --environment=$env" "enterprise/modules/modules-${env}.txt"
+    run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list --render-as yaml --environment=$env" "enterprise/modules/modules-${env}.yaml"
+  done
 }
 
 # Check r10k deployment status
@@ -1509,12 +1519,12 @@ other_logs
 ifconfig_output
 
 if is_package_installed 'pe-puppetserver'; then
-  module_listing
   module_changes
   check_certificates
   check_r10k
   puppetserver_status
   puppetserver_environments
+  module_listing
   filesync_state
 fi
 
