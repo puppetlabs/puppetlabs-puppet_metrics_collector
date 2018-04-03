@@ -567,11 +567,7 @@ db_size_from_psql() {
 }
 
 db_size_from_fs() {
-  local db=$1
-  local drop_file=resources/db_sizes_from_du.txt
-  local oid=$(su - pe-postgres -s ${SHELL} -c "${SERVER_BIN_DIR?}/psql -t -c \"SELECT oid FROM pg_database WHERE datname='$db';\"")
-
-  run_diagnostic "echo -e -n '${db}\t' ; find ${SERVER_DATA_DIR}/postgresql/ -name ${oid} -print0 | xargs -0 du -sh " "$drop_file"
+  run_diagnostic "ls -d /opt/puppetlabs/server/data/postgresql/*/PG_9* /opt/puppetlabs/server/data/postgresql/*/data | xargs du -sh" "resources/db_sizes_from_du.txt"
 }
 
 db_size_checks() {
@@ -581,10 +577,9 @@ db_size_checks() {
   for db in $database_names; do
     # Find size via psql
     db_size_from_psql $db
-
-    # Find size via filesystem
-    db_size_from_fs $db
   done
+  # Find size via filesystem
+  db_size_from_fs
 }
 
 free_checks() {
@@ -1029,11 +1024,21 @@ list_pe_and_module_files() {
 }
 
 # Gather all modules installed on the modulepath
+# Expects enterprise/puppetserver_environments.json to already be in place from puppetserver_environments()
 module_listing() {
-  if [ -f "${PUPPET_BIN_DIR?}/puppet" ]; then
-    run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list --color=false" "enterprise/modules.txt"
-    run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list --render-as yaml" "enterprise/modules.yaml"
-  fi
+  local environments=$("${PUPPET_BIN_DIR}/ruby" -rjson -e 'puts JSON.load(ARGF.read)["environments"].keys.join(" ")' "${DROP}/enterprise/puppetserver_environments.json")
+
+  run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list --color=false" "enterprise/modules.txt"
+  run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list --render-as yaml" "enterprise/modules.yaml"
+
+  mkdir -p "${DROP}/enterprise/modules"
+  for env in $environments; do
+    if [ "$env" == "production" ]; then
+      continue
+    fi
+    run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list --color=false --environment=$env" "enterprise/modules/modules-${env}.txt"
+    run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list --render-as yaml --environment=$env" "enterprise/modules/modules-${env}.yaml"
+  done
 }
 
 # Check r10k deployment status
@@ -1322,6 +1327,12 @@ check_thundering_herd() {
   run_diagnostic --user pe-postgres "${SERVER_BIN_DIR?}/psql -d pe-puppetdb -c \"${thundering_herd_query}\"" "enterprise/thundering_herd_query.txt"
 }
 
+# Pull the database statistics
+db_stat_checks() {
+  run_diagnostic --user pe-postgres "${SERVER_BIN_DIR}/psql -c 'select * from pg_stat_activity order by query_start'" "enterprise/db_stat_activity.txt"
+}
+
+
 filesync_state() {
   if [ -x /opt/puppetlabs/server/data/puppetserver/filesync ]; then
     run_diagnostic "du -h --max-depth=1 /opt/puppetlabs/server/data/puppetserver/filesync/" "resources/filesync_repo_sizes_from_du.txt"
@@ -1526,12 +1537,12 @@ other_logs
 ifconfig_output
 
 if is_package_installed 'pe-puppetserver'; then
-  module_listing
   module_changes
   check_certificates
   check_r10k
   puppetserver_status
   puppetserver_environments
+  module_listing
   filesync_state
 fi
 
@@ -1551,6 +1562,7 @@ if is_package_installed 'pe-postgresql-server'; then
   get_db_settings
   get_rbac_directory_settings_info
   check_thundering_herd
+  db_stat_checks
 fi
 
 if is_package_installed 'pe-puppetdb'; then
