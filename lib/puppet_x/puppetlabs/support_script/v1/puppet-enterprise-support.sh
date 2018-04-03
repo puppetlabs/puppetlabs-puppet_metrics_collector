@@ -1026,19 +1026,10 @@ list_pe_and_module_files() {
 # Gather all modules installed on the modulepath
 # Expects enterprise/puppetserver_environments.json to already be in place from puppetserver_environments()
 module_listing() {
-  local environments=$("${PUPPET_BIN_DIR}/ruby" -rjson -e 'puts JSON.load(ARGF.read)["environments"].keys.join(" ")' "${DROP}/enterprise/puppetserver_environments.json")
+  local agent_cert=$("${PUPPET_BIN_DIR}/puppet" config print --section agent hostcert)
+  local agent_key=$("${PUPPET_BIN_DIR}/puppet" config print --section agent hostprivkey)
 
-  run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list --color=false" "enterprise/modules.txt"
-  run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list --render-as yaml" "enterprise/modules.yaml"
-
-  mkdir -p "${DROP}/enterprise/modules"
-  for env in $environments; do
-    if [ "$env" == "production" ]; then
-      continue
-    fi
-    run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list --color=false --environment=$env" "enterprise/modules/modules-${env}.txt"
-    run_diagnostic "${PUPPET_BIN_DIR?}/puppet module list --render-as yaml --environment=$env" "enterprise/modules/modules-${env}.yaml"
-  done
+  run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --connect-timeout 5 --max-time 60 -k https://${PLATFORM_HOSTNAME}:8140/puppet/v3/environment_modules --cert ${agent_cert} --key ${agent_key}" "enterprise/modules.json"
 }
 
 # Check r10k deployment status
