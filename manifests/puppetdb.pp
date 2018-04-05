@@ -180,8 +180,8 @@ class puppet_metrics_collector::puppetdb (
   }
 
   puppet_metrics_collector::pe_metric { 'puppetdb' :
-    metric_ensure => $metrics_ensure,
-    hosts         => $hosts,
+    metric_ensure      => $metrics_ensure,
+    hosts              => $hosts,
     metrics_port       => $_port,
     ssl                => $_ssl,
     additional_metrics => $additional_metrics,

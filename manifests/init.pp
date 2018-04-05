@@ -24,9 +24,9 @@ class puppet_metrics_collector (
   }
 
   file { "${scripts_dir}/tk_metrics" :
-    ensure  => present,
-    mode    => '0755',
-    source  => 'puppet:///modules/puppet_metrics_collector/tk_metrics'
+    ensure => present,
+    mode   => '0755',
+    source => 'puppet:///modules/puppet_metrics_collector/tk_metrics'
   }
 
   file { "${bin_dir}/puppet-metrics-collector":
@@ -40,11 +40,11 @@ class puppet_metrics_collector (
   }
 
   $symlink_ensure = $symlink_puppet_metrics_collector ? {
-    false  => 'absent',
-    true   => 'symlink',
+    false => 'absent',
+    true  => 'symlink',
   }
 
-  file { "/opt/puppetlabs/bin/puppet-metrics-collector":
+  file { '/opt/puppetlabs/bin/puppet-metrics-collector':
     ensure => $symlink_ensure,
     target => "${bin_dir}/puppet-metrics-collector",
   }
