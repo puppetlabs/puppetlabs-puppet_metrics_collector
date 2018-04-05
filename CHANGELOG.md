@@ -5,6 +5,12 @@ had previously been preserved for backwards compatiblity. The new name of the
 project aligns it with the value it provides, and eliminates long incorrect
 technology references to its implementation from the name.
 
+Note: If upgrading to puppet\_metrics\_collector 5.x from a
+pe\_metric\_curl\_cron\_jobs version older than 4.6.0, it is recommended that
+you deploy pe\_metric\_curl\_cron\_jobs 4.6.0 first, let Puppet run, and then
+upgrade to puppet\_metrics\_collector 5.x in order to ensure that all cleanup
+and migration work is performed smoothly.
+
 ## Changes
  - Rename the project from "pe\_metric\_curl\_cron\_jobs" to "puppet\_metrics\_collector"
  - Remove deprecated parameters
