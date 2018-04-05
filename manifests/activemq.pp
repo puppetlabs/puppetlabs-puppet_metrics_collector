@@ -53,16 +53,16 @@ class puppet_metrics_collector::activemq (
   ]
 
   file { "${scripts_dir}/amq_metrics" :
-    ensure  => present,
-    mode    => '0744',
-    source  => 'puppet:///modules/puppet_metrics_collector/amq_metrics',
+    ensure => present,
+    mode   => '0744',
+    source => 'puppet:///modules/puppet_metrics_collector/amq_metrics',
   }
 
   puppet_metrics_collector::pe_metric { 'activemq' :
-    metric_ensure          => $metrics_ensure,
-    hosts                  => $hosts,
-    metrics_port           => $port,
-    metric_script_file     => 'amq_metrics',
-    additional_metrics     => $additional_metrics,
+    metric_ensure      => $metrics_ensure,
+    hosts              => $hosts,
+    metrics_port       => $port,
+    metric_script_file => 'amq_metrics',
+    additional_metrics => $additional_metrics,
   }
 }

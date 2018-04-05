@@ -1,8 +1,8 @@
 define puppet_metrics_collector::pe_metric (
-  Enum['absent', 'present'] $metric_ensure  = 'present',
   String                    $output_dir,
   String                    $scripts_dir,
   Integer                   $metrics_port,
+  Enum['absent', 'present'] $metric_ensure  = 'present',
   String                    $metrics_type   = $title,
   Array[String]             $hosts          = [ '127.0.0.1' ],
   String                    $cron_minute    = '*/5',
@@ -51,11 +51,11 @@ define puppet_metrics_collector::pe_metric (
   file { $metrics_tidy_script_path :
     ensure  => $metric_ensure,
     mode    => '0744',
-    content => epp('puppet_metrics_collector/tidy_cron.epp',
-                   { 'metrics_output_dir' => $metrics_output_dir,
-                     'metrics_type'       => $metrics_type,
-                     'retention_days'     => $retention_days,
-                   }),
+    content => epp('puppet_metrics_collector/tidy_cron.epp', {
+      'metrics_output_dir' => $metrics_output_dir,
+      'metrics_type'       => $metrics_type,
+      'retention_days'     => $retention_days,
+    }),
   }
 
   cron { "${metrics_type}_metrics_tidy" :
