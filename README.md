@@ -35,7 +35,7 @@ You have a new directory `/opt/puppetlabs/puppet-metrics-collector` that has one
 
 Here's an example:
 
-~~~
+```
 /opt/puppetlabs/puppet-metrics-collector/puppetserver
 ├── 127.0.0.1
 │   ├── 20170404T020001Z.json
@@ -50,7 +50,7 @@ Here's an example:
 │   ├── 20170404T170501Z.json
 │   ├── 20170404T171001Z.json
 └── puppetdb-2017.04.04.02.00.01.tar.bz2
-~~~
+```
 
 ## Cron jobs
 
@@ -58,50 +58,50 @@ Each component has two cron jobs created for it.
 
 - A cron job to gather the metrics
   - Runs every 5 minutes
-- A cron job to delete metrics past the rentention_days and compress metrics
+- A cron job to delete metrics past the rentention\_days and compress metrics
   - Runs at randomly selected time between midnight and 3AM
 
 Example:
 
-~~~
+```
 crontab -l
 ...
 # Puppet Name: puppetserver_metrics_collection
 */5 * * * * /opt/puppetlabs/puppet-metrics-collector/scripts/puppetserver_metrics
 # Puppet Name: puppetserver_metrics_tidy
 0 2 * * * /opt/puppetlabs/puppet-metrics-collector/scripts/puppetserver_metrics_tidy
-~~~
+```
 
 ## Grepping for Metrics
 
 You can get useful information with a grep like the one below run from inside of the directory containing the metrics files.  Since the metrics are compressed every night you can only grep metrics for the current day.  If you'd like to grep over a longer period of time you should decompress the compressed tarballs into `/tmp` and investigate further.
 
-~~~
+```
 cd /opt/puppetlabs/puppet-metrics-collector
 grep <metric_name> <component_name>/127.0.0.1/*.json
-~~~
+```
 
 ### Puppetserver
 
 Example output:
 
-~~~
+```
 grep average-free-jrubies puppetserver/127.0.0.1/*.json
 puppetserver/127.0.0.1/20170404T170501Z.json:                "average-free-jrubies": 0.9950009285369501,
 puppetserver/127.0.0.1/20170404T171001Z.json:                "average-free-jrubies": 0.9999444653324225,
 puppetserver/127.0.0.1/20170404T171502Z.json:                "average-free-jrubies": 0.9999993830655706,
-~~~
+```
 
 ### PuppetDB
 
 Example output:
 
-~~~
+```
 grep queue_depth puppetdb/127.0.0.1/*.json
 puppetdb/127.0.0.1/20170404T170501Z.json:            "queue_depth": 0,
 puppetdb/127.0.0.1/20170404T171001Z.json:            "queue_depth": 0,
 puppetdb/127.0.0.1/20170404T171502Z.json:            "queue_depth": 0,
-~~~
+```
 
 PE 2016.5 and below:
 
@@ -133,7 +133,7 @@ The script creates a tarball containing your metrics in the current working dire
 
 # How to use
 
-Install the module with `puppet module install npwalker-puppet_metrics_collector` or add it to your Puppetfile.
+Install the module with `puppet module install puppetlabs-puppet_metrics_collector` or add it to your Puppetfile.
 
 To start data collection you will need to classify your puppet master with the `puppet_metrics_collector` class using your preferred classification method.
 
@@ -148,41 +148,41 @@ None needed for a monolithic install
 
 ### Class Definition
 
-~~~
+```
 include puppet_metrics_collector
-~~~
+```
 
 ## Split Install ( Running on the Master )
 
 ### Hiera data Example
 
-~~~
+```
 puppet_metrics_collector::puppetdb_hosts:
  - 'split-puppetdb.domain.com'
-~~~
+```
 
 ### Class Definition Example
 
-~~~
+```
 class { 'puppet_metrics_collector':
   puppetdb_hosts => ['split-puppetdb.domain.com']
 }
-~~~
+```
 
 ## Monolithic With Compile Masters ( Running on the MoM )
 
 ### Hiera data Example
 
-~~~
+```
 puppet_metrics_collector::puppetserver_hosts:
  - 'master-1.domain.com'
  - 'compile-master-1.domain.com'
  - 'compile-master-2.domain.com'
-~~~
+```
 
 ### Class Definition Example
 
-~~~
+```
 class { 'puppet_metrics_collector':
   puppetserver_hosts => [
     'master-1.domain.com',
@@ -190,24 +190,24 @@ class { 'puppet_metrics_collector':
     'compile-master-2.domain.com'
   ]
 }
-~~~
+```
 
 ## Split With Compile Masters ( Running on the MoM )
 
 ### Hiera data Example
 
-~~~
+```
 puppet_metrics_collector::puppetdb_hosts:
  - 'split-puppetdb.domain.com'
 puppet_metrics_collector::puppetserver_hosts:
  - 'master-1.domain.com'
  - 'compile-master-1.domain.com'
  - 'compile-master-2.domain.com'
-~~~
+```
 
 ### Class Definition Example
 
-~~~
+```
 class { 'puppet_metrics_collector':
   puppetdb_hosts => ['split-puppetdb.domain.com'],
   puppetserver_hosts => [
@@ -216,24 +216,24 @@ class { 'puppet_metrics_collector':
     'compile-master-2.domain.com'
   ]
 }
-~~~
+```
 
 ## Running on PE 3.8
 
 You can still use this module on PE 3.8 although you have to run it with the future parser and you want to use `/opt/puppet` instead of `/opt/puppetlabs`. If the [future parser](https://docs.puppet.com/puppet/3.8/experiments_future.html) is enabled in the environment or globally, the following can be put in the site.pp.
 
-~~~
+```
 class { 'puppet_metrics_collector':
   output_dir => '/opt/puppet/puppet_metrics_collector'
 }
-~~~
+```
 
 The module can be run in a one off run if the future parser is not enabled in the environment.
 
-~~~
-puppet module install npwalker-puppet_metrics_collector --modulepath /tmp;
+```
+puppet module install puppetlabs-puppet_metrics_collector --modulepath /tmp;
 puppet apply -e "class { 'puppet_metrics_collector' : output_dir => '/opt/puppet/puppet_metrics_collector' }"  --modulepath /tmp --parser=future
-~~~
+```
 
 If you do not want to manage this long term and want to get it up and running quickly you can run it via puppet apply. Make sure the puppetlabs-stdlib module is installed. Refer to the other examples if you want to change other parameters.
 
@@ -241,10 +241,10 @@ If you do not want to manage this long term and want to get it up and running qu
 
 The module installation is the best way to utilize this module, but it can be run on a one off basis with the following command.
 
-~~~
-puppet module install npwalker-puppet_metrics_collector --modulepath /tmp;
+```
+puppet module install puppetlabs-puppet_metrics_collector --modulepath /tmp;
 puppet apply -e "class { 'puppet_metrics_collector': }" --modulepath /tmp;
-~~~
+```
 
 ## Alternate Option for Multi-node Metrics Collection
 
