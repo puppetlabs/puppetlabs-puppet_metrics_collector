@@ -1454,7 +1454,7 @@ read_params() {
   CLASSIFIER=false
   ENCRYPT_OUTPUT=false
   local OPTARG opt
-  while getopts ":d:t:c:e" opt; do
+  while getopts ":d:t:ce" opt; do
     case $opt in
       d) OUTPUT_DIRECTORY="$OPTARG"
         ;;
