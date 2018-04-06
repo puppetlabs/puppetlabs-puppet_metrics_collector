@@ -11,6 +11,10 @@ Puppet::Face.define(:enterprise, '1.0.0') do
       summary 'Toggle to pull classification data.'
     end
 
+    option '--encrypt' do
+      summary 'Toggle to GPG encrypt the resulting tarball.'
+    end
+
     option '--dir DIRECTORY' do
       summary 'Optional output directory.'
       default_to { '' }
@@ -41,6 +45,10 @@ EOS
 
       if options[:classifier]
         support_script_parameters.push("-c")
+      end
+
+      if options[:encrypt]
+        support_script_parameters.push("-e")
       end
 
       if options[:dir] != ''
