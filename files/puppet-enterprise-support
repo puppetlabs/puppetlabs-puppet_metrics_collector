@@ -820,12 +820,12 @@ pe_logs() {
     # Therefore, we mask the exit code with `|| true` so that tests pass.
     for s in "${pe_services[@]}"; do
       if [[ -d "${DROP}/logs/${s}" ]]; then
-        run_diagnostic "journalctl --full --unit=pe-${s} ${journalctl_filter[*]} || true" "logs/${s}/${s}-journalctl.log"
+        run_diagnostic "journalctl --full --output=short-iso --unit=pe-${s} ${journalctl_filter[*]} || true" "logs/${s}/${s}-journalctl.log"
       fi
     done
 
     for s in "${agent_services[@]}"; do
-      run_diagnostic "journalctl --full --unit=${s} ${journalctl_filter[*]} || true" "logs/${s}-journalctl.log"
+      run_diagnostic "journalctl --full --output=short-iso --unit=${s} ${journalctl_filter[*]} || true" "logs/${s}-journalctl.log"
     done
   fi
 
