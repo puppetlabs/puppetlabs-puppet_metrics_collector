@@ -20,6 +20,11 @@ Puppet::Face.define(:enterprise, '1.0.0') do
       default_to { '' }
     end
 
+    option '--log-age NUMBER|all' do
+      summary 'Maximum age in days of logfiles to collect. Defaults to 14, "all" may be used to collect all files.'
+      default_to { '14' }
+    end
+
     option '--ticket NUMBER' do
       summary 'Optional support ticket number.'
       default_to { '' }
@@ -54,7 +59,16 @@ EOS
       if options[:dir] != ''
         support_script_parameters.push("-d#{options[:dir]}")
       end
-      
+
+      unless options[:log_age].nil?
+        if options[:log_age].match(/\Aall|[0-9]+\Z/)
+          support_script_parameters.push("-l#{options[:log_age]}")
+        else
+          Puppet.err("The argument to --log-age must be a number or the string 'all'. Got: #{options[:log_age]}")
+          exit 1
+        end
+      end
+
       if options[:ticket] != ''
         if options[:ticket] =~ /^[a-zA-Z0-9\-]+$/
           support_script_parameters.push("-t#{options[:ticket]}")

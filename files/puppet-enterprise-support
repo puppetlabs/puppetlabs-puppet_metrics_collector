@@ -766,6 +766,7 @@ grab_env_vars() {
 # Global Variables Used:
 #   DROP
 #   SERVER_DATA_DIR
+#   MAX_LOG_AGE
 #
 # Arguments:
 #   None
@@ -776,8 +777,27 @@ pe_logs() {
   local pe_services
   local agent_services
   local pg_upgrade_logs
+  local find_filter=()
+  local journalctl_filter=()
 
-  cp -LpR /var/log/puppetlabs/* "${DROP?}/logs"
+  # A little odd, but portable. Tests that the value of MAX_LOG_AGE
+  # does not match a glob expression for non-digit characters.
+  if [[ $MAX_LOG_AGE != *[!0-9]* ]];then
+    find_filter=('-mtime' "-${MAX_LOG_AGE}")
+    journalctl_filter=('--since' "'${MAX_LOG_AGE} days ago'")
+  fi
+
+  (
+    cd /var/log/puppetlabs || exit 1
+
+    while IFS= read -r -d $'\0' logfile; do
+      logfile="${logfile#./}"
+      targetdir="${DROP?}/logs/${logfile%/*}"
+
+      [[ -d $targetdir ]] || mkdir -p "${targetdir}"
+      cp -Lp "${logfile}" "${targetdir}/"
+    done < <(find . -type f "${find_filter[@]}" -exec printf '%s\0' {} \;)
+  )
 
   pe_services=(
     'nginx'
@@ -800,12 +820,12 @@ pe_logs() {
     # Therefore, we mask the exit code with `|| true` so that tests pass.
     for s in "${pe_services[@]}"; do
       if [[ -d "${DROP}/logs/${s}" ]]; then
-        run_diagnostic "journalctl --full --unit=pe-${s} || true" "logs/${s}/${s}-journalctl.log"
+        run_diagnostic "journalctl --full --unit=pe-${s} ${journalctl_filter[*]} || true" "logs/${s}/${s}-journalctl.log"
       fi
     done
 
     for s in "${agent_services[@]}"; do
-      run_diagnostic "journalctl --full --unit=${s} || true" "logs/${s}-journalctl.log"
+      run_diagnostic "journalctl --full --unit=${s} ${journalctl_filter[*]} || true" "logs/${s}-journalctl.log"
     done
   fi
 
@@ -1453,10 +1473,18 @@ read_params() {
   TICKET=
   CLASSIFIER=false
   ENCRYPT_OUTPUT=false
+  MAX_LOG_AGE='14'
   local OPTARG opt
-  while getopts ":d:t:ce" opt; do
+  while getopts ":d:l:t:ce" opt; do
     case $opt in
       d) OUTPUT_DIRECTORY="$OPTARG"
+        ;;
+      l)
+        if [[ $OPTARG != *[!0-9]* || $OPTARG = 'all' ]]; then
+          MAX_LOG_AGE="${OPTARG}"
+        else
+          fail "The argument to -l must be a number or the string 'all'. Got: ${OPTARG}"
+        fi
         ;;
       t) TICKET="$OPTARG"
         ;;
