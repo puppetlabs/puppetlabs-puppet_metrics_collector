@@ -491,6 +491,30 @@ function join() {
   echo "$*"
 }
 
+# Pull the given setting from puppet config print
+# Caches this as a file in the DROP directory to prevent the need for
+# multiple calls for the same setting
+#
+# Global Variables Used:
+#  PUPPET_BIN_DIR
+#  DROP
+#
+# Arguments:
+#   $1 = The section of the puppet configuration file ['main','agent','master','user']
+#   $2 = The setting in the puppet configuration file
+#
+function get_puppet_config() {
+  local section="${1?}"
+  local setting="${2?}"
+  local tmpfile="${DROP?}/.config_${section}_${setting}.tmp"
+
+  if [ ! -e "${tmpfile}" ]; then
+    "${PUPPET_BIN_DIR?}/puppet" config print --section "${section}" "${setting}" > "${tmpfile}" || display_error "get_puppet_config error looking up ${setting} in ${section}."
+  fi
+
+  cat "${tmpfile}"
+}
+
 #===[Networking checks]=========================================================
 
 netstat_checks() {
@@ -871,7 +895,7 @@ get_state() {
   local configured_state_dir
   local state_dir
 
-  configured_state_dir=$("${PUPPET_BIN_DIR?}/puppet" config print --section=agent statedir)
+  configured_state_dir=$(get_puppet_config "agent" "statedir")
   state_dir="${configured_state_dir:=/opt/puppetlabs/puppet/cache/state/}"
 
   cp -LpR "${state_dir}" "${DROP?}/enterprise/state"
@@ -1193,7 +1217,7 @@ gem_listing() {
 check_certificates() {
   local cadir
 
-  cadir=$("${PUPPET_BIN_DIR?}/puppet" config print --section master cadir)
+  cadir=$(get_puppet_config "master" "cadir")
 
   if [[ -e "${cadir}" ]]; then
     run_diagnostic "${PUPPET_BIN_DIR?}/puppet cert list --all" "enterprise/certs.txt"
@@ -1292,8 +1316,8 @@ puppetserver_environments() {
   local environments
   local droppath
 
-  agent_cert=$("${PUPPET_BIN_DIR?}/puppet" config print --section agent hostcert)
-  agent_key=$("${PUPPET_BIN_DIR}/puppet" config print --section agent hostprivkey)
+  agent_cert=$(get_puppet_config "agent" "hostcert")
+  agent_key=$(get_puppet_config "agent" "hostprivkey")
 
   run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --fail --connect-timeout 5 --max-time 60 --cert ${agent_cert} --key ${agent_key} -k https://127.0.0.1:8140/puppet/v3/environments" "enterprise/puppetserver_environments.json" || return
 
@@ -1412,8 +1436,8 @@ puppetdb_status() {
 # Curls the classifier groups endpoint
 classifier_data() {
   if $CLASSIFIER ; then
-    agent_cert=$("${PUPPET_BIN_DIR?}/puppet" config print --section agent hostcert)
-    agent_key=$("${PUPPET_BIN_DIR}/puppet" config print --section agent hostprivkey)
+    agent_cert=$(get_puppet_config "agent" "hostcert")
+    agent_key=$(get_puppet_config "agent" "hostprivkey")
 
     run_diagnostic "${PUPPET_BIN_DIR}/curl --silent --show-error --connect-timeout 5 --max-time 60 -k https://${PLATFORM_HOSTNAME}:4433/classifier-api/v1/groups --cert ${agent_cert} --key ${agent_key}" "enterprise/classifier.json"
   fi
@@ -1463,7 +1487,7 @@ read_params() {
   CLASSIFIER=false
   ENCRYPT_OUTPUT=false
   local OPTARG opt
-  while getopts ":d:t:c:e" opt; do
+  while getopts ":d:t:ce" opt; do
     case $opt in
       d) OUTPUT_DIRECTORY="$OPTARG"
         ;;
