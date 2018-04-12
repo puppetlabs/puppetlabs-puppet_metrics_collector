@@ -167,7 +167,7 @@ detect_platform() {
       scientific | scientifics | scientificsl )
         PLATFORM_NAME=rhel
         ;;
-      'suse linux' )
+      suse* )
         PLATFORM_NAME=sles
         ;;
       amazonami )
