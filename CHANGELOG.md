@@ -1,10 +1,19 @@
+## [Release 2.7.0] - 2018-04-13
+
+### Summary
+
+Feature and bugfix release of the Support Script bundled with PE 2017.3.6
+and PE 2018.1.0. See release notes for version 1.9.0 for a list of
+improvements and bugfixes.
+
+
 ## Release 2.6.0
 
 ### Summary
 
 Feature and bugfix release of the Support Script bundled with PE 2017.2.5 and
-PE 2017.3.2. See release notes for version 1.8.0 for a list of improvements
-and bugfixes.
+PE 2017.3.2, PE 2017.3.3, PE 2017.3.4, and PE 2017.3.5. See release notes for
+version 1.8.0 for a list of improvements and bugfixes.
 
 
 ## Release 2.5.0
@@ -344,4 +353,5 @@ installations, not agents.
   - Console status check timeout has been increased from 5 seconds to 60
     seconds.
 
+[Release 2.7.0]: https://github.com/puppetlabs/puppetlabs-pe_support_script/compare/5d0c9ba...2.7.0
 [Release 1.9.0]: https://github.com/puppetlabs/puppetlabs-pe_support_script/compare/c01f3b9...1.9.0
