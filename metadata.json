@@ -1,6 +1,6 @@
 {
   "name": "puppetlabs-pe_support_script",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "author": "puppetlabs",
   "summary": "Provides the enterprise support command.",
   "license": "Puppet Enterprise Software License Agreement",

@@ -1,8 +1,42 @@
+## [Release 1.9.0] - 2018-04-13
+
+### Summary
+
+Feature and bugfix release of the Support Script bundled with PE 2016.4.11.
+
+### Features
+
+  - Support Script captures metrics from the `puppet/puppet_metrics_collector`
+    module.
+
+  - Support Script captures the contents of the `pg_stat_activity` table
+    which shows all DB connections and what they are doing.
+
+  - Support script captures on-disk sizes of database tables when the
+    database service is stopped.
+
+  - Support script captures a list of modules installed in each environment.
+
+  - Support script now accepts an `--encrypt` flag that causes the output
+    tarball to be encrypted using GPG.
+
+  - Support script now accepts a `--log-age` flag that can be used to limit the
+    amount of log data collected. This flag accepts an integer which specifies
+    the maximum age in days for collecting logs. The string "all" may also be
+    passed to enable collection of all logs.
+
+### Bug Fixes
+
+  - Support script no longer fails when running on SLES 12.2 if the
+    `lsb-release` package is installed.
+
+
 ## Release 1.8.0
 
 ### Summary
 
-Feature and bugfix release of the Support Script bundled with PE 2016.4.9.
+Feature and bugfix release of the Support Script bundled with PE 2016.4.9
+and PE 2016.4.10.
 
 ### Features
 
@@ -217,3 +251,5 @@ installations, not agents.
 ### Bug Fixes
   - Console status check timeout has been increased from 5 seconds to 60
     seconds.
+
+[Release 1.9.0]: https://github.com/puppetlabs/puppetlabs-pe_support_script/compare/c01f3b9...1.9.0
