@@ -1,0 +1,13 @@
+---
+mock_with: ':rspec'
+
+appveyor.yml:
+  delete: true
+.gitlab-ci.yml:
+  delete: true
+.project:
+  delete: true
+
+spec/default_facts.yml:
+  extra_facts:
+    pe_server_version: '2016.4.5'
