@@ -18,7 +18,7 @@ class puppet_metrics_collector::puppetserver (
     metrics_port  => $port,
   }
   
-  if $facts['pe_server_version'] < 2018.1.0 {
+  if $facts['pe_server_version'] < '2018.1.0' {
   
     Pe_metric_curl_cron_jobs::Pe_metric <| title == 'puppetserver' |> {
       additional_metrics => [
