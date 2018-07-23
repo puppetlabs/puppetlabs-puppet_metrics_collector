@@ -12,14 +12,6 @@ class puppet_metrics_collector::puppetserver (
     retention_days => $retention_days,
   }
 
-  puppet_metrics_collector::pe_metric { 'puppetserver' :
-    metric_ensure => $metrics_ensure,
-    hosts         => $hosts,
-    metrics_port  => $port,
-    additional_metrics => $additional_metrics,
-
-  }
-  
   if versioncmp($facts['pe_server_version'], '2018.1.0') < 0 {
     $additional_metrics = [
       { 'name' => 'compiler.find_node',
@@ -40,9 +32,15 @@ class puppet_metrics_collector::puppetserver (
         'url'  => "puppetserver:name=puppetlabs.${::hostname}.puppetdb.report.convert_to_wire_format_hash" },
       { 'name' => 'puppetdb.command.submit.store report',
         'url'  => "puppetserver:name=puppetlabs.${::hostname}.puppetdb.command.submit.store report" },
-      ],
-    } else {
-      $additional_metrics = []
-    }
-  
- }
+      ]
+  } else {
+     $additional_metrics = []
+  }
+
+  puppet_metrics_collector::pe_metric { 'puppetserver' :
+    metric_ensure => $metrics_ensure,
+    hosts         => $hosts,
+    metrics_port  => $port,
+    additional_metrics => $additional_metrics,
+  }
+}
