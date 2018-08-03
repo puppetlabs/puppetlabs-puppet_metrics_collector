@@ -14,6 +14,9 @@ class puppet_metrics_collector (
   String        $activemq_metrics_ensure       = 'absent',
   Array[String] $activemq_hosts                = [ '127.0.0.1' ],
   Integer       $activemq_port                 = 8161,
+  String        $console_metrics_ensure        = 'present',
+  Array[String] $console_hosts                 = [ '127.0.0.1' ],
+  Integer       $console_port                  = 4433,
   Boolean       $symlink_puppet_metrics_collector = true,
 ) {
   $scripts_dir = "${output_dir}/scripts"
@@ -53,6 +56,7 @@ class puppet_metrics_collector (
   include puppet_metrics_collector::puppetdb
   include puppet_metrics_collector::orchestrator
   include puppet_metrics_collector::activemq
+  include puppet_metrics_collector::console
 
   # LEGACY CLEANUP
   # This exec resource exists to clean up old metrics directories created by
