@@ -4,6 +4,7 @@ class puppet_metrics_collector::activemq (
   String        $metrics_ensure       = $puppet_metrics_collector::activemq_metrics_ensure,
   Array[String] $hosts                = $puppet_metrics_collector::activemq_hosts,
   Integer       $port                 = $puppet_metrics_collector::activemq_port,
+  Optional[Puppet_metrics_collector::Metrics_server] $metrics_server_info = $::puppet_metrics_collector::metrics_server_info,
 ) {
   $scripts_dir = $::puppet_metrics_collector::scripts_dir
 
@@ -64,5 +65,6 @@ class puppet_metrics_collector::activemq (
     metrics_port       => $port,
     metric_script_file => 'amq_metrics',
     additional_metrics => $additional_metrics,
+    metrics_server_info => $metrics_server_info,
   }
 }
