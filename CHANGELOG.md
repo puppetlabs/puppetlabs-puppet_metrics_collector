@@ -1,3 +1,9 @@
+# Minor Release 5.1.0
+
+## Improvements
+ - Auto configure puppetserver and puppetdb hosts
+  - https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/5
+
 # Z Release 5.0.1
 
 ## Changes:
