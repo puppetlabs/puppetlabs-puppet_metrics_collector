@@ -1,3 +1,9 @@
+# Z Release 5.1.1
+
+## Changes:
+ - Ensure nightly compression of metrics works with a large amount of files
+   - https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/8
+
 # Minor Release 5.1.0
 
 ## Improvements
