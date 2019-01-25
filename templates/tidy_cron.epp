@@ -16,6 +16,6 @@ find "$DIR" -type f -ctime +$RETENTION_DAYS -delete
 #compress files
 cd "$DIR"
 find . -type f -not -name "*.gz" -a -not -name "*.bz2" > "$DIR.tmp"
-xargs -a "$DIR.tmp" tar -zcf "$DIR/$METRICS_TYPE-$(date +%Y.%m.%d.%H.%M.%S).tar.gz"
+tar -zcf "$DIR/$METRICS_TYPE-$(date +%Y.%m.%d.%H.%M.%S).tar.gz" --files-from "$DIR.tmp"
 xargs -a "$DIR.tmp" rm
 rm "$DIR.tmp"
