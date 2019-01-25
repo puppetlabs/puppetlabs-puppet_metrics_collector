@@ -21,13 +21,13 @@ function puppet_metrics_collector::hosts_with_pe_profile($profile) {
                type = 'Class' and
                title = 'Puppet_enterprise::Profile::${_profile}' and
                nodes { deactivated is null and expired is null }
-             }").map |$nodes| {
-               if $nodes['certname'] == $settings::certname {
-                 '127.0.0.1'
-               } else {
-                 $nodes['certname']
-               }
-             }
+              }").map |$nodes| {
+                if $nodes['certname'] == $settings::certname {
+                  '127.0.0.1'
+                } else {
+                  $nodes['certname']
+                }
+    }
   } else {
     $hosts = []
   }
@@ -37,4 +37,3 @@ function puppet_metrics_collector::hosts_with_pe_profile($profile) {
     sort($hosts)
   }
 }
-
