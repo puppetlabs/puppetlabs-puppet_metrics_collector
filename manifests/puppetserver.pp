@@ -34,13 +34,13 @@ class puppet_metrics_collector::puppetserver (
         'url'  => "puppetserver:name=puppetlabs.${::hostname}.puppetdb.command.submit.store report" },
       ]
   } else {
-     $additional_metrics = []
+      $additional_metrics = []
   }
 
   puppet_metrics_collector::pe_metric { 'puppetserver' :
-    metric_ensure => $metrics_ensure,
-    hosts         => $hosts,
-    metrics_port  => $port,
+    metric_ensure      => $metrics_ensure,
+    hosts              => $hosts,
+    metrics_port       => $port,
     additional_metrics => $additional_metrics,
   }
 }
