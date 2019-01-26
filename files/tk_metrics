@@ -1,34 +1,34 @@
 #!/opt/puppetlabs/puppet/bin/ruby
 
-require "net/https"
-require "json"
-require "uri"
+require 'net/https'
+require 'json'
+require 'uri'
 require 'time'
 require 'optparse'
 require 'yaml'
 
 options = {}
-OptionParser.new do |opts|
-  opts.banner = "Usage: tk_metrics [options]"
+OptionParser.new { |opts|
+  opts.banner = 'Usage: tk_metrics [options]'
 
   opts.on('-p', '--[no-]print', 'Print to stdout') { |p| options[:print] = p }
   opts.on('-m [TYPE]', '--metrics_type [TYPE]', 'Type of metric to collect') { |v| options[:metrics_type] = v }
   opts.on('-o [DIR]', '--output-dir [DIR]', 'Directory to save output to') { |o| options[:output_dir] = o }
   opts.on('--metrics_port [PORT]', 'The port the metrics service runs on') { |port| options[:metrics_port] = port }
   opts.on('--[no-]ssl', 'Whether or not to use SSL when gather metrics') { |ssl| options[:ssl] = ssl }
-end.parse!
+}.parse!
 
-if options[:metrics_type].nil? then
+if options[:metrics_type].nil?
   STDERR.puts '--metrics_type (-m) is a required argument'
   exit 1
 end
 
 METRICS_TYPE = options[:metrics_type]
-config = YAML.load_file(File.join(File.dirname(File.expand_path(__FILE__)),"#{METRICS_TYPE}_config.yaml"))
+config = YAML.load_file(File.join(File.dirname(File.expand_path(__FILE__)), "#{METRICS_TYPE}_config.yaml"))
 
-def coalesce ( opt1, opt2, default=nil )
-  if opt1.nil? then
-    if opt2.nil? then
+def coalesce(opt1, opt2, default = nil)
+  if opt1.nil?
+    if opt2.nil?
       default
     else
       opt2
@@ -51,25 +51,25 @@ $error_array = []
 def setup_connection(url, ssl)
   uri  = URI.parse(url)
   http = Net::HTTP.new(uri.host, uri.port)
-  if ssl then
+  if ssl
     http.use_ssl = true
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE
   end
 
-  return http,uri
+  [http, uri]
 end
 
-def get_endpoint(url,ssl)
-  http,uri = setup_connection(url,ssl)
+def get_endpoint(url, ssl)
+  http, uri = setup_connection(url, ssl)
 
   data = JSON.parse(http.get(uri.request_uri).body)
 rescue Exception => e
-    $error_array << "#{e}"
-    data = {}
+  $error_array << e.to_s
+  data = {}
 end
 
-def post_endpoint(url,post_data,ssl)
-  http,uri = setup_connection(url,ssl)
+def post_endpoint(url, post_data, ssl)
+  http, uri = setup_connection(url, ssl)
 
   request = Net::HTTP::Post.new(uri.request_uri)
   request.content_type = 'application/json'
@@ -77,16 +77,16 @@ def post_endpoint(url,post_data,ssl)
 
   data = JSON.parse(http.request(request).body)
 rescue Exception => e
-    $error_array << "#{e}"
-    data = {}
+  $error_array << e.to_s
+  data = {}
 end
 
 def generate_host_url(host, port, ssl)
-  if ssl then
-    protocol = 'https'
-  else
-    protocol = 'http'
-  end
+  protocol = if ssl
+               'https'
+             else
+               'http'
+             end
 
   host_url = "#{protocol}://#{host}:#{port}"
 end
@@ -95,7 +95,7 @@ def get_status_endpoint(host, port, ssl)
   host_url = generate_host_url(host, port, ssl)
 
   status_endpoint = "#{host_url}/status/v1/services?level=debug"
-  status_output   = get_endpoint(status_endpoint,ssl)
+  status_output   = get_endpoint(status_endpoint, ssl)
 end
 
 def bulk_retrieve_additional_metrics(host, port, metrics, ssl)
@@ -115,10 +115,10 @@ def bulk_retrieve_additional_metrics(host, port, metrics, ssl)
     metric_data = metrics_output[index]
 
     metrics_array << { 'name' => metric_name,
-                       'data' => metric_data  }
+                       'data' => metric_data }
   end
 
-  return metrics_array
+  metrics_array
 end
 
 def individually_retrieve_additional_metrics(host, port, metrics, ssl)
@@ -127,21 +127,21 @@ def individually_retrieve_additional_metrics(host, port, metrics, ssl)
   metrics_array = []
   metrics.each do |metric|
     endpoint = URI.escape("#{host_url}/metrics/v1/mbeans/#{metric['url']}")
-    metrics_array <<  { 'name' => metric['name'],
-                        'data' => get_endpoint(endpoint, ssl) }
+    metrics_array << { 'name' => metric['name'],
+                       'data' => get_endpoint(endpoint, ssl) }
   end
 
-  return metrics_array
+  metrics_array
 end
 
-def retrieve_additional_metrics(host,port,metrics,pe_version, ssl)
-  if Gem::Version.new(pe_version) < Gem::Version.new('2016.2.0') then
-    metrics_array = individually_retrieve_additional_metrics(host, port, metrics, ssl)
-  else
-    metrics_array = bulk_retrieve_additional_metrics(host, port, metrics, ssl)
-  end
+def retrieve_additional_metrics(host, port, metrics, pe_version, ssl)
+  metrics_array = if Gem::Version.new(pe_version) < Gem::Version.new('2016.2.0')
+                    individually_retrieve_additional_metrics(host, port, metrics, ssl)
+                  else
+                    bulk_retrieve_additional_metrics(host, port, metrics, ssl)
+                  end
 
-  return metrics_array
+  metrics_array
 end
 
 filename = Time.now.utc.strftime('%Y%m%dT%H%M%SZ') + '.json'
@@ -149,13 +149,13 @@ filename = Time.now.utc.strftime('%Y%m%dT%H%M%SZ') + '.json'
 HOSTS.each do |host|
   begin
     timestamp = Time.now
-    dataset = {'timestamp' => timestamp.utc.iso8601, 'servers' => {}}
-    hostkey = host.gsub('.', '-')
+    dataset = { 'timestamp' => timestamp.utc.iso8601, 'servers' => {} }
+    hostkey = host.tr('.', '-')
 
-    status_output   = get_status_endpoint(host, PORT, SSL)
-    dataset['servers'][hostkey] = {METRICS_TYPE => status_output}
+    status_output = get_status_endpoint(host, PORT, SSL)
+    dataset['servers'][hostkey] = { METRICS_TYPE => status_output }
 
-    unless METRICS.empty? then
+    unless METRICS.empty?
       metrics_array = retrieve_additional_metrics(host, PORT, METRICS, PE_VERSION, SSL)
 
       metrics_array.each do |metric_hash|
@@ -173,7 +173,7 @@ HOSTS.each do |host|
 
     json_dataset = JSON.pretty_generate(dataset)
 
-    unless OUTPUT_DIR.nil? then
+    unless OUTPUT_DIR.nil?
       Dir.chdir(OUTPUT_DIR) do
         Dir.mkdir(host) unless File.exist?(host)
         File.open(File.join(host, filename), 'w') do |file|
@@ -181,7 +181,7 @@ HOSTS.each do |host|
         end
       end
     end
-    if options[:print] != false then
+    if options[:print] != false
       STDOUT.write(json_dataset)
     end
   end
