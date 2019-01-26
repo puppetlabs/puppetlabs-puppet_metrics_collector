@@ -20,7 +20,7 @@ matrix:
   fast_finish: true
   include:
     -
-      env: CHECK="syntax metadata_lint check:symlinks check:git_ignore check:dot_underscore check:test_file"
+      env: CHECK="syntax lint metadata_lint check:symlinks check:git_ignore check:dot_underscore check:test_file rubocop"
     -
       env: CHECK=parallel_spec
     -
