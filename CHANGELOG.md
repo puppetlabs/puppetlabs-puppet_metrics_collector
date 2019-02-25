@@ -1,16 +1,24 @@
-# Z Release 5.1.1
+# Patch Release 5.1.2
+
+## Changes:
+ - Update metadata dependency information to reflect support for
+   puppetlabs/stdlib 5.x
+ - Update Changelog terminology to use [semver term](https://semver.org/)
+   "Patch", rather than "Z"
+
+# Patch Release 5.1.1
 
 ## Changes:
  - Ensure nightly compression of metrics works with a large amount of files
-   - https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/8
+   - https://github.com/puppetlabs/puppetlabs-puppet\_metrics\_collector/pull/8
 
 # Minor Release 5.1.0
 
 ## Improvements
  - Auto configure puppetserver and puppetdb hosts
-  - https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/5
+  - https://github.com/puppetlabs/puppetlabs-puppet\_metrics\_collector/pull/5
 
-# Z Release 5.0.1
+# Patch Release 5.0.1
 
 ## Changes:
  - Convert module to standard PDK format
@@ -46,7 +54,7 @@ and migration work is performed smoothly.
  - Add a script to zip up metrics for sharing
    - [PR #41](https://github.com/npwalker/pe_metric_curl_cron_jobs/pull/41)
 
-# Z Release 4.4.2
+# Patch Release 4.4.2
 
 ## Bug Fixes:
  - Tidy script does not work without bzip (not installed on RHEL 7 by default)
@@ -57,7 +65,7 @@ and migration work is performed smoothly.
  - Config file could change every run if you use puppetdb_query to find the hosts
    - [PR #42](https://github.com/npwalker/pe_metric_curl_cron_jobs/pull/42)
 
-# Z Release 4.4.1
+# Patch Release 4.4.1
 
 ## Bug Fixes:
  - PuppetDB metrics could not be gathered by default in PE < 2016.4.0
@@ -76,13 +84,13 @@ and migration work is performed smoothly.
   - No longer pass certificates to connect to metrics endpoint
     - [PR #34](https://github.com/npwalker/pe_metric_curl_cron_jobs/pull/34)
 
-# Z Release 4.2.2
+# Patch Release 4.2.2
 
 ## Bug Fixes:
  - Tidy cron jobs would only delete metric files exactly retention_days away
    - [PR #33](https://github.com/npwalker/pe_metric_curl_cron_jobs/pull/33)
 
-# Z Release 4.2.1
+# Patch Release 4.2.1
 
 ## Bug Fixes:
  - PE versions < 2016.2 now GET each metric individually instead of using a POST
@@ -133,7 +141,7 @@ the output of the module then you may need to update to the new names of the met
  - Each component now has its own class to allow customizing parameters per
   component
 
-# Z Release 3.0.1
+# Patch Release 3.0.1
 
 ## Bug Fixes:
  - Stagger compression of files between midnight and 3AM to prevent a CPU spike
