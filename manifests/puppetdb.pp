@@ -10,6 +10,7 @@ class puppet_metrics_collector::puppetdb (
     scripts_dir    => $puppet_metrics_collector::scripts_dir,
     cron_minute    => "*/${collection_frequency}",
     retention_days => $retention_days,
+    pipe_string    => $puppet_metrics_collector::pipe_string,
   }
 
   $activemq_metrics = [
