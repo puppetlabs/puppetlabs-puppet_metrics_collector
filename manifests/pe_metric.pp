@@ -41,7 +41,7 @@ define puppet_metrics_collector::pe_metric (
   $script_file_name = "${scripts_dir}/${metric_script_file}"
 
   # let us pipe this to a different thing entirely
-  if $pipe_string {
+  if ($pipe_string) and ($pipe_string != '') {
     $command_string = "${script_file_name} --metrics_type ${metrics_type} --print | ${pipe_string}"
   }
   else {
@@ -56,7 +56,7 @@ define puppet_metrics_collector::pe_metric (
   }
 
   # now we only install these jobs we're not piping it
-  if ! $pipe_string {
+  if ( ! $pipe_string) or ($pipe_string == '') {
     $metrics_tidy_script_path = "${scripts_dir}/${metrics_type}_metrics_tidy"
 
     file { $metrics_tidy_script_path :
