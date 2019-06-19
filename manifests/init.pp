@@ -15,7 +15,7 @@ class puppet_metrics_collector (
   Array[String] $activemq_hosts                = puppet_metrics_collector::hosts_with_pe_profile('amq::broker'),
   Integer       $activemq_port                 = 8161,
   Boolean       $symlink_puppet_metrics_collector = true,
-  Optional[Pe_metric_curl_cron_jobs::Metrics_server] $metrics_server_info = undef,
+  Optional[Puppet_metrics_collector::Metrics_server] $metrics_server_info = undef,
 ) {
   $scripts_dir = "${output_dir}/scripts"
   $bin_dir     = "${output_dir}/bin"
@@ -31,9 +31,9 @@ class puppet_metrics_collector (
   }
 
   file { "${scripts_dir}/json2timeseriesdb" :
-    ensure  => present,
-    mode    => '0755',
-    source  => 'puppet:///modules/pe_metric_curl_cron_jobs/json2timeseriesdb'
+    ensure => present,
+    mode   => '0755',
+    source => 'puppet:///modules/puppet_metrics_collector/json2timeseriesdb'
   }
 
   file { "${bin_dir}/puppet-metrics-collector":

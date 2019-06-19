@@ -4,7 +4,7 @@ class puppet_metrics_collector::orchestrator (
   String        $metrics_ensure       = $puppet_metrics_collector::orchestrator_metrics_ensure,
   Array[String] $hosts                = $puppet_metrics_collector::orchestrator_hosts,
   Integer       $port                 = $puppet_metrics_collector::orchestrator_port,
-  Optional[Puppet_metrics_collector::Metrics_server] $metrics_server_info = $puppet_metrics_collector::metrics_server_info,
+  Optional[Puppet_metrics_collector::Metrics_server] $metrics_server_info = $::puppet_metrics_collector::metrics_server_info,
 ) {
   Puppet_metrics_collector::Pe_metric {
     output_dir     => $puppet_metrics_collector::output_dir,
@@ -14,9 +14,9 @@ class puppet_metrics_collector::orchestrator (
   }
 
   puppet_metrics_collector::pe_metric { 'orchestrator' :
-    metric_ensure => $metrics_ensure,
-    hosts         => $hosts,
-    metrics_port  => $port,
+    metric_ensure       => $metrics_ensure,
+    hosts               => $hosts,
+    metrics_port        => $port,
     metrics_server_info => $metrics_server_info,
   }
 }

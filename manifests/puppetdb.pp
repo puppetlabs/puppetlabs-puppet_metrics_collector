@@ -4,7 +4,7 @@ class puppet_metrics_collector::puppetdb (
   String        $metrics_ensure       = $puppet_metrics_collector::puppetdb_metrics_ensure,
   Array[String] $hosts                = $puppet_metrics_collector::puppetdb_hosts,
   Integer       $port                 = $puppet_metrics_collector::puppetdb_port,
-  Optional[Puppet_metrics_collector::Metrics_server] $metrics_server_info = $puppet_metrics_collector::metrics_server_info,
+  Optional[Puppet_metrics_collector::Metrics_server] $metrics_server_info = $::puppet_metrics_collector::metrics_server_info,
 ) {
   Puppet_metrics_collector::Pe_metric {
     output_dir     => $puppet_metrics_collector::output_dir,
@@ -181,11 +181,11 @@ class puppet_metrics_collector::puppetdb (
   }
 
   puppet_metrics_collector::pe_metric { 'puppetdb' :
-    metric_ensure      => $metrics_ensure,
-    hosts              => $hosts,
-    metrics_port       => $_port,
-    ssl                => $_ssl,
-    additional_metrics => $additional_metrics,
+    metric_ensure       => $metrics_ensure,
+    hosts               => $hosts,
+    metrics_port        => $_port,
+    ssl                 => $_ssl,
+    additional_metrics  => $additional_metrics,
     metrics_server_info => $metrics_server_info,
   }
 }

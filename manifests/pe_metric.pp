@@ -10,7 +10,7 @@ define puppet_metrics_collector::pe_metric (
   String                    $metric_script_file = 'tk_metrics',
   Array[Hash]               $additional_metrics = [],
   Boolean                   $ssl                = true,
-  Optional[Pe_metric_curl_cron_jobs::Metrics_server] $metrics_server_info = undef,
+  Optional[Puppet_metrics_collector::Metrics_server] $metrics_server_info = undef,
 ) {
 
   $metrics_output_dir = "${output_dir}/${metrics_type}"
