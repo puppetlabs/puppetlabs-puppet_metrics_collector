@@ -57,6 +57,25 @@ Integer: How often to collect metrics, in minutes. Defaults to `5`.
 
 Integer: How long to retain collect metrics, in days. Defaults to `90`.
 
+##### metrics_server_info
+
+Struct:
+  metrics_server_type => Enum['influxdb','graphite'],
+  hostname            => String,
+  port                => Optional[Integer],
+  db_name             => Optional[String],
+
+Specifies a metrics server to write data to. Currently it supports `influxdb` and `graphite` type servers. The parameters `metrics_server_type` and `hostname` are both required, and `dbname` is required for a `metrics_server_type` of `influxdb`.
+
+Example:
+```
+Puppet_metrics_collector::Metrics_server{ 'collectmydataplease':
+  metrics_server_type => 'influxdb',
+  hostname            => 'my.hostname.here',
+  port                => 1234,
+  db_name             => 'mycooldbname',
+}]
+```
 
 ## Usage
 
