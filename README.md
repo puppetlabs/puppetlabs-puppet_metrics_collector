@@ -60,12 +60,12 @@ Integer: How long to retain collect metrics, in days. Defaults to `90`.
 ##### metrics_server_info
 
 Struct:
-  metrics_server_type => Enum['influxdb','graphite'],
+  metrics_server_type => Enum['influxdb','graphite','splunk_hec'],
   hostname            => String,
   port                => Optional[Integer],
   db_name             => Optional[String],
 
-Specifies a metrics server to write data to. Currently it supports `influxdb` and `graphite` type servers. The parameters `metrics_server_type` and `hostname` are both required, and `dbname` is required for a `metrics_server_type` of `influxdb`.
+Specifies a metrics server to write data to. Currently it supports `influxdb`, `graphite` and `splnk_hec` type servers. The parameters `metrics_server_type` and `hostname` are both required, and `dbname` is required for a `metrics_server_type` of `influxdb`.
 
 Example:
 ```
@@ -76,6 +76,9 @@ Puppet_metrics_collector::Metrics_server{ 'collectmydataplease':
   db_name             => 'mycooldbname',
 }]
 ```
+
+For a `splunk_hec` setup please note that this will require the module `splunk_hec` installed, which can be found here on the Forge [here](https://forge.puppet.com/puppetlabs/splunk_hec) or [here](https://github.com/puppetlabs/puppetlabs-splunk_hec) on github.
+Further setup instructions for using the `splunk_hec` module can be found within the modules own README.md.
 
 ## Usage
 

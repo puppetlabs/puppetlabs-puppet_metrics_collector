@@ -65,6 +65,7 @@ define puppet_metrics_collector::pe_metric (
       $metrics_command = $metrics_server_type ? {
         'influxdb' => "${port_metrics_command} --influx-db ${metrics_server_db} > /dev/null",
         'graphite' => "${port_metrics_command} > /dev/null",
+        'splunk_hec' => "${port_metrics_command} | /opt/puppetlabs/bin/puppet splunk_hec --sourcetype puppet:metrics --pe_metrics > /dev/null",
         default    => "${port_metrics_command} > /dev/null",
       }
     } else {
