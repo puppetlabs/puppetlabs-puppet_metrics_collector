@@ -4,7 +4,9 @@ class puppet_metrics_collector::activemq (
   String        $metrics_ensure       = $puppet_metrics_collector::activemq_metrics_ensure,
   Array[String] $hosts                = $puppet_metrics_collector::activemq_hosts,
   Integer       $port                 = $puppet_metrics_collector::activemq_port,
+  Boolean       $use_splunk_hec       = $::puppet_metrics_collector::use_splunk_hec,
   Optional[Puppet_metrics_collector::Metrics_server] $metrics_server_info = $::puppet_metrics_collector::metrics_server_info,
+  Optional[String]          $override_metrics_command = $::puppet_metrics_collector::override_metrics_command,
 ) {
   $scripts_dir = $::puppet_metrics_collector::scripts_dir
 
@@ -13,6 +15,8 @@ class puppet_metrics_collector::activemq (
     scripts_dir    => $scripts_dir,
     cron_minute    => "*/${collection_frequency}",
     retention_days => $retention_days,
+    override_metrics_command => $override_metrics_command,
+    use_splunk_hec      => $use_splunk_hec,
   }
 
   $additional_metrics = [
@@ -65,6 +69,7 @@ class puppet_metrics_collector::activemq (
     metrics_port        => $port,
     metric_script_file  => 'amq_metrics',
     additional_metrics  => $additional_metrics,
+    use_splunk_hec      => $use_splunk_hec,
     metrics_server_info => $metrics_server_info,
   }
 }

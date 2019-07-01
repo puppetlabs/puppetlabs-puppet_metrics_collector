@@ -15,7 +15,9 @@ class puppet_metrics_collector (
   Array[String] $activemq_hosts                = puppet_metrics_collector::hosts_with_pe_profile('amq::broker'),
   Integer       $activemq_port                 = 8161,
   Boolean       $symlink_puppet_metrics_collector = true,
+  Boolean       $use_splunk_hec = false,
   Optional[Puppet_metrics_collector::Metrics_server] $metrics_server_info = undef,
+  Optional[String]          $override_metrics_command = undef,
 ) {
   $scripts_dir = "${output_dir}/scripts"
   $bin_dir     = "${output_dir}/bin"
