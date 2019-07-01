@@ -4,13 +4,17 @@ class puppet_metrics_collector::puppetserver (
   String        $metrics_ensure       = $puppet_metrics_collector::puppetserver_metrics_ensure,
   Array[String] $hosts                = $puppet_metrics_collector::puppetserver_hosts,
   Integer       $port                 = $puppet_metrics_collector::puppetserver_port,
+  Boolean       $use_splunk_hec       = $::puppet_metrics_collector::use_splunk_hec,
   Optional[Puppet_metrics_collector::Metrics_server] $metrics_server_info = $::puppet_metrics_collector::metrics_server_info,
+  Optional[String]          $override_metrics_command = $::puppet_metrics_collector::override_metrics_command,
 ) {
   Puppet_metrics_collector::Pe_metric {
     output_dir     => $puppet_metrics_collector::output_dir,
     scripts_dir    => $puppet_metrics_collector::scripts_dir,
     cron_minute    => "*/${collection_frequency}",
     retention_days => $retention_days,
+    override_metrics_command => $override_metrics_command,
+    use_splunk_hec      => $use_splunk_hec,
   }
 
   if versioncmp($facts['pe_server_version'], '2018.1.0') < 0 {

@@ -10,6 +10,7 @@ define puppet_metrics_collector::pe_metric (
   String                    $metric_script_file = 'tk_metrics',
   Array[Hash]               $additional_metrics = [],
   Boolean                   $ssl                = true,
+  Boolean                   $use_splunk_hec     = false,
   Optional[Puppet_metrics_collector::Metrics_server] $metrics_server_info = undef,
   Optional[String]          $override_metrics_command = undef,
 ) {
@@ -65,9 +66,10 @@ define puppet_metrics_collector::pe_metric (
       $metrics_command = $metrics_server_type ? {
         'influxdb' => "${port_metrics_command} --influx-db ${metrics_server_db} > /dev/null",
         'graphite' => "${port_metrics_command} > /dev/null",
-        'splunk_hec' => "${port_metrics_command} | /opt/puppetlabs/bin/puppet splunk_hec --sourcetype puppet:metrics --pe_metrics > /dev/null",
         default    => "${port_metrics_command} > /dev/null",
       }
+    } elsif $use_splunk_hec {
+      $metrics_command = "${metrics_base_command} | /opt/puppetlabs/bin/puppet splunk_hec --sourcetype puppet:metrics --pe_metrics > /dev/null"
     } else {
       $metrics_command = "${metrics_base_command} --no-print"
     }
