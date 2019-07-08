@@ -4,17 +4,18 @@ class puppet_metrics_collector::puppetserver (
   String        $metrics_ensure       = $puppet_metrics_collector::puppetserver_metrics_ensure,
   Array[String] $hosts                = $puppet_metrics_collector::puppetserver_hosts,
   Integer       $port                 = $puppet_metrics_collector::puppetserver_port,
-  Boolean       $use_splunk_hec       = $::puppet_metrics_collector::use_splunk_hec,
-  Optional[Puppet_metrics_collector::Metrics_server] $metrics_server_info = $::puppet_metrics_collector::metrics_server_info,
-  Optional[String]          $override_metrics_command = $::puppet_metrics_collector::override_metrics_command,
-) {
+  Optional[Enum['influxdb','graphite','splunk_hec']] $metrics_server_type = $puppet_metrics_collector::metrics_server_type,
+  Optional[String]  $metrics_server_hostname = $puppet_metrics_collector::metrics_server_hostname,
+  Optional[Integer] $metrics_server_port     = $puppet_metrics_collector::metrics_server_port,
+  Optional[String]  $metrics_server_db_name  = $puppet_metrics_collector::metrics_server_db_name,
+  Optional[String]  $override_metrics_command = $puppet_metrics_collector::override_metrics_command,
+  ) {
   Puppet_metrics_collector::Pe_metric {
     output_dir     => $puppet_metrics_collector::output_dir,
     scripts_dir    => $puppet_metrics_collector::scripts_dir,
     cron_minute    => "*/${collection_frequency}",
     retention_days => $retention_days,
     override_metrics_command => $override_metrics_command,
-    use_splunk_hec      => $use_splunk_hec,
   }
 
   if versioncmp($facts['pe_server_version'], '2018.1.0') < 0 {
@@ -43,10 +44,13 @@ class puppet_metrics_collector::puppetserver (
   }
 
   puppet_metrics_collector::pe_metric { 'puppetserver' :
-    metric_ensure       => $metrics_ensure,
-    hosts               => $hosts,
-    metrics_port        => $port,
-    additional_metrics  => $additional_metrics,
-    metrics_server_info => $metrics_server_info,
+    metric_ensure           => $metrics_ensure,
+    hosts                   => $hosts,
+    metrics_port            => $port,
+    additional_metrics      => $additional_metrics,
+    metrics_server_type     => $metrics_server_type,
+    metrics_server_hostname => $metrics_server_hostname,
+    metrics_server_port     => $metrics_server_port,
+    metrics_server_db_name  => $metrics_server_db_name,
   }
 }

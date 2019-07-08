@@ -57,38 +57,38 @@ Integer: How often to collect metrics, in minutes. Defaults to `5`.
 
 Integer: How long to retain collect metrics, in days. Defaults to `90`.
 
-##### use_splunk_hec
+##### Metrics Server Parameters
 
-Boolean: Use the splunk_hec endpoint enabled by the puppetlabs/splunk_hec module. Defaults to `false`.
+The following set of parameters begining with `metrics_server_` allows for the specification of a server type to use to generate and in some cases send data to a specified server.
+Currently both `influxdb` and `graphite` types allow for the transfer of data while `splunk_hec` only generates the data.
 
-This will require the module `splunk_hec` installed, which can be found here on the Forge [here](https://forge.puppet.com/puppetlabs/splunk_hec) or [here](https://github.com/puppetlabs/puppetlabs-splunk_hec) on github.
+##### metrics_server_type
+
+Optional Enum['influxdb','graphite','splunk_hec']: specifies the metrics server type to write data to. Currently it supports `influxdb`, `graphite` and `splunk_hec` type servers.
+
+To Note:
+
+Please note that for `influxdb` server types a `dbname` must be provided.
+
+Please note that for a server type of `splunk_hec` no data can be sent to a server with the current configuration, however the command will format the json output using the `splunk_hec` module, which is a requirement for this option and can be found on the Forge [here](https://forge.puppet.com/puppetlabs/splunk_hec) or [here](https://github.com/puppetlabs/puppetlabs-splunk_hec) on github.
 Further setup instructions for using the `splunk_hec` module can be found within the modules own README.md.
 
-##### metrics_server_info
+##### metrics_server_hostname
 
-Struct:
-  metrics_server_type => Enum['influxdb','graphite'],
-  hostname            => String,
-  port                => Optional[Integer],
-  db_name             => Optional[String],
+Optional String: Allows you to define the host name of a server to send data to. Defaults to undef.
 
-Specifies a metrics server to write data to. Currently it supports `influxdb`and `graphite` type servers. The parameters `metrics_server_type` and `hostname` are both required, and `dbname` is required for a `metrics_server_type` of `influxdb`.
+##### metrics_server_port
 
-Example:
-```
-Puppet_metrics_collector::Metrics_server{ 'collectmydataplease':
-  metrics_server_type => 'influxdb',
-  hostname            => 'my.hostname.here',
-  port                => 1234,
-  db_name             => 'mycooldbname',
-}]
-```
+Optional Integer: Allows you to define the port number of a server to send data to. Defaults to undef.
+
+##### metrics_server_db_name
+
+Optional String: Allows you to define the database name of a server to send data to. Required for `metrics_server_type` of `influxdb`. Defaults to undef.
 
 ##### override_metrics_command
 
-String: replace the crontab entry entirely for the metric command being used. Defaults to `undef`
+Optional String: Allows you to override the command that is run to gather metrics. Defaults to undef.
 
-If you are using this, you know what you're doing, and will probably have to set these for each class for the services being collected, and not use this top level param at all.
 
 ## Usage
 

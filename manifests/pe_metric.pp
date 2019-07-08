@@ -10,8 +10,10 @@ define puppet_metrics_collector::pe_metric (
   String                    $metric_script_file = 'tk_metrics',
   Array[Hash]               $additional_metrics = [],
   Boolean                   $ssl                = true,
-  Boolean                   $use_splunk_hec     = false,
-  Optional[Puppet_metrics_collector::Metrics_server] $metrics_server_info = undef,
+  Optional[Enum['influxdb','graphite','splunk_hec']] $metrics_server_type = undef,
+  Optional[String]          $metrics_server_hostname  = undef,
+  Optional[Integer]         $metrics_server_port      = undef,
+  Optional[String]          $metrics_server_db_name   = undef,
   Optional[String]          $override_metrics_command = undef,
 ) {
 
@@ -46,30 +48,30 @@ define puppet_metrics_collector::pe_metric (
   if empty($override_metrics_command){
     $metrics_base_command = "${script_file_name} --metrics_type ${metrics_type} --output-dir ${metrics_output_dir}"
 
-    if !empty($metrics_server_info) {
-      $metrics_server_hostname = $metrics_server_info['hostname']
-      $metrics_server_port     = $metrics_server_info['port']
-      $metrics_server_type     = $metrics_server_info['metrics_server_type']
-      $metrics_server_db       = $metrics_server_info['db_name']
+    if !empty($metrics_server_type) {
+      $server_hostname = $metrics_server_hostname
+      $server_port     = $metrics_server_port
+      $server_type     = $metrics_server_type
+      $server_db       = $metrics_server_db_name
 
-      if empty($metrics_server_db) and $metrics_server_type == 'influxdb'  {
+      if empty($server_db) and $server_type == 'influxdb'  {
         fail( 'When using an influxdb server you must provide the db_name to store metrics in' )
       }
 
-      $local_metrics_command = "${metrics_base_command} | ${conversion_script_file_name} --netcat ${metrics_server_hostname} --convert-to ${metrics_server_type}"
+      $local_metrics_command = "${metrics_base_command} | ${conversion_script_file_name} --netcat ${server_hostname} --convert-to ${server_type}"
 
-      $port_metrics_command = empty($metrics_server_port) ? {
-        false => "${local_metrics_command} --port ${metrics_server_port}",
+      $port_metrics_command = empty($server_port) ? {
+        false => "${local_metrics_command} --port ${server_port}",
         true  => $local_metrics_command,
       }
 
-      $metrics_command = $metrics_server_type ? {
-        'influxdb' => "${port_metrics_command} --influx-db ${metrics_server_db} > /dev/null",
+      $metrics_command = $server_type ? {
+        'influxdb' => "${port_metrics_command} --influx-db ${server_db} > /dev/null",
         'graphite' => "${port_metrics_command} > /dev/null",
+        # We use only the base metrics command for splunk_hec server type
+        'splunk_hec' => "${metrics_base_command} | /opt/puppetlabs/bin/puppet splunk_hec --sourcetype puppet:metrics --pe_metrics > /dev/null",
         default    => "${port_metrics_command} > /dev/null",
       }
-    } elsif $use_splunk_hec {
-      $metrics_command = "${metrics_base_command} | /opt/puppetlabs/bin/puppet splunk_hec --sourcetype puppet:metrics --pe_metrics > /dev/null"
     } else {
       $metrics_command = "${metrics_base_command} --no-print"
     }
