@@ -91,7 +91,7 @@ end
 
 def get_timestamp(str)
   # Example filename: nzxppc5047.nndc.kp.org-11_29_16_13:00.json
-  timestr = str.match(/(\d\d)_(\d\d)_(\d\d)_(\d\d:\d\d)\.json$/) || raise("Unable to parse timestame from #{str}")
+  timestr = str.match(/(\d\d)_(\d\d)_(\d\d)_(\d\d:\d\d)\.json$/) || raise("Unable to parse timestame from #{str}") # rubocop:disable GetText/DecorateFunctionMessage
   yyyy = timestr[3].sub(/.*_(\d\d)$/, '20\1')
   mm = timestr[1]
   dd = timestr[2]
@@ -309,7 +309,7 @@ end.parse!
 if $options[:host]
   url = case $options[:output_format]
         when 'influxdb'
-          raise ArgumentError, "--influx-db must be passsed along with --netcat" unless $options[:influx_db]
+          raise ArgumentError, "--influx-db must be passsed along with --netcat" unless $options[:influx_db] # rubocop:disable GetText/DecorateFunctionMessage
           port = $options[:port] || "8086"
           "http://#{$options[:host]}:#{port}/write?db=#{$options[:influx_db]}&precision=s"
         else
