@@ -19,11 +19,13 @@ define puppet_metrics_collector::pe_metric (
 
   $metrics_output_dir = "${output_dir}/${metrics_type}"
 
-  file { $metrics_output_dir :
-    ensure => $metric_ensure ? {
+  $_metric_ensure = $metric_ensure ? {
       'present' => directory,
       'absent'  => absent,
-    },
+    }
+
+  file { $metrics_output_dir :
+    ensure => $_metric_ensure,
   }
 
   $config_hash = {
