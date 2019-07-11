@@ -57,6 +57,38 @@ Integer: How often to collect metrics, in minutes. Defaults to `5`.
 
 Integer: How long to retain collect metrics, in days. Defaults to `90`.
 
+##### Metrics Server Parameters
+
+The following set of parameters begining with `metrics_server_` allows for the specification of a server type to use to generate and in some cases send data to a specified server.
+Currently both `influxdb` and `graphite` types allow for the transfer of data while `splunk_hec` only generates the data.
+
+##### metrics_server_type
+
+Optional Enum['influxdb','graphite','splunk_hec']: specifies the metrics server type to write data to. Currently it supports `influxdb`, `graphite` and `splunk_hec` type servers.
+
+To Note:
+
+Please note that for `influxdb` server types a `dbname` must be provided.
+
+Please note that for a server type of `splunk_hec` no data can be sent to a server with the current configuration, however the command will format the json output using the `splunk_hec` module, which is a requirement for this option and can be found on the Forge [here](https://forge.puppet.com/puppetlabs/splunk_hec) or [here](https://github.com/puppetlabs/puppetlabs-splunk_hec) on github.
+Further setup instructions for using the `splunk_hec` module can be found within the modules own README.md.
+
+##### metrics_server_hostname
+
+Optional String: Allows you to define the host name of a server to send data to. Defaults to undef.
+
+##### metrics_server_port
+
+Optional Integer: Allows you to define the port number of a server to send data to. Defaults to undef.
+
+##### metrics_server_db_name
+
+Optional String: Allows you to define the database name of a server to send data to. Required for `metrics_server_type` of `influxdb`. Defaults to undef.
+
+##### override_metrics_command
+
+Optional String: Allows you to override the command that is run to gather metrics. Defaults to undef.
+
 
 ## Usage
 
