@@ -1,3 +1,14 @@
+# Minor Release 5.2.0
+
+## Improvements
+ - Adds ability to define a metrics server to send data to.
+  - https://github.com/puppetlabs/puppetlabs-puppet\_metrics\_collector/pull/19
+
+## Changes
+ - Update metadata dependency information to reflect support for
+   puppetlabs/stdlib 6.x
+  - https://github.com/puppetlabs/puppetlabs-puppet\_metrics\_collector/pull/22
+
 # Patch Release 5.1.2
 
 ## Changes:
