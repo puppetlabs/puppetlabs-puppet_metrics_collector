@@ -1,7 +1,8 @@
 # Minor Release 5.2.0
 
 ## Improvements
- - Adds ability to define a metrics server to send data to.
+ - Add ability to send metrics data directly to influxdb, graphite, 
+   or splunk ( in combination with the splunk_hec module ) 
   - https://github.com/puppetlabs/puppetlabs-puppet\_metrics\_collector/pull/19
 
 ## Changes
