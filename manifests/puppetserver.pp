@@ -18,7 +18,7 @@ class puppet_metrics_collector::puppetserver (
     override_metrics_command => $override_metrics_command,
   }
 
-  if versioncmp($facts['pe_server_version'], '2018.1.0') < 0 {
+  if ($facts['pe_server_version'] =~ NotUndef) and (versioncmp($facts['pe_server_version'], '2018.1.0') < 0) {
     $additional_metrics = [
       { 'name' => 'compiler.find_node',
         'url'  => "puppetserver:name=puppetlabs.${::hostname}.compiler.find_node" },
