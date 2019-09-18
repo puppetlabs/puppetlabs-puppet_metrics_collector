@@ -1,6 +1,6 @@
 {
   "name": "puppetlabs-puppet_metrics_collector",
-  "version": "5.1.2",
+  "version": "5.2.0",
   "author": "npwalker",
   "summary": "A Puppet module for gathering metrics from PE components",
   "license": "Apache-2.0",
@@ -68,7 +68,7 @@
       "version_requirement": ">= 4.2.1"
     }
   ],
-  "pdk-version": "1.11.1",
+  "pdk-version": "1.12.0",
   "template-url": "https://github.com/puppetlabs/pdk-templates#master",
-  "template-ref": "heads/master-0-g7cf0403"
+  "template-ref": "heads/master-0-g66e1443"
 }

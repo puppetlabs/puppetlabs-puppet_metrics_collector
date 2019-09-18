@@ -1,3 +1,15 @@
+# Minor Release 5.2.0
+
+## Improvements
+ - Add ability to send metrics data directly to influxdb, graphite, 
+   or splunk ( in combination with the splunk_hec module ) 
+  - https://github.com/puppetlabs/puppetlabs-puppet\_metrics\_collector/pull/19
+
+## Changes
+ - Update metadata dependency information to reflect support for
+   puppetlabs/stdlib 6.x
+  - https://github.com/puppetlabs/puppetlabs-puppet\_metrics\_collector/pull/22
+
 # Patch Release 5.1.2
 
 ## Changes:
