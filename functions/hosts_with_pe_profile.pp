@@ -11,7 +11,6 @@
 #
 # $hosts: an array of certnames.
 #
-# Replaces the certname with '127.0.0.1' when the certname matches the localhost.
 # Returns ['127.0.0.1'] when PuppetDB returns no hosts.
 
 function puppet_metrics_collector::hosts_with_pe_profile($profile) {
@@ -21,19 +20,16 @@ function puppet_metrics_collector::hosts_with_pe_profile($profile) {
                type = 'Class' and
                title = 'Puppet_enterprise::Profile::${_profile}' and
                nodes { deactivated is null and expired is null }
-              }").map |$nodes| {
-                if $nodes['certname'] == $settings::certname {
-                  '127.0.0.1'
-                } else {
-                  $nodes['certname']
-                }
-    }
-  } else {
+              }").map |$nodes| { $nodes['certname'] }
+  }
+  else {
     $hosts = []
   }
+
   if empty($hosts) {
     ['127.0.0.1']
-  } else {
+  }
+  else {
     sort($hosts)
   }
 }
