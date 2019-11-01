@@ -10,6 +10,7 @@ define puppet_metrics_collector::pe_metric (
   String                    $metric_script_file = 'tk_metrics',
   Array[Hash]               $additional_metrics = [],
   Boolean                   $ssl                = true,
+  Array[String]             $excludes           = [],
   Optional[Enum['influxdb','graphite','splunk_hec']] $metrics_server_type = undef,
   Optional[String]          $metrics_server_hostname  = undef,
   Optional[Integer]         $metrics_server_port      = undef,
@@ -36,6 +37,7 @@ define puppet_metrics_collector::pe_metric (
     'clientcert'         => $::clientcert,
     'pe_version'         => $facts['pe_server_version'],
     'ssl'                => $ssl,
+    'excludes'           => $excludes,
   }
 
   file { "${scripts_dir}/${metrics_type}_config.yaml" :
