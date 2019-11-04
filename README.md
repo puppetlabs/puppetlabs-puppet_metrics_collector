@@ -108,6 +108,13 @@ Optional String: Allows you to override the command that is run to gather metric
 
 ### Grepping Metrics
 
+The metrics come in a JSON hash on one line. In order to convert the metric files into a pretty format, they can be processed with `python -m json.tool` like below.
+
+```bash
+cd /opt/puppetlabs/puppet-metrics-collector
+for i in <service_name>/127.0.0.1/*.json; do echo "$(python -m json.tool < $i)" > $i; done
+```
+
 You can search for useful information by performing a `grep` in the following format, run from inside the directory containing the metrics.
 
 ```

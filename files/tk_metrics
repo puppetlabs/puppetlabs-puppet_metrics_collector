@@ -186,7 +186,7 @@ HOSTS.each do |host|
     dataset['servers'][hostkey][METRICS_TYPE]['api-query-duration'] = Time.now - timestamp
 
     filtered_dataset = filter_metrics(dataset, EXCLUDES)
-    json_dataset = JSON.pretty_generate(filtered_dataset)
+    json_dataset = JSON.generate(filtered_dataset)
 
     unless OUTPUT_DIR.nil? then
       Dir.chdir(OUTPUT_DIR) do
