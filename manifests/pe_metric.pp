@@ -10,7 +10,7 @@ define puppet_metrics_collector::pe_metric (
   String                    $metric_script_file = 'tk_metrics',
   Array[Hash]               $additional_metrics = [],
   Boolean                   $ssl                = true,
-  Array[String]             $excludes           = [],
+  Array[String]             $excludes           = puppet_metrics_collector::version_based_excludes($title),
   Optional[Enum['influxdb','graphite','splunk_hec']] $metrics_server_type = undef,
   Optional[String]          $metrics_server_hostname  = undef,
   Optional[Integer]         $metrics_server_port      = undef,

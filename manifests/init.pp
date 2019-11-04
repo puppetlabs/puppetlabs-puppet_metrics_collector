@@ -20,7 +20,7 @@ class puppet_metrics_collector (
   Optional[Integer] $metrics_server_port      = undef,
   Optional[String]  $metrics_server_db_name   = undef,
   Optional[String]  $override_metrics_command = undef,
-  Optional[Array[String]] $puppetserver_excludes = ['pe-puppet-profiler', 'file-sync-storage-service'],
+  Optional[Array[String]] $puppetserver_excludes = undef,
   Optional[Array[String]] $puppetdb_excludes     = undef,
   Optional[Array[String]] $orchestrator_excludes = undef,
 ) {
