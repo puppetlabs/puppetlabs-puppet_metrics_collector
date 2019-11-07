@@ -1,0 +1,256 @@
+#!/opt/puppetlabs/puppet/bin/ruby
+# frozen_string_literal: true
+
+# rubocop::disable GetText/DecorateFunctionMessage
+
+require "optparse"
+require "json"
+require "time"
+require "fileutils"
+
+# This script is intended to be run on a puppet infrastructure node as part of the
+# puppet_metrics_collector module.  It will generate system statistics in the file format that
+# other puppet_metrics_collector stats follow.  Over a time period defined as the file interval,
+# it will poll the system for data based on the polling interval, then calculate an average from
+# the polling data to put in the file as a single data point at the end of the file interval.
+# sar_metric.pp will setup a cron job to run this similar to how pe_metric runs tk_metrics
+#
+# Example execution
+# generate_system_metrics --metric_type cpu --file_interval 300 --polling_interval 1
+#                         --metrics_dir /opt/puppetlabs/puppet-metrics-collector
+
+# General namespace for SystemMetrics module
+module SystemMetrics
+  # Main class for collecting system metrics into a json file
+  #
+  # @author Randell Pelak
+  #
+  # @attr [integer] polling_interval Time in seconds between calls to poll the system for data.
+  # @attr [integer] file_interval Time in seconds between the creation of each output file.
+  # @attr [string] metric_type cpu|memory
+  # @attr [string] metrics_dir The puppet_metrics_collector output directory.
+  # @attr [boolean] verbose Verbose output
+  # @attr [string] hostname Name of the host the metrics are from. In directory name and json file.
+  #
+  class GenerateSystemMetrics
+    #
+    # Initialize class
+    #
+    # @author Randell Pelak
+    #
+    # @param [integer] polling_interval Time in seconds between calls to poll the system for data.
+    # @param [integer] file_interval Time in seconds between the creation of each output file.
+    # @param [string] metric_type cpu|memory
+    # @param [string] metrics_dir The puppet_metrics_collector output directory.
+    # @param [boolean] verbose Verbose output
+    #
+    # @return [void]
+    def initialize(polling_interval, file_interval, metric_type, metrics_dir, verbose = false)
+      @polling_interval = polling_interval
+      @file_interval = file_interval
+      @metric_type = metric_type
+      @metrics_dir = metrics_dir
+      @verbose = verbose
+
+      @hostname = %x[hostname].strip
+      puts "Hostname is: #{@hostname}" if @verbose
+      FileUtils.mkdir_p(@metrics_dir) unless File.directory?(@metrics_dir)
+    end
+
+    # Run sar to collect the raw system data
+    #
+    # @author Randell Pelak
+    #
+    # @return [string] raw output from sar
+    def run_sar
+      times_to_poll = (@file_interval / @polling_interval).round
+      # sar inputs are polling interval and how many times to poll
+      comm_flags = " -r" if @metric_type =~ /memory/
+      comm = "sar #{comm_flags} #{@polling_interval} #{times_to_poll}"
+      puts "sar command is: #{comm}" if @verbose
+      %x[#{comm}]
+    end
+
+    # Parse the sar output and extract the metrics data
+    #
+    # @author Randell Pelak
+    #
+    # @param [array] sar_output
+    #
+    # @raise [RuntimeError] if sar_output doesn't parse correctly
+    #
+    # @return [hash] The metrics data
+    def parse_sar_output(sar_output)
+      sar_output_arr = sar_output.split(/\n+|\r+/).reject(&:empty?).map { |line| line.split }
+
+      if ( @metric_type == "memory")
+        unique_header_str = "%memused"
+      else
+        unique_header_str = "%user"
+      end
+      headers_line = sar_output_arr.find { |e| e.include? unique_header_str }
+
+      sar_error_missing_headers = "sar output invalid or missing headers." +
+                                  "failed to find line with #{unique_header_str}."
+                                  "\nFull output:\n#{sar_output}"
+      raise(sar_error_missing_headers) if headers_line.nil?
+
+      averages_line = sar_output_arr.find { |e| e.include? "Average:" }
+      sar_error_missing_averages = "sar output missing \"Average:\"\nFull output:\n#{sar_output}"
+      raise(sar_error_missing_averages) if averages_line.nil?
+
+      Hash[headers_line.reverse.zip(averages_line.reverse).reverse]
+
+      puts "sar headers and averages:\n#{headers_line.join(",")}\n#{averages_line.join(",")}" if @verbose
+
+      #example of array data
+      # 04:59:13,PM,CPU,%user,%nice,%system,%iowait,%steal,%idle
+      # Average:,all,0.58,0.00,0.08,0.00,0.00,99.33
+      #combine the arrays into a hash starting from the deal with the unmatched columns in the front
+      data_hash = Hash[headers_line.reverse.zip(averages_line.reverse).reverse]
+      # remove anything that doesn't have a number for an average like "Average:" or "all"
+      data_hash.select{ |k,v| v =~ /\A[-+]?[0-9]*\.?[0-9]+\Z/ }
+    end
+
+    # Convert the inputted sar output into json and raise errors if the sar output is invalid
+    #
+    # @author Randell Pelak
+    #
+    # @param [string] sar_output
+    # @param [obj] time_stamp_obj Time object to use for generating the filename
+    #
+    # @raise [RuntimeError] if sar_output doesn't parse correctly
+    #
+    # @return [string] json of sar output
+    def convert_sar_output_to_json(sar_output, time_stamp_obj)
+      hostkey = @hostname.gsub('.', '-')
+      dataset = {'time_stamp_obj' => time_stamp_obj.utc.iso8601, 'servers' => {}}
+      metrics_data = parse_sar_output(sar_output)
+      dataset['servers'][hostkey] = {@metric_type => metrics_data}
+      json_dataset = JSON.pretty_generate(dataset)
+      return json_dataset
+    end
+
+    # Create the file and put the json data in it
+    #
+    # @author Randell Pelak
+    #
+    # @param [string] json_dataset data in json format to put in file
+    # @param [obj] time_stamp_obj Time object to use for generating the filename
+    #
+    # @return [void]
+    def create_file(json_dataset, time_stamp_obj)
+      filename = time_stamp_obj.utc.strftime('%Y%m%dT%H%M%SZ') + '.json'
+      dirname = "#{@metrics_dir}/system_#{@metric_type}/#{@hostname}"
+      file_path = "#{dirname}/#{filename}"
+      FileUtils.mkdir_p(dirname) unless File.directory?(dirname)
+      puts "Creating json file: #{file_path}" if @verbose
+      File.write(file_path, json_dataset)
+    end
+
+    # Get the data and create the file
+    #
+    # @author Randell Pelak
+    #
+    # @return [void]
+    def generate_system_metrics
+      sar_output = run_sar
+      # time stamp generated after sar run to be consistent with
+      # pe metrics from puppet metrics collector
+      time_stamp_obj = Time.now
+      json_data = convert_sar_output_to_json(sar_output, time_stamp_obj)
+      create_file(json_data, time_stamp_obj)
+    end
+  end
+end
+
+if $PROGRAM_NAME == __FILE__
+
+  VALID_METRIC_TYPES = %w[cpu memory]
+  FILE_INTERVAL_DEFAULT = 60 * 5
+  POLLING_INTERVAL_DEFAULT = 1
+  METRIC_TYPE_DEFAULT = "cpu"
+  METRICS_DIR_DEFAULT = "/opt/puppetlabs/puppet-metrics-collector"
+
+  DESCRIPTION = <<-DESCRIPTION
+    This script is intended to be run on a puppet infrastructure node as part of the
+    puppet_metrics_collector module.  It will generate system statistics in the file format that
+    other puppet_metrics_collector stats follow.  It will poll the system for data at a given
+    interval, and then output the average to a file once per given file interval.
+  DESCRIPTION
+
+  DEFAULTS = <<-DEFAULTS
+    The following default values are used if the options are not specified:
+      * polling_interval (-p, --polling_interval): #{POLLING_INTERVAL_DEFAULT}
+      * file_interval (-f, --file_interval): #{FILE_INTERVAL_DEFAULT}
+      * metric_type (-t, --metric_type): #{METRIC_TYPE_DEFAULT}
+      * metrics_dir (-m, --metrics_dir): #{METRICS_DIR_DEFAULT}
+      * verbose (-v, --verbose): False
+  DEFAULTS
+
+  options = {}
+
+  OptionParser.new do |opts|
+    opts.banner = "Usage: generate_system_stats.rb [options]"
+
+    opts.on("-h", "--help", "Display the help text") do
+      puts DESCRIPTION
+      puts opts
+      puts DEFAULTS
+      exit
+    end
+
+    opts.on("-p", "--polling_interval seconds", Integer,
+            "Time in seconds between calls to poll the system for data.") do |interval|
+      options[:polling_interval] = interval
+    end
+    opts.on("-f", "--file_interval seconds", Integer,
+            "Time in seconds between the creation of each output file.") do |interval|
+      options[:file_interval] = interval
+    end
+    opts.on("-t", "--metric_type type", String,
+            "One of: #{VALID_METRIC_TYPES.join(', ')}") do |type|
+      options[:metric_type] = type.downcase
+    end
+    opts.on("-m", "--metrics_dir dir_path", String,
+            "The puppet_metrics_collector output directory") do |metrics_dir|
+      options[:metrics_dir] = metrics_dir
+    end
+    opts.on("-v", "--verbose", String, "Enable Verbose output") { options[:verbose] = true }
+  end.parse!
+
+  if options[:metric_type]
+    unless VALID_METRIC_TYPES.include?(options[:metric_type])
+      options_error = "Invalid metric type #{options[:metric_type]}." +
+      " Must be one of: #{VALID_METRIC_TYPES.join(', ')}."
+      raise options_error
+    end
+  end
+
+  polling_interval = options[:polling_interval] || POLLING_INTERVAL_DEFAULT
+  file_interval = options[:file_interval] || FILE_INTERVAL_DEFAULT
+  metric_type = options[:metric_type] || METRIC_TYPE_DEFAULT
+  metrics_dir = options[:metrics_dir] || METRICS_DIR_DEFAULT
+  verbose = options[:verbose] || false
+
+  if options[:polling_interval] || options[:file_interval]
+    options_error = "Polling interval must be less than file interval"
+    raise options_error unless polling_interval < file_interval
+  end
+
+  if verbose
+    OPTION_SETTINGS = <<-SETTINGS
+      The following are the resulting options settings:
+        * polling_interval: #{polling_interval}
+        * file_interval: #{file_interval}
+        * metric_type: #{metric_type}
+        * metrics_dir: #{metrics_dir}
+        * verbose: #{verbose}
+    SETTINGS
+    puts OPTION_SETTINGS
+  end
+
+  obj = SystemMetrics::GenerateSystemMetrics.new(polling_interval, file_interval, metric_type,
+                                                 metrics_dir, verbose)
+  obj.generate_system_metrics
+end
