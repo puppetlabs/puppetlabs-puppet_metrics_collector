@@ -124,7 +124,7 @@ module SystemMetrics
     # @return [string] json of sar output
     def convert_sar_output_to_json(sar_output, time_stamp_obj)
       hostkey = @hostname.gsub('.', '-')
-      dataset = {'time_stamp_obj' => time_stamp_obj.utc.iso8601, 'servers' => {}}
+      dataset = {'timestamp' => time_stamp_obj.utc.iso8601, 'servers' => {}}
       metrics_data = parse_sar_output(sar_output)
       dataset['servers'][hostkey] = {@metric_type => metrics_data}
       json_dataset = JSON.pretty_generate(dataset)
