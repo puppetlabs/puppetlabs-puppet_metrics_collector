@@ -109,7 +109,8 @@ module SystemMetrics
       #combine the arrays into a hash starting from the deal with the unmatched columns in the front
       data_hash = Hash[headers_line.reverse.zip(averages_line.reverse).reverse]
       # remove anything that doesn't have a number for an average like "Average:" or "all"
-      data_hash.select{ |k,v| v =~ /\A[-+]?[0-9]*\.?[0-9]+\Z/ }
+      data_hash.select!{ |k,v| v =~ /\A[-+]?[0-9]*\.?[0-9]+\Z/ }
+      data_hash.transform_values!(&:to_f)
     end
 
     # Convert the inputted sar output into json and raise errors if the sar output is invalid
@@ -124,7 +125,7 @@ module SystemMetrics
     # @return [string] json of sar output
     def convert_sar_output_to_json(sar_output, time_stamp_obj)
       hostkey = @hostname.gsub('.', '-')
-      dataset = {'time_stamp_obj' => time_stamp_obj.utc.iso8601, 'servers' => {}}
+      dataset = {'timestamp' => time_stamp_obj.utc.iso8601, 'servers' => {}}
       metrics_data = parse_sar_output(sar_output)
       dataset['servers'][hostkey] = {@metric_type => metrics_data}
       json_dataset = JSON.pretty_generate(dataset)
