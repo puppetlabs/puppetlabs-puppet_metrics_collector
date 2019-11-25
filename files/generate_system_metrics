@@ -16,7 +16,7 @@ require "fileutils"
 # sar_metric.pp will setup a cron job to run this similar to how pe_metric runs tk_metrics
 #
 # Example execution
-# generate_system_metrics --metric_type cpu --file_interval 300 --polling_interval 1
+# generate_system_metrics --metric_type system_cpu --file_interval 300 --polling_interval 1
 #                         --metrics_dir /opt/puppetlabs/puppet-metrics-collector
 
 # General namespace for SystemMetrics module
@@ -27,7 +27,7 @@ module SystemMetrics
   #
   # @attr [integer] polling_interval Time in seconds between calls to poll the system for data.
   # @attr [integer] file_interval Time in seconds between the creation of each output file.
-  # @attr [string] metric_type cpu|memory
+  # @attr [string] metric_type system_cpu|system_memory
   # @attr [string] metrics_dir The puppet_metrics_collector output directory.
   # @attr [boolean] verbose Verbose output
   # @attr [string] hostname Name of the host the metrics are from. In directory name and json file.
@@ -40,7 +40,7 @@ module SystemMetrics
     #
     # @param [integer] polling_interval Time in seconds between calls to poll the system for data.
     # @param [integer] file_interval Time in seconds between the creation of each output file.
-    # @param [string] metric_type cpu|memory
+    # @param [string] metric_type system_cpu|system_memory
     # @param [string] metrics_dir The puppet_metrics_collector output directory.
     # @param [boolean] verbose Verbose output
     #
@@ -65,7 +65,7 @@ module SystemMetrics
     def run_sar
       times_to_poll = (@file_interval / @polling_interval).round
       # sar inputs are polling interval and how many times to poll
-      comm_flags = " -r" if @metric_type =~ /memory/
+      comm_flags = " -r" if @metric_type =~ /system_memory/
       comm = "sar #{comm_flags} #{@polling_interval} #{times_to_poll}"
       puts "sar command is: #{comm}" if @verbose
       %x[#{comm}]
@@ -83,7 +83,7 @@ module SystemMetrics
     def parse_sar_output(sar_output)
       sar_output_arr = sar_output.split(/\n+|\r+/).reject(&:empty?).map { |line| line.split }
 
-      if ( @metric_type == "memory")
+      if ( @metric_type == "system_memory")
         unique_header_str = "%memused"
       else
         unique_header_str = "%user"
@@ -142,7 +142,7 @@ module SystemMetrics
     # @return [void]
     def create_file(json_dataset, time_stamp_obj)
       filename = time_stamp_obj.utc.strftime('%Y%m%dT%H%M%SZ') + '.json'
-      dirname = "#{@metrics_dir}/system_#{@metric_type}/#{@hostname}"
+      dirname = "#{@metrics_dir}/#{@metric_type}/#{@hostname}"
       file_path = "#{dirname}/#{filename}"
       FileUtils.mkdir_p(dirname) unless File.directory?(dirname)
       puts "Creating json file: #{file_path}" if @verbose
@@ -167,10 +167,10 @@ end
 
 if $PROGRAM_NAME == __FILE__
 
-  VALID_METRIC_TYPES = %w[cpu memory]
+  VALID_METRIC_TYPES = %w[system_cpu system_memory]
   FILE_INTERVAL_DEFAULT = 60 * 5
   POLLING_INTERVAL_DEFAULT = 1
-  METRIC_TYPE_DEFAULT = "cpu"
+  METRIC_TYPE_DEFAULT = "system_cpu"
   METRICS_DIR_DEFAULT = "/opt/puppetlabs/puppet-metrics-collector"
 
   DESCRIPTION = <<-DESCRIPTION

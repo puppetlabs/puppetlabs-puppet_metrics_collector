@@ -37,6 +37,19 @@ node 'master.example.com' {
 }
 ```
 
+Optionally, you can also gather some basic system metrics.  Unlike the service metrics, this has to be enabled on each host you want metrics from, and the resulting data will be only on that host.  Do not include the top level puppet_metrics_collector on anything other than the master as it will collect the same data as the one on the master.  This functionality depends on sysstat.
+
+```
+node 'master.example.com' {
+  include puppet_metrics_collector
+  include puppet_metrics_collector::system
+}
+
+node 'compilerA.example.com', 'compilerB.example.com,' {
+  include puppet_metrics_collector::system
+}
+``` 
+
 ### Configuration
 
 This module automatically configures the hosts it queries by querying PuppetDB for PE Infrastructure Hosts. If there is an error with automatic configuration of hosts, refer to [Manual Configuration of Hosts](#manual-configuration-of-hosts).
