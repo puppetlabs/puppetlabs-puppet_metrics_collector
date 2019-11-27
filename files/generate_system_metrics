@@ -31,6 +31,7 @@ module SystemMetrics
   # @attr [string] metrics_dir The puppet_metrics_collector output directory.
   # @attr [boolean] verbose Verbose output
   # @attr [string] hostname Name of the host the metrics are from. In directory name and json file.
+  # @attr [obj] time_stamp_obj Time object to use for generating the filename
   #
   class GenerateSystemMetrics
     #
@@ -55,6 +56,8 @@ module SystemMetrics
       @hostname = %x[hostname].strip
       puts "Hostname is: #{@hostname}" if @verbose
       FileUtils.mkdir_p(@metrics_dir) unless File.directory?(@metrics_dir)
+      # The time object is set after the sar run for consistency
+      @time_stamp_obj = nil
     end
 
     # Run sar to collect the raw system data
@@ -68,7 +71,12 @@ module SystemMetrics
       comm_flags = " -r" if @metric_type =~ /system_memory/
       comm = "sar #{comm_flags} #{@polling_interval} #{times_to_poll}"
       puts "sar command is: #{comm}" if @verbose
-      %x[#{comm}]
+      begin
+        %x[#{comm}]
+      rescue Exception => e
+        error_msg = [e.class, e.message].join " "
+        send_error_to_output_file_and_exit(error_msg)
+      end
     end
 
     # Parse the sar output and extract the metrics data
@@ -76,8 +84,6 @@ module SystemMetrics
     # @author Randell Pelak
     #
     # @param [array] sar_output
-    #
-    # @raise [RuntimeError] if sar_output doesn't parse correctly
     #
     # @return [hash] The metrics data
     def parse_sar_output(sar_output)
@@ -89,15 +95,20 @@ module SystemMetrics
         unique_header_str = "%user"
       end
       headers_line = sar_output_arr.find { |e| e.include? unique_header_str }
-
-      sar_error_missing_headers = "sar output invalid or missing headers." +
-                                  "failed to find line with #{unique_header_str}."
-                                  "\nFull output:\n#{sar_output}"
-      raise(sar_error_missing_headers) if headers_line.nil?
+      sar_error_missing_headers = <<-EOF
+        sar output invalid or missing headers. Failed to find line with #{unique_header_str}.
+        Full output:
+        #{sar_output}
+      EOF
+      send_error_to_output_file_and_exit(sar_error_missing_headers) if headers_line.nil?
 
       averages_line = sar_output_arr.find { |e| e.include? "Average:" }
-      sar_error_missing_averages = "sar output missing \"Average:\"\nFull output:\n#{sar_output}"
-      raise(sar_error_missing_averages) if averages_line.nil?
+      sar_error_missing_averages = <<-EOF
+        sar output missing "Average:"
+        Full output:
+        #{sar_output}"
+      EOF
+      send_error_to_output_file_and_exit(sar_error_missing_averages) if averages_line.nil?
 
       Hash[headers_line.reverse.zip(averages_line.reverse).reverse]
 
@@ -113,35 +124,46 @@ module SystemMetrics
       data_hash.transform_values!(&:to_f)
     end
 
-    # Convert the inputted sar output into json and raise errors if the sar output is invalid
+    # Create the file and put the json data with the error in it
+    # then exit
     #
     # @author Randell Pelak
     #
-    # @param [string] sar_output
-    # @param [obj] time_stamp_obj Time object to use for generating the filename
+    # @param [string] error_msg Error message to put in the json
     #
-    # @raise [RuntimeError] if sar_output doesn't parse correctly
-    #
-    # @return [string] json of sar output
-    def convert_sar_output_to_json(sar_output, time_stamp_obj)
-      hostkey = @hostname.gsub('.', '-')
-      dataset = {'timestamp' => time_stamp_obj.utc.iso8601, 'servers' => {}}
-      metrics_data = parse_sar_output(sar_output)
-      dataset['servers'][hostkey] = {@metric_type => metrics_data}
-      json_dataset = JSON.pretty_generate(dataset)
-      return json_dataset
+    # @return [void]
+    def send_error_to_output_file_and_exit(error_msg)
+      # Time object is created after successful sar run
+      # so could be nil when an error occurs. But the file needs a name based on a timestamp
+      @time_stamp_obj = Time.now if @time_stamp_obj.nil?
+      metrics_json = metrics_to_json({:error => error_msg})
+      write_metrics_to_file(metrics_json)
+      exit 1
     end
 
-    # Create the file and put the json data in it
+    # Create the metrics json
+    #
+    # @author Randell Pelak
+    #
+    # @param [hash] metrics_data the data for the metrics section of the jason
+    #
+    # @return [string] json
+    def metrics_to_json(metrics_data)
+      hostkey = @hostname.gsub('.', '-')
+      metrics_json = {'timestamp' => @time_stamp_obj.utc.iso8601, 'servers' => {}}
+      metrics_json['servers'][hostkey] = {@metric_type => metrics_data}
+      JSON.pretty_generate(metrics_json)
+    end
+
+    # Create the metric file and put the json data in it
     #
     # @author Randell Pelak
     #
     # @param [string] json_dataset data in json format to put in file
-    # @param [obj] time_stamp_obj Time object to use for generating the filename
     #
     # @return [void]
-    def create_file(json_dataset, time_stamp_obj)
-      filename = time_stamp_obj.utc.strftime('%Y%m%dT%H%M%SZ') + '.json'
+    def write_metrics_to_file(json_dataset)
+      filename = @time_stamp_obj.utc.strftime('%Y%m%dT%H%M%SZ') + '.json'
       dirname = "#{@metrics_dir}/#{@metric_type}/#{@hostname}"
       file_path = "#{dirname}/#{filename}"
       FileUtils.mkdir_p(dirname) unless File.directory?(dirname)
@@ -149,7 +171,7 @@ module SystemMetrics
       File.write(file_path, json_dataset)
     end
 
-    # Get the data and create the file
+    # Get the data and create the metric json file
     #
     # @author Randell Pelak
     #
@@ -158,9 +180,11 @@ module SystemMetrics
       sar_output = run_sar
       # time stamp generated after sar run to be consistent with
       # pe metrics from puppet metrics collector
-      time_stamp_obj = Time.now
-      json_data = convert_sar_output_to_json(sar_output, time_stamp_obj)
-      create_file(json_data, time_stamp_obj)
+      @time_stamp_obj = Time.now
+      @time_stamp_obj.freeze
+      metrics_data = parse_sar_output(sar_output)
+      metrics_json = metrics_to_json(metrics_data)
+      write_metrics_to_file(metrics_json)
     end
   end
 end
