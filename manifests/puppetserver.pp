@@ -9,6 +9,7 @@ class puppet_metrics_collector::puppetserver (
   Optional[Integer] $metrics_server_port     = $puppet_metrics_collector::metrics_server_port,
   Optional[String]  $metrics_server_db_name  = $puppet_metrics_collector::metrics_server_db_name,
   Optional[String]  $override_metrics_command = $puppet_metrics_collector::override_metrics_command,
+  Optional[Array[String]] $excludes           = $puppet_metrics_collector::puppetserver_excludes,
   ) {
   Puppet_metrics_collector::Pe_metric {
     output_dir     => $puppet_metrics_collector::output_dir,
@@ -52,5 +53,6 @@ class puppet_metrics_collector::puppetserver (
     metrics_server_hostname => $metrics_server_hostname,
     metrics_server_port     => $metrics_server_port,
     metrics_server_db_name  => $metrics_server_db_name,
+    excludes                => $excludes,
   }
 }

@@ -8,6 +8,7 @@ class puppet_metrics_collector::orchestrator (
   Optional[String]  $metrics_server_hostname = $puppet_metrics_collector::metrics_server_hostname,
   Optional[Integer] $metrics_server_port     = $puppet_metrics_collector::metrics_server_port,
   Optional[String]  $metrics_server_db_name  = $puppet_metrics_collector::metrics_server_db_name,
+  Optional[Array[String]] $excludes          = $puppet_metrics_collector::orchestrator_excludes,
   ) {
   Puppet_metrics_collector::Pe_metric {
     output_dir     => $puppet_metrics_collector::output_dir,
@@ -24,5 +25,6 @@ class puppet_metrics_collector::orchestrator (
     metrics_server_hostname => $metrics_server_hostname,
     metrics_server_port     => $metrics_server_port,
     metrics_server_db_name  => $metrics_server_db_name,
+    excludes                => $excludes,
   }
 }
