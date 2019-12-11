@@ -1,14 +1,31 @@
+# Minor Release 5.3.0
+
+## Improvements
+ - Enable FOSS support with Puppetserver collection
+   - [PR #23](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/23)
+ - Remove `127.0.0.1` special case naming
+   - [PR #26](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/26)
+ - Add the ability to generate system metrics
+   - [PR #28](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/28)
+   - [PR #30](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/30)
+ - Make the output files smaller by excluding metrics and not pretty printing
+   - [PR #29](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/29)
+
+## Changes
+ - Add a newline to STDOUT of the processing script
+   - [PR #27](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/27)
+
 # Minor Release 5.2.0
 
 ## Improvements
- - Add ability to send metrics data directly to influxdb, graphite, 
-   or splunk ( in combination with the splunk_hec module ) 
-  - https://github.com/puppetlabs/puppetlabs-puppet\_metrics\_collector/pull/19
+ - Add ability to send metrics data directly to influxdb, graphite,
+   or splunk ( in combination with the splunk_hec module )
+   - https://github.com/puppetlabs/puppetlabs-puppet\_metrics\_collector/pull/19
 
 ## Changes
  - Update metadata dependency information to reflect support for
    puppetlabs/stdlib 6.x
-  - https://github.com/puppetlabs/puppetlabs-puppet\_metrics\_collector/pull/22
+   - https://github.com/puppetlabs/puppetlabs-puppet\_metrics\_collector/pull/22
 
 # Patch Release 5.1.2
 
