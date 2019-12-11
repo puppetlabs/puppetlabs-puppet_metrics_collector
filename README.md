@@ -29,11 +29,24 @@ This module collects metrics provided by the status endpoints of Puppet Enterpri
 
 Install this module with `puppet module install puppetlabs-puppet_metrics_collector` or add it to your Puppetfile.
 
-To activate this module, classify your Primary Master (aka Master of Masters or MoM) with the `puppet_metrics_collector` class using your preferred classification method.
+To activate this module, classify your Primary Master (aka Master of Masters or MoM) with the `puppet_metrics_collector` class using your preferred classification method. Below is an example when using the `site.pp`.
 
 ```
 node 'master.example.com' {
   include puppet_metrics_collector
+}
+```
+
+Optionally, you can also gather some basic system metrics.  Unlike the service metrics, this has to be enabled on each host you want metrics from, and the resulting data will be only on that host.  Do not include the top level puppet_metrics_collector on anything other than the master as it will collect the same data as the one on the master.  This functionality depends on sysstat.
+
+```
+node 'master.example.com' {
+  include puppet_metrics_collector
+  include puppet_metrics_collector::system
+}
+
+node 'compilerA.example.com', 'compilerB.example.com,' {
+  include puppet_metrics_collector::system
 }
 ```
 
@@ -95,11 +108,18 @@ Optional String: Allows you to override the command that is run to gather metric
 
 ### Grepping Metrics
 
+The metrics come in a JSON hash on one line. In order to convert the metric files into a pretty format, they can be processed with `python -m json.tool` like below.
+
+```bash
+cd /opt/puppetlabs/puppet-metrics-collector
+for i in <service_name>/master.example.com/*.json; do echo "$(python -m json.tool < $i)" > $i; done
+```
+
 You can search for useful information by performing a `grep` in the following format, run from inside the directory containing the metrics.
 
 ```
 cd /opt/puppetlabs/puppet-metrics-collector
-grep <metric_name> <service_name>/127.0.0.1/*.json
+grep <metric_name> <service_name>/master.example.com/*.json
 ```
 
 Since the metrics are compressed every night, you can only search metrics for the current day. To search older metrics, decompress the compressed files into a subdirectory of `/tmp` and run from inside that directory.
@@ -110,10 +130,10 @@ Since the metrics are compressed every night, you can only search metrics for th
 Example:
 
 ```
-grep average-free-jrubies puppetserver/127.0.0.1/*.json
-puppetserver/127.0.0.1/20170404T170501Z.json:                "average-free-jrubies": 0.9950009285369501,
-puppetserver/127.0.0.1/20170404T171001Z.json:                "average-free-jrubies": 0.9999444653324225,
-puppetserver/127.0.0.1/20170404T171502Z.json:                "average-free-jrubies": 0.9999993830655706,
+grep average-free-jrubies puppetserver/master.example.com/*.json
+puppetserver/master.example.com/20170404T170501Z.json:                "average-free-jrubies": 0.9950009285369501,
+puppetserver/master.example.com/20170404T171001Z.json:                "average-free-jrubies": 0.9999444653324225,
+puppetserver/master.example.com/20170404T171502Z.json:                "average-free-jrubies": 0.9999993830655706,
 ```
 
 #### Grepping PuppetDB Metrics
@@ -121,25 +141,25 @@ puppetserver/127.0.0.1/20170404T171502Z.json:                "average-free-jrubi
 Example:
 
 ```
-grep queue_depth puppetdb/127.0.0.1/*.json
-puppetdb/127.0.0.1/20170404T170501Z.json:            "queue_depth": 0,
-puppetdb/127.0.0.1/20170404T171001Z.json:            "queue_depth": 0,
-puppetdb/127.0.0.1/20170404T171502Z.json:            "queue_depth": 0,
+grep queue_depth puppetdb/master.example.com/*.json
+puppetdb/master.example.com/20170404T170501Z.json:            "queue_depth": 0,
+puppetdb/master.example.com/20170404T171001Z.json:            "queue_depth": 0,
+puppetdb/master.example.com/20170404T171502Z.json:            "queue_depth": 0,
 ```
 
 Example for PE 2016.5 and older:
 
 ```
-grep Cursor puppetdb/127.0.0.1/*.json
-puppetdb/127.0.0.1/20170404T171001Z.json:          "CursorMemoryUsage": 0,
-puppetdb/127.0.0.1/20170404T171001Z.json:          "CursorFull": false,
-puppetdb/127.0.0.1/20170404T171001Z.json:          "CursorPercentUsage": 0,
-puppetdb/127.0.0.1/20170404T171502Z.json:          "CursorMemoryUsage": 0,
-puppetdb/127.0.0.1/20170404T171502Z.json:          "CursorFull": false,
-puppetdb/127.0.0.1/20170404T171502Z.json:          "CursorPercentUsage": 0,
-puppetdb/127.0.0.1/20170404T172002Z.json:          "CursorMemoryUsage": 0,
-puppetdb/127.0.0.1/20170404T172002Z.json:          "CursorFull": false,
-puppetdb/127.0.0.1/20170404T172002Z.json:          "CursorPercentUsage": 0,
+grep Cursor puppetdb/master.example.com/*.json
+puppetdb/master.example.com/20170404T171001Z.json:          "CursorMemoryUsage": 0,
+puppetdb/master.example.com/20170404T171001Z.json:          "CursorFull": false,
+puppetdb/master.example.com/20170404T171001Z.json:          "CursorPercentUsage": 0,
+puppetdb/master.example.com/20170404T171502Z.json:          "CursorMemoryUsage": 0,
+puppetdb/master.example.com/20170404T171502Z.json:          "CursorFull": false,
+puppetdb/master.example.com/20170404T171502Z.json:          "CursorPercentUsage": 0,
+puppetdb/master.example.com/20170404T172002Z.json:          "CursorMemoryUsage": 0,
+puppetdb/master.example.com/20170404T172002Z.json:          "CursorFull": false,
+puppetdb/master.example.com/20170404T172002Z.json:          "CursorPercentUsage": 0,
 ```
 
 
@@ -171,14 +191,14 @@ Example:
 
 ```
 /opt/puppetlabs/puppet-metrics-collector/puppetserver
-├── 127.0.0.1
+├── master.example.com
 │   ├── 20170404T020001Z.json
 │   ├── ...
 │   ├── 20170404T170501Z.json
 │   └── 20170404T171001Z.json
 └── puppetserver-2017.04.04.02.00.01.tar.bz2
 /opt/puppetlabs/puppet-metrics-collector/puppetdb
-└── 127.0.0.1
+└── master.example.com
 │   ├── 20170404T020001Z.json
 │   ├── ...
 │   ├── 20170404T170501Z.json
@@ -316,7 +336,7 @@ If the future parser is enabled, globally or in the environment, the following c
 
 ```
 class { 'puppet_metrics_collector':
-  output_dir => '/opt/puppet/puppet_metrics_collector'
+  output_dir => '/opt/puppet/puppet-metrics-collector'
 }
 ```
 
@@ -324,5 +344,5 @@ Otherwise, use the following commands.
 
 ```
 puppet module install puppetlabs-puppet_metrics_collector --modulepath /tmp;
-puppet apply -e "class { 'puppet_metrics_collector' : output_dir => '/opt/puppet/puppet_metrics_collector' }"  --modulepath /tmp --parser=future
+puppet apply -e "class { 'puppet_metrics_collector' : output_dir => '/opt/puppet/puppet-metrics-collector' }"  --modulepath /tmp --parser=future
 ```

@@ -694,3 +694,6 @@ Style/YodaCondition:
   Enabled: false
 Style/ZeroLengthPredicate:
   Enabled: false
+GetText/DecorateString:
+  Exclude:
+    - 'files/generate_system_metrics'

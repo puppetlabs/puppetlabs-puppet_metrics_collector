@@ -45,6 +45,7 @@ METRICS    = config['additional_metrics']
 CLIENTCERT = config['clientcert']
 PE_VERSION = config['pe_version']
 SSL        = coalesce(options[:ssl], config['ssl'], true)
+EXCLUDES   = config['excludes']
 
 $error_array = []
 
@@ -144,6 +145,19 @@ def retrieve_additional_metrics(host,port,metrics,pe_version, ssl)
   return metrics_array
 end
 
+def filter_metrics(dataset, filters)
+  return dataset if filters.empty?
+
+  case dataset
+  when Hash
+    dataset = dataset.inject({}) {|m, (k, v)| m[k] = filter_metrics(v,filters) unless filters.include? k ; m }
+  when Array
+    dataset.map! {|e| filter_metrics(e,filters)}
+  end
+
+  return dataset
+end
+
 filename = Time.now.utc.strftime('%Y%m%dT%H%M%SZ') + '.json'
 
 HOSTS.each do |host|
@@ -171,7 +185,8 @@ HOSTS.each do |host|
     dataset['servers'][hostkey][METRICS_TYPE]['api-query-start'] = timestamp.utc.iso8601
     dataset['servers'][hostkey][METRICS_TYPE]['api-query-duration'] = Time.now - timestamp
 
-    json_dataset = JSON.pretty_generate(dataset)
+    filtered_dataset = filter_metrics(dataset, EXCLUDES)
+    json_dataset = JSON.generate(filtered_dataset)
 
     unless OUTPUT_DIR.nil? then
       Dir.chdir(OUTPUT_DIR) do
