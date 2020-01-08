@@ -11,6 +11,12 @@ class puppet_metrics_collector (
   String        $orchestrator_metrics_ensure   = 'present',
   Array[String] $orchestrator_hosts            = puppet_metrics_collector::hosts_with_pe_profile('orchestrator'),
   Integer       $orchestrator_port             = 8143,
+  String        $ace_metrics_ensure            = 'present',
+  Array[String] $ace_hosts                     = puppet_metrics_collector::hosts_with_pe_profile('ace_server'),
+  Integer       $ace_port                      = 44633,
+  String        $bolt_metrics_ensure           = 'present',
+  Array[String] $bolt_hosts                    = puppet_metrics_collector::hosts_with_pe_profile('bolt_server'),
+  Integer       $bolt_port                     = 62658,
   String        $activemq_metrics_ensure       = 'absent',
   Array[String] $activemq_hosts                = puppet_metrics_collector::hosts_with_pe_profile('amq::broker'),
   Integer       $activemq_port                 = 8161,
@@ -23,12 +29,20 @@ class puppet_metrics_collector (
   Optional[Array[String]] $puppetserver_excludes = undef,
   Optional[Array[String]] $puppetdb_excludes     = undef,
   Optional[Array[String]] $orchestrator_excludes = undef,
+  Optional[Array[String]] $ace_excludes          = undef,
+  Optional[Array[String]] $bolt_excludes         = undef,
 ) {
   $scripts_dir = "${output_dir}/scripts"
   $bin_dir     = "${output_dir}/bin"
 
   file { [ $output_dir, $scripts_dir, $bin_dir] :
     ensure => directory,
+  }
+
+  file { "${scripts_dir}/puma_metrics" :
+    ensure => present,
+    mode   => '0755',
+    source => 'puppet:///modules/puppet_metrics_collector/puma_metrics'
   }
 
   file { "${scripts_dir}/tk_metrics" :
@@ -66,6 +80,8 @@ class puppet_metrics_collector (
   include puppet_metrics_collector::puppetserver
   include puppet_metrics_collector::puppetdb
   include puppet_metrics_collector::orchestrator
+  include puppet_metrics_collector::ace
+  include puppet_metrics_collector::bolt
   include puppet_metrics_collector::activemq
 
   # LEGACY CLEANUP
