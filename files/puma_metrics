@@ -42,24 +42,37 @@ OUTPUT_DIR = options[:output_dir]
 HOSTS      = config['hosts']
 PORT       = coalesce(options[:metrics_port], config['metrics_port'])
 METRICS    = config['additional_metrics']
-CLIENTCERT = config['clientcert']
 PE_VERSION = config['pe_version']
 SSL        = coalesce(options[:ssl], config['ssl'], true)
 EXCLUDES   = config['excludes']
 
+if SSL
+  CERTNAME = `puppet config print certname`.chomp
+  SSLDIR   = `puppet config print ssldir`.chomp
+end
+
 $error_array = []
 
+# Change to reflect the version of PE with Puma metrics endpoints.
 exit if Gem::Version.new(PE_VERSION) < Gem::Version.new('2019.4.0')
 
 def setup_connection(url, ssl)
   uri  = URI.parse(url)
   http = Net::HTTP.new(uri.host, uri.port)
+
   if ssl then
     http.use_ssl = true
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    # PE Puma services serve metrics from endpoints requiring a client certificate.
+    # If https://github.com/puma/puma/pull/2098 is merged into the Puma used by PE,
+    # we can collect metrics from /stats and /gc-stats without a client certificate.
+    http.ca_path = "#{SSLDIR}/ca"
+    http.ca_file = "#{SSLDIR}/certs/ca.pem"
+    http.cert = OpenSSL::X509::Certificate.new(File.read("#{SSLDIR}/certs/#{CERTNAME}.pem"))
+    http.key = OpenSSL::PKey::RSA.new(File.read("#{SSLDIR}/private_keys/#{CERTNAME}.pem"))
   end
 
-  return http,uri
+  return http, uri
 end
 
 def get_endpoint(url,ssl)
@@ -81,17 +94,20 @@ def generate_host_url(host, port, ssl)
   host_url = "#{protocol}://#{host}:#{port}"
 end
 
+# If https://github.com/puma/puma/pull/2098 is merged into the Puma used by PE,
+# we can collect metrics from /stats and /gc-stats without a client certificate.
+
 def get_status_endpoint(host, port, ssl)
   host_url = generate_host_url(host, port, ssl)
 
-  status_endpoint = "#{host_url}/stats"
+  status_endpoint = "#{host_url}/admin/status"
   status_output   = get_endpoint(status_endpoint,ssl)
 end
 
 def get_gc_status_endpoint(host, port, ssl)
   host_url = generate_host_url(host, port, ssl)
 
-  status_endpoint = "#{host_url}/gc-stats"
+  status_endpoint = "#{host_url}/admin/gc_stat"
   status_output   = get_endpoint(status_endpoint,ssl)
 end
 
