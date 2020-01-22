@@ -9,14 +9,19 @@ require "time"
 require "fileutils"
 
 # This script is intended to be run on a puppet infrastructure node as part of the
-# puppet_metrics_collector module.  It will generate system statistics in the file format that
-# other puppet_metrics_collector stats follow.  Over a time period defined as the file interval,
-# it will poll the system for data based on the polling interval, then calculate an average from
-# the polling data to put in the file as a single data point at the end of the file interval.
+# puppet_metrics_collector module.  It will generate system/process statistics in the file format
+# that other puppet_metrics_collector stats follow.  Over a time period defined as the file
+# interval, it will poll the system for data based on the polling interval, then calculate an
+# average from the polling data to put in the file as a single data point at the end of the file
+# interval.
 # sar_metric.pp will setup a cron job to run this similar to how pe_metric runs tk_metrics
 #
 # Example execution
 # generate_system_metrics --metric_type system_cpu --file_interval 300 --polling_interval 1
+#                         --metrics_dir /opt/puppetlabs/puppet-metrics-collector
+# or
+# generate_system_metrics --metric_type processes --file_interval 300 --polling_interval 1
+#                         --process_expression '/opt/puppetlabs|puma.*/etc/puppetlabs'
 #                         --metrics_dir /opt/puppetlabs/puppet-metrics-collector
 
 # General namespace for SystemMetrics module
@@ -27,8 +32,9 @@ module SystemMetrics
   #
   # @attr [integer] polling_interval Time in seconds between calls to poll the system for data.
   # @attr [integer] file_interval Time in seconds between the creation of each output file.
-  # @attr [string] metric_type system_cpu|system_memory
+  # @attr [string] metric_type system_cpu|system_memory|processes
   # @attr [string] metrics_dir The puppet_metrics_collector output directory.
+  # @attr [string] process_expression Expression to pass to egrep that matches processes to track
   # @attr [boolean] verbose Verbose output
   # @attr [string] hostname Name of the host the metrics are from. In directory name and json file.
   # @attr [obj] time_stamp_obj Time object to use for generating the filename
@@ -42,14 +48,17 @@ module SystemMetrics
     # @param [integer] polling_interval Time in seconds between calls to poll the system for data.
     # @param [integer] file_interval Time in seconds between the creation of each output file.
     # @param [string] metric_type system_cpu|system_memory
+    # @param [string] process_expression Expression to pass to egrep that matches processes to track
     # @param [string] metrics_dir The puppet_metrics_collector output directory.
     # @param [boolean] verbose Verbose output
     #
     # @return [void]
-    def initialize(polling_interval, file_interval, metric_type, metrics_dir, verbose = false)
+    def initialize(polling_interval, file_interval, metric_type, process_expression, metrics_dir,
+                   verbose = false)
       @polling_interval = polling_interval
       @file_interval = file_interval
       @metric_type = metric_type
+      @process_expression = process_expression
       @metrics_dir = metrics_dir
       @verbose = verbose
 
@@ -124,6 +133,169 @@ module SystemMetrics
       data_hash.transform_values!(&:to_f)
     end
 
+    # Run pidstat to collect process specific data
+    #
+    # @author Randell Pelak
+    #
+    # @param [hash] processes_to_monitor Key:PID Value:command(spaces allowed)
+    #
+    # @return [string] raw output from pidstat
+    def run_pidstat(processes_to_monitor)
+      process_ids = processes_to_monitor.keys.join(",")
+      times_to_poll = (@file_interval / @polling_interval).round
+      # pidstat inputs are process_ids polling interval and how many times to poll
+      comm = "pidstat -rud -p #{process_ids}  #{@polling_interval} #{times_to_poll}"
+      puts "pidstat command is: #{comm}" if @verbose
+      begin
+        %x[#{comm}]
+      rescue Exception => e
+        error_msg = [e.class, e.message].join " "
+        send_error_to_output_file_and_exit(error_msg)
+      end
+    end
+
+    # Use ps and grep to get the process id and command of the processes we want to monitor
+    #
+    # @author Randell Pelak
+    #
+    # @return [hash] processes and commands to monitor. Key:PID Value:command(spaces allowed)
+    def find_processes_to_monitor
+      processes_to_monitor = {}
+      comm = "ps -eo pid,cmd | grep -E \'#{@process_expression}\'"
+      # we don't want to track PMC scripts or the grep command itself
+      comm += "| grep -vE 'puppet-metrics-collector|grep|generate_system_metrics'"
+      puts "process grep command is: #{comm}" if @verbose
+      begin
+        process_info = %x[#{comm}]
+      rescue Exception => e
+        error_msg = [e.class, e.message].join " "
+        send_error_to_output_file_and_exit(error_msg)
+      end
+      process_info.each_line do |line|
+        # use the PID as key and command with args as value
+        # string will be of the form:
+        # <pid> <command>
+        # Where command can and usually does have spaces in it.
+        processes_to_monitor[line.split(' ').first] = line.split(' ')[1..-1].join(' ')
+      end
+      return processes_to_monitor
+    end
+
+    # Parse the pidstat output and extract the metrics data, add in processes information
+    #
+    # Output to be parsed should look like this (plus some extra above it)
+    #
+    # Average:      UID       PID    %usr %system  %guest    %CPU   CPU  Command
+    # Average:      996     14537    0.00    0.00    0.00    0.00     -  puma
+    # Average:      990      2803    0.00    0.00    0.00    0.00     -  java
+    #
+    # Average:      UID       PID  minflt/s  majflt/s     VSZ    RSS   %MEM  Command
+    # Average:      996     14537      0.00      0.00  630672  35560   0.23  puma
+    # Average:      990      2803      1.33      0.00 7634052 1150060   7.34  java
+    #
+    # Average:      UID       PID   kB_rd/s   kB_wr/s kB_ccwr/s  Command
+    # Average:      996     14537      0.00      0.00      0.00  puma
+    # Average:      990      2803      0.00      1.33      0.00  java
+    #
+    # @author Randell Pelak
+    #
+    # @param [array] pidstat_output
+    # @param [hash] processes_to_monitor Key:PID Value:command(spaces allowed)
+    #
+    # @return [hash] The metrics data
+    def parse_pidstat_output(pidstat_output, processes_to_monitor)
+      pidstat_output_arr = pidstat_output.split(/\n+|\r+/).reject(&:empty?)
+
+      data_hash = {}
+      fields = Array.new(9,"bogus") # make it clear something went wrong if this ends up in the file
+      pidstat_output_arr.each do |line|
+        if line =~ /^Average:\s+UID/ #find a header row
+          fields = line.split(' ').drop(3)
+        end
+        if line =~ /^Average:\s+\d/ #find a row with averages data
+          value_array = line.split(' ')
+          values = value_array.drop(3)
+          pid = value_array[2]
+          line_data = Hash[fields.zip(values)]
+          command_pidstat = line_data["Command"]
+          # remove anything that doesn't have a number for the value like "-" or "puma"
+          line_data.select!{ |k,v| v =~ /\A[-+]?[0-9]*\.?[0-9]+\Z/ }
+          line_data.transform_values!(&:to_f)
+          line_data["command_pidstat"] = command_pidstat
+          data_hash[pid] = {} if data_hash[pid].nil?
+          data_hash[pid].merge!(line_data)
+        end
+      end
+
+      # replace key with unique command identifier
+      # add the full command string
+      # add the pid that was the key as a data item
+      unknown_count = 0
+      processes_to_monitor.each do |k, v|
+        comm_identifier = determine_relevant_command_name(v,data_hash[k]["command_pidstat"])
+        if comm_identifier == "unknown" #needs to be unique so adding a counter
+          unknown_count += 1
+          comm_identifier = "#{comm_identifier}_#{unknown_count}"
+        end
+        data_hash[k].merge!({"command_full" => v, "pid" => k})
+        data_hash[comm_identifier] = data_hash.delete(k)
+      end
+
+      return data_hash
+    end
+
+    # Determine the relevant command name for the process based on command information
+    # If not able, return unknown
+    #
+    # @author Randell Pelak
+    #
+    # @param [string] command_full full command text from ps
+    # @param [string] command_pidstat pidstat short command string
+    #
+    # @return [string] The service name or unknown
+    def determine_relevant_command_name(command_full, command_pidstat)
+      case command_pidstat
+      when  /^java$/
+        case command_full
+        when /puppetserver/
+          return "puppetserver"
+        when /puppetdb/
+          return "puppetdb"
+        when /console-services/
+          return "console"
+        when /orchestration-services/
+          return "orchestrator"
+        end
+      when /^postgres$/
+        return "postgres"
+      when /^pxp-agent$/
+        return "pxp-agent"
+      when /^puma$/
+        case command_full
+        when /bolt-server/
+          return "bolt-server"
+        when /ace-server/
+          if command_full =~ /ruby/
+            return "ace-cleanup"
+          end
+          return "ace-server"
+        end
+      when /^nginx$/
+        return "nginx"
+      end
+      return "unknown"
+    end
+
+    # Generate metrics data for the case where there are no processes to monitor on the host
+    #
+    # @author Randell Pelak
+    #
+    # @return [hash] The metrics data
+    def generate_no_processes_metrics_data
+      warning_msg = "No processes matching the process_expression found on the host to monitor"
+      {:warning => warning_msg, :process_expression => @process_expression}
+    end
+
     # Create the file and put the json data with the error in it
     # then exit
     #
@@ -171,19 +343,61 @@ module SystemMetrics
       File.write(file_path, json_dataset)
     end
 
-    # Get the data and create the metric json file
+    # Generate the system data
     #
     # @author Randell Pelak
     #
-    # @return [void]
+    # @return [hash] metrics data
     def generate_system_metrics
       sar_output = run_sar
       # time stamp generated after sar run to be consistent with
       # pe metrics from puppet metrics collector
       @time_stamp_obj = Time.now
-      @time_stamp_obj.freeze
-      metrics_data = parse_sar_output(sar_output)
+
+      parse_sar_output(sar_output)
+    end
+
+    # Generate the process data
+    #
+    # @author Randell Pelak
+    #
+    # @return [void]
+    def generate_process_metrics
+      processes_to_monitor = find_processes_to_monitor
+      num_of_processes = processes_to_monitor.keys.length
+      if num_of_processes < 1
+        # sleep to simulate a normal run so that the file names based on timestamp line up
+        times_to_poll = (@file_interval / @polling_interval).round
+        sleep @polling_interval * times_to_poll
+        metrics_data = generate_no_processes_metrics_data
+      else
+        pidstat_output = run_pidstat(processes_to_monitor)
+      end
+      # time stamp generated after pidstat run to be consistent with
+      # pe metrics from puppet metrics collector
+      @time_stamp_obj = Time.now
+
+      unless num_of_processes < 1
+        metrics_data = parse_pidstat_output(pidstat_output, processes_to_monitor)
+      end
+
+      return metrics_data
+    end
+
+    # Get the data and create the metric json file
+    #
+    # @author Randell Pelak
+    #
+    # @return [void]
+    def generate_metrics
+      if @metric_type == "processes"
+        metrics_data = generate_process_metrics
+      else
+        metrics_data = generate_system_metrics
+      end
+
       metrics_json = metrics_to_json(metrics_data)
+
       write_metrics_to_file(metrics_json)
     end
   end
@@ -191,10 +405,11 @@ end
 
 if $PROGRAM_NAME == __FILE__
 
-  VALID_METRIC_TYPES = %w[system_cpu system_memory]
+  VALID_METRIC_TYPES = %w[system_cpu system_memory processes]
   FILE_INTERVAL_DEFAULT = 60 * 5
   POLLING_INTERVAL_DEFAULT = 1
   METRIC_TYPE_DEFAULT = "system_cpu"
+  PROCESS_EXPRESSION_DEFAULT = "/opt/puppetlabs|puma.*/etc/puppetlabs"
   METRICS_DIR_DEFAULT = "/opt/puppetlabs/puppet-metrics-collector"
 
   DESCRIPTION = <<-DESCRIPTION
@@ -209,6 +424,7 @@ if $PROGRAM_NAME == __FILE__
       * polling_interval (-p, --polling_interval): #{POLLING_INTERVAL_DEFAULT}
       * file_interval (-f, --file_interval): #{FILE_INTERVAL_DEFAULT}
       * metric_type (-t, --metric_type): #{METRIC_TYPE_DEFAULT}
+      * process_expression (-e, --process_expression): #{PROCESS_EXPRESSION_DEFAULT}
       * metrics_dir (-m, --metrics_dir): #{METRICS_DIR_DEFAULT}
       * verbose (-v, --verbose): False
   DEFAULTS
@@ -237,6 +453,10 @@ if $PROGRAM_NAME == __FILE__
             "One of: #{VALID_METRIC_TYPES.join(', ')}") do |type|
       options[:metric_type] = type.downcase
     end
+    opts.on("-e", "--process_expression expression_list", String,
+            "Expression to pass to egrep that matches processes to track") do |expression_list|
+      options[:process_expression] = expression_list.downcase
+    end
     opts.on("-m", "--metrics_dir dir_path", String,
             "The puppet_metrics_collector output directory") do |metrics_dir|
       options[:metrics_dir] = metrics_dir
@@ -255,6 +475,7 @@ if $PROGRAM_NAME == __FILE__
   polling_interval = options[:polling_interval] || POLLING_INTERVAL_DEFAULT
   file_interval = options[:file_interval] || FILE_INTERVAL_DEFAULT
   metric_type = options[:metric_type] || METRIC_TYPE_DEFAULT
+  process_expression = options[:process_expression] || PROCESS_EXPRESSION_DEFAULT
   metrics_dir = options[:metrics_dir] || METRICS_DIR_DEFAULT
   verbose = options[:verbose] || false
 
@@ -269,6 +490,7 @@ if $PROGRAM_NAME == __FILE__
         * polling_interval: #{polling_interval}
         * file_interval: #{file_interval}
         * metric_type: #{metric_type}
+        * process_expression #{process_expression}
         * metrics_dir: #{metrics_dir}
         * verbose: #{verbose}
     SETTINGS
@@ -276,6 +498,6 @@ if $PROGRAM_NAME == __FILE__
   end
 
   obj = SystemMetrics::GenerateSystemMetrics.new(polling_interval, file_interval, metric_type,
-                                                 metrics_dir, verbose)
-  obj.generate_system_metrics
+                                                 process_expression, metrics_dir, verbose)
+  obj.generate_metrics
 end
