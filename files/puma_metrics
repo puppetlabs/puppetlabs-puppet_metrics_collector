@@ -53,8 +53,7 @@ end
 
 $error_array = []
 
-# Change to reflect the version of PE with Puma metrics endpoints.
-exit if Gem::Version.new(PE_VERSION) < Gem::Version.new('2019.4.0')
+exit if Gem::Version.new(PE_VERSION) < Gem::Version.new('2019.3.0')
 
 def setup_connection(url, ssl)
   uri  = URI.parse(url)
