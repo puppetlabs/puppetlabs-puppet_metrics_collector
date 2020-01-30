@@ -14,6 +14,8 @@
 # Returns ['127.0.0.1'] when PuppetDB returns no hosts.
 
 function puppet_metrics_collector::hosts_with_pe_profile($profile) {
+  # storeconfigs is used here to determine if PuppetDB is available to query.
+  # See: https://github.com/puppetlabs/puppet-enterprise-modules/blob/master/docs/pe-modules-next-discussion-outline.txt
   if $settings::storeconfigs {
     $_profile = capitalize($profile)
     $hosts = puppetdb_query("resources[certname] {
