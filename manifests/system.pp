@@ -52,4 +52,5 @@ class puppet_metrics_collector::system (
 
   include puppet_metrics_collector::system_cpu
   include puppet_metrics_collector::system_memory
+  include puppet_metrics_collector::processes
 }
