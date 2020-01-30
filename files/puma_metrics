@@ -47,8 +47,8 @@ SSL        = coalesce(options[:ssl], config['ssl'], true)
 EXCLUDES   = config['excludes']
 
 if SSL
-  CERTNAME = `puppet config print certname`.chomp
-  SSLDIR   = `puppet config print ssldir`.chomp
+  CERTNAME = `/usr/local/bin/puppet config print certname`.chomp
+  SSLDIR   = `/usr/local/bin/puppet config print ssldir`.chomp
 end
 
 $error_array = []
