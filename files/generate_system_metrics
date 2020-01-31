@@ -273,12 +273,12 @@ module SystemMetrics
       when /^puma$/
         case command_full
         when /bolt-server/
-          return "bolt-server"
+          return "bolt"
         when /ace-server/
           if command_full =~ /ruby/
             return "ace-cleanup"
           end
-          return "ace-server"
+          return "ace"
         end
       when /^nginx$/
         return "nginx"
