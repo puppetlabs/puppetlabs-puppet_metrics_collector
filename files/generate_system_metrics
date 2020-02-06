@@ -232,6 +232,7 @@ module SystemMetrics
       # add the pid that was the key as a data item
       unknown_count = 0
       processes_to_monitor.each do |k, v|
+        next unless data_hash.key?(k)
         comm_identifier = determine_relevant_command_name(v,data_hash[k]["command_pidstat"])
         if comm_identifier == "unknown" #needs to be unique so adding a counter
           unknown_count += 1
@@ -409,7 +410,7 @@ if $PROGRAM_NAME == __FILE__
   FILE_INTERVAL_DEFAULT = 60 * 5
   POLLING_INTERVAL_DEFAULT = 1
   METRIC_TYPE_DEFAULT = "system_cpu"
-  PROCESS_EXPRESSION_DEFAULT = "/opt/puppetlabs|puma.*/etc/puppetlabs"
+  PROCESS_EXPRESSION_DEFAULT = "/opt/puppetlabs.*(java|postgres)|puma.*/etc/puppetlabs/(ace|bolt)"
   METRICS_DIR_DEFAULT = "/opt/puppetlabs/puppet-metrics-collector"
 
   DESCRIPTION = <<-DESCRIPTION
