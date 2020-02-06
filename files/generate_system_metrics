@@ -18,11 +18,11 @@ require "fileutils"
 #
 # Example execution
 # generate_system_metrics --metric_type system_cpu --file_interval 300 --polling_interval 1
-#                         --metrics_dir /opt/puppetlabs/puppet-metrics-collector
+#                         --metrics_dir <path to puppet-metrics-collector data>
 # or
 # generate_system_metrics --metric_type processes --file_interval 300 --polling_interval 1
-#                         --process_expression '/opt/puppetlabs|puma.*/etc/puppetlabs'
-#                         --metrics_dir /opt/puppetlabs/puppet-metrics-collector
+#                         --process_expression <custom expression>
+#                         --metrics_dir <path to puppet-metrics-collector data>
 
 # General namespace for SystemMetrics module
 module SystemMetrics
