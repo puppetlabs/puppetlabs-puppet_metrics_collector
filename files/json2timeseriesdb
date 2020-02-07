@@ -215,9 +215,9 @@ def influx_tag_parser(tag)
     tag.delete('orchestrator')
   end
 
-  if tag.include? 'puppet_server'
-    tag_set = "#{tag_set}service=puppet_server,"
-    tag.delete('puppet_server')
+  if tag.include? 'puppetserver'
+    tag_set = "#{tag_set}service=puppetserver,"
+    tag.delete('puppetserver')
   end
 
   if tag.include? 'puppetdb'
@@ -225,12 +225,14 @@ def influx_tag_parser(tag)
     tag.delete('puppetdb')
   end
 
-  if tag.include? 'gc-stats'
-    n = tag.index 'gc-stats'
-    gcstats_name = tag[n.to_i + 1]
-    tag_set = "#{tag_set}gc-stats=#{gcstats_name},"
-    tag.delete_at(tag.index('gc-stats') + 1)
-    tag.delete('gc-stats')
+  if tag.include? 'ace'
+    tag_set = "#{tag_set}service=ace,"
+    tag.delete('ace')
+  end
+
+  if tag.include? 'bolt'
+    tag_set = "#{tag_set}service=bolt,"
+    tag.delete('bolt')
   end
 
   if tag.include? 'broker-service'
