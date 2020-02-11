@@ -378,9 +378,10 @@ end
 
 if ARGF.filename == '-'
   begin
-    converted_data = parse_input( JSON.parse(ARGF.read) )
+    input = ARGF.read
+    converted_data = input.lines.map { |l| parse_input( JSON.parse(l) )}
     if $options[:host]
-      $net_output.write(converted_data)
+      $net_output.write(converted_data.flatten.join("\n"))
     else
       STDOUT.puts(converted_data)
     end
