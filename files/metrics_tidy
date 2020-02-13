@@ -4,31 +4,40 @@ set -e
 
 # Arguments and defaults.
 
-METRICS_OUTPUT_DIR=${1:-/opt/puppetlabs/puppet-metrics-collector}
-METRICS_TYPE=${2:-puppetserver}
-RETENTION_DAYS=${3:-90}
+METRICS_DIR=${1:-/opt/puppetlabs/puppet-metrics-collector/puppetserver}
+RETENTION_DAYS=${2:-90}
 
-METRICS_DIR="$METRICS_OUTPUT_DIR/$METRICS_TYPE"
+METRICS_TYPE=$(basename "$METRICS_DIR")
 
-# Guard. 
+# Guard against deleting or archiving other files. 
 
+INVALID_PATHS=(/ /etc /var /opt /usr)
 METRICS_REALPATH=$(realpath "$METRICS_DIR")
-if [ "$METRICS_REALPATH" = "/" ]; then
-  echo "Invalid options"
+
+for INVALID_PATH in "${INVALID_PATHS[@]}"
+do
+  if [ " $METRICS_REALPATH " = " $INVALID_PATH " ]; then
+    echo "Invalid metrics directory"
+    exit 1
+  fi
+done
+
+if [ " $METRICS_TYPE " = " puppet-metrics-collector " ]; then
+  echo "Invalid metrics directory"
   exit 1
 fi
 
-# Delete files older than the retention period, in days.
+# Delete metrics files older than the retention period, in days.
 
-find "$METRICS_DIR" -type f -ctime +"$RETENTION_DAYS" -delete
+find "$METRICS_DIR" -type f -ctime +"$RETENTION_DAYS" -regex '\(.*gz$\|.*json$\)' -delete
 
-# Compress the remaining files.
+# Archive the remaining metrics files.
 
 cd "$METRICS_DIR"
 find . -type f -name "*.json" > "$METRICS_DIR.tmp"
 tar --create --gzip --file "$METRICS_DIR/$METRICS_TYPE-$(date +%Y.%m.%d.%H.%M.%S).tar.gz" --files-from "$METRICS_DIR.tmp"
 
-# Delete the files that have been compressed.
+# Delete metrics files that have been archived.
 
 xargs -r -a "$METRICS_DIR.tmp" rm
 rm "$METRICS_DIR.tmp"

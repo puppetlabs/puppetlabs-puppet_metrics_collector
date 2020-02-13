@@ -1,19 +1,15 @@
-class puppet_metrics_collector::system_memory (
-  Integer $collection_frequency      = $puppet_metrics_collector::system::collection_frequency,
-  Integer $polling_frequency_seconds = $puppet_metrics_collector::system::polling_frequency_seconds,
-  Integer $retention_days            = $puppet_metrics_collector::system::retention_days,
+# Collect System Memory Metrics
+class puppet_metrics_collector::system::memory (
   String  $metrics_ensure            = $puppet_metrics_collector::system::system_metrics_ensure,
+  Integer $collection_frequency      = $puppet_metrics_collector::system::collection_frequency,
+  Integer $retention_days            = $puppet_metrics_collector::system::retention_days,
+  Integer $polling_frequency_seconds = $puppet_metrics_collector::system::polling_frequency_seconds,
   ) {
-  Puppet_metrics_collector::Sar_metric {
-    output_dir                => $puppet_metrics_collector::system::output_dir,
-    scripts_dir               => $puppet_metrics_collector::system::scripts_dir,
-    cron_minute               => "*/${collection_frequency}",
-    collection_frequency      => $collection_frequency,
-    polling_frequency_seconds => $polling_frequency_seconds,
-    retention_days            => $retention_days,
-  }
-
   puppet_metrics_collector::sar_metric { 'system_memory' :
     metric_ensure             => $metrics_ensure,
+    cron_minute               => "*/${collection_frequency}",
+    retention_days            => $retention_days,
+    collection_frequency      => $collection_frequency,
+    polling_frequency_seconds => $polling_frequency_seconds,
   }
 }

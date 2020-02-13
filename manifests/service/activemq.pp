@@ -1,25 +1,17 @@
-class puppet_metrics_collector::activemq (
-  Integer           $collection_frequency    = $puppet_metrics_collector::collection_frequency,
-  Integer           $retention_days          = $puppet_metrics_collector::retention_days,
-  String            $metrics_ensure          = $puppet_metrics_collector::activemq_metrics_ensure,
-  Array[String]     $hosts                   = $puppet_metrics_collector::activemq_hosts,
-  Integer           $port                    = $puppet_metrics_collector::activemq_port,
-  Optional[Enum['influxdb','graphite','splunk_hec']] $metrics_server_type = $puppet_metrics_collector::metrics_server_type,
-  Optional[String]            $metrics_server_hostname = $puppet_metrics_collector::metrics_server_hostname,
-  Optional[Integer] $metrics_server_port     = $puppet_metrics_collector::metrics_server_port,
-  Optional[String]  $metrics_server_db_name  = $puppet_metrics_collector::metrics_server_db_name,
-  Optional[String]  $override_metrics_command = $puppet_metrics_collector::override_metrics_command,
+# Collect ActiveMQ Metrics
+class puppet_metrics_collector::service::activemq (
+  String                  $metrics_ensure           = $puppet_metrics_collector::activemq_metrics_ensure,
+  Integer                 $collection_frequency     = $puppet_metrics_collector::collection_frequency,
+  Integer                 $retention_days           = $puppet_metrics_collector::retention_days,
+  Array[String]           $hosts                    = $puppet_metrics_collector::activemq_hosts,
+  Integer                 $port                     = $puppet_metrics_collector::activemq_port,
+  Optional[String]        $override_metrics_command = $puppet_metrics_collector::override_metrics_command,
+  Optional[Array[String]] $excludes                 = $puppet_metrics_collector::activemq_excludes,
+  Optional[Enum['influxdb', 'graphite', 'splunk_hec']] $metrics_server_type = $puppet_metrics_collector::metrics_server_type,
+  Optional[String]        $metrics_server_hostname  = $puppet_metrics_collector::metrics_server_hostname,
+  Optional[Integer]       $metrics_server_port      = $puppet_metrics_collector::metrics_server_port,
+  Optional[String]        $metrics_server_db_name   = $puppet_metrics_collector::metrics_server_db_name,
 ) {
-  $scripts_dir = $::puppet_metrics_collector::scripts_dir
-
-  Puppet_metrics_collector::Pe_metric {
-    output_dir     => $::puppet_metrics_collector::output_dir,
-    scripts_dir    => $scripts_dir,
-    cron_minute    => "*/${collection_frequency}",
-    retention_days => $retention_days,
-    override_metrics_command => $override_metrics_command,
-  }
-
   $additional_metrics = [
     {
       'type'      => 'read',
@@ -58,21 +50,25 @@ class puppet_metrics_collector::activemq (
     },
   ]
 
-  file { "${scripts_dir}/amq_metrics" :
-    ensure => present,
-    mode   => '0744',
+  file { "${puppet_metrics_collector::scripts_dir}/amq_metrics" :
+    ensure => $metrics_ensure,
+    mode   => '0755',
     source => 'puppet:///modules/puppet_metrics_collector/amq_metrics',
   }
 
   puppet_metrics_collector::pe_metric { 'activemq' :
-    metric_ensure           => $metrics_ensure,
-    hosts                   => $hosts,
-    metrics_port            => $port,
-    metric_script_file      => 'amq_metrics',
-    additional_metrics      => $additional_metrics,
-    metrics_server_type     => $metrics_server_type,
-    metrics_server_hostname => $metrics_server_hostname,
-    metrics_server_port     => $metrics_server_port,
-    metrics_server_db_name  => $metrics_server_db_name,
+    metric_ensure            => $metrics_ensure,
+    cron_minute              => "*/${collection_frequency}",
+    retention_days           => $retention_days,
+    hosts                    => $hosts,
+    metrics_port             => $port,
+    metric_script_file       => 'amq_metrics',
+    override_metrics_command => $override_metrics_command,
+    excludes                 => $excludes,
+    additional_metrics       => $additional_metrics,
+    metrics_server_type      => $metrics_server_type,
+    metrics_server_hostname  => $metrics_server_hostname,
+    metrics_server_port      => $metrics_server_port,
+    metrics_server_db_name   => $metrics_server_db_name,
   }
 }
