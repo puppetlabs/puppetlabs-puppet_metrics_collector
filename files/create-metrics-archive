@@ -6,7 +6,7 @@ set -e
 
 while [[ $1 ]]; do
   case "$1" in
-    '-m'|'--metrics-dir')
+    '-m'|'--metrics-directory')
       arg_metrics_dir="$2"
       ;;
     '-r'|'--retention-days')
