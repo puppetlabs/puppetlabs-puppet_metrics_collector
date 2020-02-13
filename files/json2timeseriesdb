@@ -1,9 +1,5 @@
 #!/opt/puppetlabs/puppet/bin/ruby
 
-# Keep these two scripts in sync.
-# puppetlabs-puppet-metrics-viewer/json2graphite.rb
-# puppetlabs-puppet_metrics_collector/files/json2timeseriesdb
-
 require 'fcntl'
 require 'json'
 require 'time'
