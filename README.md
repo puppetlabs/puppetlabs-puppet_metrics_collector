@@ -15,11 +15,11 @@ Table of Contents
   * [Temporary Installation](#temporary-installation)
   * [Manual Configuration of Hosts](#manual-configuration-of-hosts)
   * [Configuration for Distributed Metrics Collection](#Configuration-for-distributed-metrics-collection)
-  * [Using with PE 3.8](#using-with-pe-38)
 
 ## Overview
 
-This module collects metrics provided by the status endpoints of Puppet Enterprise services. The metrics can be used to identify performance issues that may be addressed by performance tuning.
+This module collects metrics provided by the status endpoints of Puppet Enterprise services.
+The metrics can be used to identify performance issues that may be addressed by performance tuning.
 
 
 ## Setup
@@ -29,17 +29,20 @@ This module collects metrics provided by the status endpoints of Puppet Enterpri
 
 Install this module with `puppet module install puppetlabs-puppet_metrics_collector` or add it to your Puppetfile.
 
-To activate this module, classify your Primary Master (aka Master of Masters or MoM) with the `puppet_metrics_collector` class using your preferred classification method. Below is an example when using the `site.pp`.
+To activate this module, classify your Primary Master (aka Master of Masters or MoM) with the `puppet_metrics_collector` class using your preferred classification method.
+Below is an example using `site.pp`.
 
-```
+```puppet
 node 'master.example.com' {
   include puppet_metrics_collector
 }
 ```
 
-Optionally, you can also gather some basic system metrics.  Unlike the service metrics, this has to be enabled on each host you want metrics from, and the resulting data will be only on that host.  Do not include the top level puppet_metrics_collector on anything other than the master as it will collect the same data as the one on the master.  This functionality depends on sysstat.
+Optionally, you can gather basic system metrics.
+Unlike service metrics, system metrics have to be enabled locally on each PE Infrastructure Host, and the resulting data will be stored locally on that host.
+This functionality depends on `sysstat`.
 
-```
+```puppet
 node 'master.example.com' {
   include puppet_metrics_collector
   include puppet_metrics_collector::system
@@ -50,57 +53,77 @@ node 'compilerA.example.com', 'compilerB.example.com,' {
 }
 ```
 
+> Note: Do not `include` the top-level `puppet_metrics_collector` class on any PE Infrastructure Host other than the Primary Master, otherwise it will collect the same data as the Primary Master.
+
 ### Configuration
 
-This module automatically configures the hosts it queries by querying PuppetDB for PE Infrastructure Hosts. If there is an error with automatic configuration of hosts, refer to [Manual Configuration of Hosts](#manual-configuration-of-hosts).
+This module automatically configures the hosts it collects metrics from by querying PuppetDB for PE Infrastructure Hosts.
+If there is an error with the automatic configuration of hosts, refer to [Manual Configuration of Hosts](#manual-configuration-of-hosts).
 
 #### Parameters
 
-For each Puppet Enterprise service (Puppetserver, PuppetDB, Orchestration, and ActiveMQ) there are associated `<service_name>_hosts`, `<service_name>_ensure` and `<service_name>_port` parameters. Refer to `manifests/init.pp` for details.
+For each Puppet Enterprise service (Puppet Server, PuppetDB, Orchestrator, Ace, Bolt, and ActiveMQ) there are associated `<service_name>_ensure`, `<service_name>_hosts`, and `<service_name>_port` parameters.
+Refer to `manifests/init.pp` for details.
 
 ##### output_dir
 
-String: Output directory for collected metrics. Defaults to `/opt/puppetlabs/puppet-metrics-collector`.
+`String`: Output directory for collected metrics.
+
+Defaults to `/opt/puppetlabs/puppet-metrics-collector`.
 
 ##### collection_frequency
 
-Integer: How often to collect metrics, in minutes. Defaults to `5`.
+`Integer`: How often to collect metrics, in minutes.
+
+Defaults to `5`.
 
 ##### retention_days
 
-Integer: How long to retain collect metrics, in days. Defaults to `90`.
+`Integer`: How long to retain collect metrics, in days.
+
+Defaults to `90`.
 
 ##### Metrics Server Parameters
 
-The following set of parameters begining with `metrics_server_` allows for the specification of a server type to use to generate and in some cases send data to a specified server.
-Currently both `influxdb` and `graphite` types allow for the transfer of data while `splunk_hec` only generates the data.
+The following set of parameters begining with `metrics_server_` allows for the specification of a server type to use to generate and (in some cases) send data to a specified metrics server.
+Currently, both `influxdb` and `graphite` types allow for the transfer of data while `splunk_hec` only generates data.
 
 ##### metrics_server_type
 
-Optional Enum['influxdb','graphite','splunk_hec']: specifies the metrics server type to write data to. Currently it supports `influxdb`, `graphite` and `splunk_hec` type servers.
+Optional `Enum['influxdb','graphite','splunk_hec']`: The metrics server type to send data to.
 
-To Note:
+Currently, this module supports `influxdb`, `graphite`, and `splunk_hec` metrics server types.
 
-Please note that for `influxdb` server types a `dbname` must be provided.
+For the `influxdb` metrics server type, a `metrics_server_db_name` must be provided.
 
-Please note that for a server type of `splunk_hec` no data can be sent to a server with the current configuration, however the command will format the json output using the `splunk_hec` module, which is a requirement for this option and can be found on the Forge [here](https://forge.puppet.com/puppetlabs/splunk_hec) or [here](https://github.com/puppetlabs/puppetlabs-splunk_hec) on github.
-Further setup instructions for using the `splunk_hec` module can be found within the modules own README.md.
+For the `splunk_hec` metrics server type, data cannot be sent to a server, however the command will format the JSON output using the `splunk_hec` module, which is a requirement for this option. The `splunk_hec` module can be found on the [Forge](https://forge.puppet.com/puppetlabs/splunk_hec) or [GitHub](https://github.com/puppetlabs/puppetlabs-splunk_hec).
+Setup instructions for the `splunk_hec` module can be found within that module's README.
 
 ##### metrics_server_hostname
 
-Optional String: Allows you to define the host name of a server to send data to. Defaults to undef.
+Optional `String`: The hostname of the metrics server to send data to.
+
+Defaults to `undef`.
 
 ##### metrics_server_port
 
-Optional Integer: Allows you to define the port number of a server to send data to. Defaults to undef.
+Optional `Integer`: The port number of the metrics server to send data to.
+
+Defaults to `undef`.
 
 ##### metrics_server_db_name
 
-Optional String: Allows you to define the database name of a server to send data to. Required for `metrics_server_type` of `influxdb`. Defaults to undef.
+Optional `String`: The database name on the metrics server to send data to.
+
+Required for `metrics_server_type` of `influxdb`.
+
+Defaults to `undef`.
 
 ##### override_metrics_command
 
-Optional String: Allows you to override the command that is run to gather metrics. Defaults to undef.
+Optional `String`: Allows you to define the command that is executed to gather metrics.
+
+Defaults to `undef`.
 
 
 ## Usage
@@ -108,76 +131,79 @@ Optional String: Allows you to override the command that is run to gather metric
 
 ### Grepping Metrics
 
-The metrics come in a JSON hash on one line. In order to convert the metric files into a pretty format, they can be processed with `python -m json.tool` like below.
+Metrics are formatted as a JSON hash on one line.
+In order to convert the metric files into a multi-line format, they can be processed with `python -m json.tool` as per below.
 
 ```bash
 cd /opt/puppetlabs/puppet-metrics-collector
 for i in <service_name>/master.example.com/*.json; do echo "$(python -m json.tool < $i)" > $i; done
 ```
 
-You can search for useful information by performing a `grep` in the following format, run from inside the directory containing the metrics.
+You can search for useful information by performing a `grep`, run from inside the directory containing the metrics.
 
-```
+```bash
 cd /opt/puppetlabs/puppet-metrics-collector
 grep <metric_name> <service_name>/master.example.com/*.json
 ```
 
-Since the metrics are compressed every night, you can only search metrics for the current day. To search older metrics, decompress the compressed files into a subdirectory of `/tmp` and run from inside that directory.
-
+Since the metrics are compressed once per day, you can only search metrics for the current day.
+To search older metrics, decompress the compressed files into a subdirectory of `/tmp` and run search from inside that directory.
 
 #### Grepping Puppetserver Metrics
 
 Example:
 
-```
+```bash
 grep average-free-jrubies puppetserver/master.example.com/*.json
-puppetserver/master.example.com/20170404T170501Z.json:                "average-free-jrubies": 0.9950009285369501,
-puppetserver/master.example.com/20170404T171001Z.json:                "average-free-jrubies": 0.9999444653324225,
-puppetserver/master.example.com/20170404T171502Z.json:                "average-free-jrubies": 0.9999993830655706,
+
+puppetserver/master.example.com/20190404T170501Z.json: "average-free-jrubies": 0.9950009285369501,
+puppetserver/master.example.com/20190404T171001Z.json: "average-free-jrubies": 0.9999444653324225,
+puppetserver/master.example.com/20190404T171502Z.json: "average-free-jrubies": 0.9999993830655706,
 ```
 
 #### Grepping PuppetDB Metrics
 
 Example:
 
-```
+```bash
 grep queue_depth puppetdb/master.example.com/*.json
-puppetdb/master.example.com/20170404T170501Z.json:            "queue_depth": 0,
-puppetdb/master.example.com/20170404T171001Z.json:            "queue_depth": 0,
-puppetdb/master.example.com/20170404T171502Z.json:            "queue_depth": 0,
+
+puppetdb/master.example.com/20190404T170501Z.json: "queue_depth": 0,
+puppetdb/master.example.com/20190404T171001Z.json: "queue_depth": 0,
+puppetdb/master.example.com/20190404T171502Z.json: "queue_depth": 0,
 ```
 
 Example for PE 2016.5 and older:
 
-```
+```bash
 grep Cursor puppetdb/master.example.com/*.json
-puppetdb/master.example.com/20170404T171001Z.json:          "CursorMemoryUsage": 0,
-puppetdb/master.example.com/20170404T171001Z.json:          "CursorFull": false,
-puppetdb/master.example.com/20170404T171001Z.json:          "CursorPercentUsage": 0,
-puppetdb/master.example.com/20170404T171502Z.json:          "CursorMemoryUsage": 0,
-puppetdb/master.example.com/20170404T171502Z.json:          "CursorFull": false,
-puppetdb/master.example.com/20170404T171502Z.json:          "CursorPercentUsage": 0,
-puppetdb/master.example.com/20170404T172002Z.json:          "CursorMemoryUsage": 0,
-puppetdb/master.example.com/20170404T172002Z.json:          "CursorFull": false,
-puppetdb/master.example.com/20170404T172002Z.json:          "CursorPercentUsage": 0,
-```
 
+puppetdb/master.example.com/20190404T171001Z.json: "CursorMemoryUsage": 0,
+puppetdb/master.example.com/20190404T171001Z.json: "CursorFull": false,
+puppetdb/master.example.com/20190404T171001Z.json: "CursorPercentUsage": 0,
+puppetdb/master.example.com/20190404T171502Z.json: "CursorMemoryUsage": 0,
+puppetdb/master.example.com/20190404T171502Z.json: "CursorFull": false,
+puppetdb/master.example.com/20190404T171502Z.json: "CursorPercentUsage": 0,
+puppetdb/master.example.com/20190404T172002Z.json: "CursorMemoryUsage": 0,
+puppetdb/master.example.com/20190404T172002Z.json: "CursorFull": false,
+puppetdb/master.example.com/20190404T172002Z.json: "CursorPercentUsage": 0,
+```
 
 ### Sharing Metrics Data
 
-When working with Support, you may be asked to provide an archive of collected metrics data.
+When working with Support, you may be asked for an archive of collected metrics data.
 
-This module provides a utility script, `puppet-metrics-collector` to prepare metrics data for sharing.
+This module provides a script, `create-metrics-archive` to prepare metrics data for sharing with Support.
 
-```
-/opt/puppetlabs/bin/puppet-metrics-collector create-tarball
+```bash
+/opt/puppetlabs/puppet-metrics-collector/scripts/create-metrics-archive
 ```
 
 This script creates a tar archive in the current working directory.
 
-```
-[root@master ~]# /opt/puppetlabs/bin/puppet-metrics-collector create-tarball
-Metrics data tarball created at: /root/puppet-metrics-20170801T180338Z.tar.gz
+```bash
+[root@master ~]# /opt/puppetlabs/puppet-metrics-collector/scripts/create-metrics-archive
+Created metrics archive file: /root/puppet-metrics-collector-20200203T123456Z.tar.gz
 ```
 
 ## Reference
@@ -185,25 +211,28 @@ Metrics data tarball created at: /root/puppet-metrics-20170801T180338Z.tar.gz
 
 ### Directory Layout
 
-This module creates an output directory with one subdirectory for each Puppet Enterprise service (Puppetserver, PuppetDB, Orchestration, and ActiveMQ) that this module has been configured to collect. Each service directory has one subdirectory for each host. Each host directory contains one JSON file, collected every 5 minutes. Once per day, the metrics for each service are compressed and saved in the root of its directory.
+This module creates an output directory with one subdirectory for each Puppet Enterprise service (Puppet Server, PuppetDB, Orchestrator, Ace, Bolt, and ActiveMQ) that this module has been configured to collect.
+Each service directory has one subdirectory for each host.
+Each host directory contains one JSON file, collected every 5 minutes.
+Once per day, the metrics for each service are compressed.
 
 Example:
 
-```
+```bash
 /opt/puppetlabs/puppet-metrics-collector/puppetserver
 ├── master.example.com
-│   ├── 20170404T020001Z.json
+│   ├── 20190404T020001Z.json
 │   ├── ...
-│   ├── 20170404T170501Z.json
-│   └── 20170404T171001Z.json
-└── puppetserver-2017.04.04.02.00.01.tar.bz2
+│   ├── 20190404T170501Z.json
+│   └── 20190404T171001Z.json
+└── puppetserver-2019.04.04.02.00.01.tar.bz2
 /opt/puppetlabs/puppet-metrics-collector/puppetdb
 └── master.example.com
-│   ├── 20170404T020001Z.json
+│   ├── 20190404T020001Z.json
 │   ├── ...
-│   ├── 20170404T170501Z.json
-│   ├── 20170404T171001Z.json
-└── puppetdb-2017.04.04.02.00.01.tar.bz2
+│   ├── 20190404T170501Z.json
+│   ├── 20190404T171001Z.json
+└── puppetdb-2019.04.04.02.00.01.tar.bz2
 ```
 
 ### Cron Jobs
@@ -217,13 +246,13 @@ This module creates two cron jobs for each Puppet Enterprise service:
 
 Example:
 
-```
+```bash
 crontab -l
 ...
 # Puppet Name: puppetserver_metrics_collection
-*/5 * * * * /opt/puppetlabs/puppet-metrics-collector/scripts/puppetserver_metrics
+*/5 * * * * /opt/puppetlabs/puppet-metrics-collector/scripts/tk_metrics --metrics_type puppetserver --output_dir /opt/puppetlabs/puppet-metrics-collector/puppetserver
 # Puppet Name: puppetserver_metrics_tidy
-0 2 * * * /opt/puppetlabs/puppet-metrics-collector/scripts/puppetserver_metrics_tidy
+0 2 * * * /opt/puppetlabs/puppet-metrics-collector/scripts/metrics_tidy /opt/puppetlabs/puppet-metrics-collector puppetserver 90
 ```
 
 
@@ -234,7 +263,7 @@ crontab -l
 
 While a permanent installation is recommended, this module can be temporarily installed with the following commands.
 
-```
+```bash
 puppet module install puppetlabs-puppet_metrics_collector --modulepath /tmp;
 puppet apply -e "class { 'puppet_metrics_collector': }" --modulepath /tmp;
 ```
@@ -242,14 +271,16 @@ puppet apply -e "class { 'puppet_metrics_collector': }" --modulepath /tmp;
 
 ### Manual Configuration of Hosts
 
-If necessary, you can manually configure this module by specifying parameters via the class declaration or via Hiera data. The preferred method is via Hiera data. The following examples show you how to specify those parameters for different infrastructures, and assumes you declare this module on the Primary Master.
+If necessary, you can manually configure this module by specifying parameters via the class declaration or via Hiera data.
+The preferred method is via Hiera data.
+The following examples show you how to specify those parameters for different infrastructures, and assumes you declare this module on the Primary Master.
 
 
 #### Monolithic Infrastructure with Compile Masters
 
 ##### Hiera Data Example
 
-```
+```yaml
 puppet_metrics_collector::puppetserver_hosts:
  - 'master.example.com'
  - 'compile-master-1.example.com'
@@ -260,7 +291,7 @@ puppet_metrics_collector::puppetdb_hosts:
 
 ##### Class Declaration Example
 
-```
+```puppet
 class { 'puppet_metrics_collector':
   puppetserver_hosts => [
     'master.example.com',
@@ -276,7 +307,7 @@ class { 'puppet_metrics_collector':
 
 ##### Hiera Data Example
 
-```
+```yaml
 puppet_metrics_collector::puppetserver_hosts:
  - 'split-master.example.com'
 puppet_metrics_collector::puppetdb_hosts:
@@ -285,7 +316,7 @@ puppet_metrics_collector::puppetdb_hosts:
 
 ##### Class Declaration Example
 
-```
+```puppet
 class { 'puppet_metrics_collector':
   puppetserver_hosts => ['split-master.example.com'],
   puppetdb_hosts     => ['split-puppetdb.example.com'],
@@ -297,7 +328,7 @@ class { 'puppet_metrics_collector':
 
 ##### Hiera Data Example
 
-```
+```yaml
 puppet_metrics_collector::puppetserver_hosts:
  - 'split-master.example.com'
  - 'compile-master-1.example.com'
@@ -308,7 +339,7 @@ puppet_metrics_collector::puppetserver_hosts:
 
 ##### Class Definition Example
 
-```
+```puppet
 class { 'puppet_metrics_collector':
   puppetserver_hosts => [
     'split-master.example.com',
@@ -322,27 +353,24 @@ class { 'puppet_metrics_collector':
 
 ### Configuration for Distributed Metrics Collection
 
-This option collect metrics on each PE Infrastructure Host instead of collecting metrics centrally on the MoM. This option is discouraged, but allows for the collection of metrics when the MoM cannot access the API endpoints of the other PE Infrastructure Hosts. Classify each PE Infrastructure Host with this module, specifying the following parameters.
+This option collect metrics on each PE Infrastructure Host instead of collecting metrics centrally on the Primary Master.
+This option is discouraged, but allows for the collection of metrics when the Primary Master cannot access the API endpoints of the other PE Infrastructure Hosts.
+Classify each PE Infrastructure Host with this module, specifying the following parameters.
 
-* When classifying a Compile Master Host, specify `puppetdb_metrics_ensure => absent`
-* When classifying a PuppetDB Host, specify `puppetserver_metrics_ensure => absent`
+When classifying a Compile Master, specify these additional parameters:
 
-
-### Using with PE 3.8
-
-You can use this module with PE 3.8, although it requires the [future parser](https://docs.puppet.com/puppet/3.8/experiments_future.html).
-
-If the future parser is enabled, globally or in the environment, the following can be declared in site.pp.
-
-```
-class { 'puppet_metrics_collector':
-  output_dir => '/opt/puppet/puppet-metrics-collector'
-}
+```puppet
+  puppetdb_metrics_ensure     => absent,
+  orchestrator_metrics_ensure => absent,
+  ace_metrics_ensure          => absent,
+  bolt_metrics_ensure         => absent,
 ```
 
-Otherwise, use the following commands.
+When classifying a PuppetDB Host, specify these additional parameters:
 
-```
-puppet module install puppetlabs-puppet_metrics_collector --modulepath /tmp;
-puppet apply -e "class { 'puppet_metrics_collector' : output_dir => '/opt/puppet/puppet-metrics-collector' }"  --modulepath /tmp --parser=future
+```puppet
+  puppetserver_metrics_ensure => absent,
+  orchestrator_metrics_ensure => absent,
+  ace_metrics_ensure          => absent,
+  bolt_metrics_ensure         => absent,
 ```

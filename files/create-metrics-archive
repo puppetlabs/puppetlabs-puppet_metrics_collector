@@ -1,0 +1,17 @@
+#!/bin/sh
+
+set -e
+
+# Arguments and defaults.
+
+CURRENT_DIRECTORY=$(pwd)
+METRICS_OUTPUT_DIR=${1:-/opt/puppetlabs/puppet-metrics-collector}
+RETENTION_DAYS=${2:-30}
+OUTPUT_FILE="$CURRENT_DIRECTORY/puppet-metrics-collector-$(date +%Y.%m.%d.%H.%M.%S).tar.gz"
+
+cd "$METRICS_OUTPUT_DIR"
+find . -type f -ctime -"$RETENTION_DAYS" -and -name "*.json" -or -name "*.gz" > "$METRICS_OUTPUT_DIR.tmp"
+tar --create --gzip --file "$OUTPUT_FILE" --files-from "$METRICS_OUTPUT_DIR.tmp" --transform 's,^,/puppet-metrics/,'
+rm "$METRICS_OUTPUT_DIR.tmp"
+
+echo "Created metrics archive file: ${OUTPUT_FILE}"

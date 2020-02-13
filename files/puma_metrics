@@ -1,140 +1,42 @@
 #!/opt/puppetlabs/puppet/bin/ruby
 
-require "net/https"
-require "json"
-require "uri"
-require 'time'
-require 'optparse'
-require 'yaml'
-
-options = {}
-OptionParser.new do |opts|
-  opts.banner = "Usage: puma_metrics [options]"
-
-  opts.on('-p', '--[no-]print', 'Print to stdout') { |p| options[:print] = p }
-  opts.on('-m [TYPE]', '--metrics_type [TYPE]', 'Type of metric to collect') { |v| options[:metrics_type] = v }
-  opts.on('-o [DIR]', '--output-dir [DIR]', 'Directory to save output to') { |o| options[:output_dir] = o }
-  opts.on('--metrics_port [PORT]', 'The port the metrics service runs on') { |port| options[:metrics_port] = port }
-  opts.on('--[no-]ssl', 'Whether or not to use SSL when gather metrics') { |ssl| options[:ssl] = ssl }
-end.parse!
-
-if options[:metrics_type].nil? then
-  STDERR.puts '--metrics_type (-m) is a required argument'
-  exit 1
-end
-
-METRICS_TYPE = options[:metrics_type]
-config = YAML.load_file(File.join(File.dirname(File.expand_path(__FILE__)),"#{METRICS_TYPE}_config.yaml"))
-
-def coalesce ( opt1, opt2, default=nil )
-  if opt1.nil? then
-    if opt2.nil? then
-      default
-    else
-      opt2
-    end
-  else
-    opt1
-  end
-end
-
-OUTPUT_DIR = options[:output_dir]
-HOSTS      = config['hosts']
-PORT       = coalesce(options[:metrics_port], config['metrics_port'])
-METRICS    = config['additional_metrics']
-PE_VERSION = config['pe_version']
-SSL        = coalesce(options[:ssl], config['ssl'], true)
-EXCLUDES   = config['excludes']
-
-if SSL
-  CERTNAME = `/usr/local/bin/puppet config print certname`.chomp
-  SSLDIR   = `/usr/local/bin/puppet config print ssldir`.chomp
-end
-
-$error_array = []
+require_relative 'pe_metrics'
 
 exit if Gem::Version.new(PE_VERSION) < Gem::Version.new('2019.3.0')
-
-def setup_connection(url, ssl)
-  uri  = URI.parse(url)
-  http = Net::HTTP.new(uri.host, uri.port)
-
-  if ssl then
-    http.use_ssl = true
-    http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-    # PE Puma services serve metrics from endpoints requiring a client certificate.
-    # If https://github.com/puma/puma/pull/2098 is merged into the Puma used by PE,
-    # we can collect metrics from /stats and /gc-stats without a client certificate.
-    http.ca_path = "#{SSLDIR}/ca"
-    http.ca_file = "#{SSLDIR}/certs/ca.pem"
-    http.cert = OpenSSL::X509::Certificate.new(File.read("#{SSLDIR}/certs/#{CERTNAME}.pem"))
-    http.key = OpenSSL::PKey::RSA.new(File.read("#{SSLDIR}/private_keys/#{CERTNAME}.pem"))
-  end
-
-  return http, uri
-end
-
-def get_endpoint(url,ssl)
-  http,uri = setup_connection(url,ssl)
-
-  data = JSON.parse(http.get(uri.request_uri).body)
-rescue Exception => e
-    $error_array << "#{e}"
-    data = {}
-end
-
-def generate_host_url(host, port, ssl)
-  if ssl then
-    protocol = 'https'
-  else
-    protocol = 'http'
-  end
-
-  host_url = "#{protocol}://#{host}:#{port}"
-end
-
-# If https://github.com/puma/puma/pull/2098 is merged into the Puma used by PE,
-# we can collect metrics from /stats and /gc-stats without a client certificate.
 
 def get_status_endpoint(host, port, ssl)
   host_url = generate_host_url(host, port, ssl)
 
   status_endpoint = "#{host_url}/admin/status"
-  status_output   = get_endpoint(status_endpoint,ssl)
+  status_output   = get_endpoint(status_endpoint, ssl)
 end
 
 def get_gc_status_endpoint(host, port, ssl)
   host_url = generate_host_url(host, port, ssl)
 
   status_endpoint = "#{host_url}/admin/gc_stat"
-  status_output   = get_endpoint(status_endpoint,ssl)
+  status_output   = get_endpoint(status_endpoint, ssl)
 end
 
-def filter_metrics(dataset, filters)
-  return dataset if filters.empty?
+# Metrics endpoints for our Puma services require a client certificate.
 
-  case dataset
-  when Hash
-    dataset = dataset.inject({}) {|m, (k, v)| m[k] = filter_metrics(v,filters) unless filters.include? k ; m }
-  when Array
-    dataset.map! {|e| filter_metrics(e,filters)}
-  end
-
-  return dataset
+if SSL
+  SSLDIR = `/usr/local/bin/puppet config print ssldir`.chomp
 end
 
-filename = Time.now.utc.strftime('%Y%m%dT%H%M%SZ') + '.json'
+output_file = Time.now.utc.strftime('%Y%m%dT%H%M%SZ') + '.json'
 
 HOSTS.each do |host|
   begin
     timestamp = Time.now
     dataset = {'timestamp' => timestamp.utc.iso8601, 'servers' => {}}
     hostkey = host.gsub('.', '-')
+    dataset['servers'][hostkey] = { METRICS_TYPE => {} }
 
     status_output = get_status_endpoint(host, PORT, SSL)
-    dataset['servers'][hostkey] = {METRICS_TYPE => status_output}
-
     gc_status_output = get_gc_status_endpoint(host, PORT, SSL)
+
+    dataset['servers'][hostkey][METRICS_TYPE] = status_output
     dataset['servers'][hostkey][METRICS_TYPE]['gc_stats'] = gc_status_output
 
     dataset['servers'][hostkey][METRICS_TYPE]['error'] = $error_array
@@ -148,12 +50,12 @@ HOSTS.each do |host|
     unless OUTPUT_DIR.nil? then
       Dir.chdir(OUTPUT_DIR) do
         Dir.mkdir(host) unless File.exist?(host)
-        File.open(File.join(host, filename), 'w') do |file|
+        File.open(File.join(host, output_file), 'w') do |file|
           file.write(json_dataset)
         end
       end
     end
-    if options[:print] != false then
+    if OPTIONS[:print] != false then
       # Use puts so that data gatherd from each host is written to stdout
       # with a newline separator. This enables parsing of multiple datasets
       # as the output stream is in line-delimited JSON form.
