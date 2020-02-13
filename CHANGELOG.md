@@ -1,3 +1,16 @@
+# Major Release 6.0.0
+
+ - Move duplicate code from classes to defined types
+ - Reorganize into service and system classes
+ - Move per-service collection scripts to common service scripts
+ - Move per-service tidy scripts to one common tidy script.
+ - Simplify puppet-metrics-collector script removing the one constant parameter
+ - Do not symlink the above (and renamed) script to '/opt/puppetlabs/bin/'
+ - Store configuration and code in separate 'config' and 'scripts' directories
+ - Eliminate the 'bin' directory
+ - Add puppet code to delete the above legacy directories and files
+ - Normalize and simplify the README
+
 # Minor Release 5.3.0
 
 ## Improvements
