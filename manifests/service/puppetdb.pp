@@ -1,24 +1,17 @@
-class puppet_metrics_collector::puppetdb (
-  Integer       $collection_frequency = $puppet_metrics_collector::collection_frequency,
-  Integer       $retention_days       = $puppet_metrics_collector::retention_days,
-  String        $metrics_ensure       = $puppet_metrics_collector::puppetdb_metrics_ensure,
-  Array[String] $hosts                = $puppet_metrics_collector::puppetdb_hosts,
-  Integer       $port                 = $puppet_metrics_collector::puppetdb_port,
-  Optional[Enum['influxdb','graphite','splunk_hec']] $metrics_server_type = $puppet_metrics_collector::metrics_server_type,
-  Optional[String]  $metrics_server_hostname  = $puppet_metrics_collector::metrics_server_hostname,
-  Optional[Integer] $metrics_server_port      = $puppet_metrics_collector::metrics_server_port,
-  Optional[String]  $metrics_server_db_name   = $puppet_metrics_collector::metrics_server_db_name,
-  Optional[String]  $override_metrics_command = $puppet_metrics_collector::override_metrics_command,
-  Optional[Array[String]] $excludes           = $puppet_metrics_collector::puppetdb_excludes,
+# Collect Service Metrics
+class puppet_metrics_collector::service::puppetdb (
+  String                  $metrics_ensure           = $puppet_metrics_collector::puppetdb_metrics_ensure,
+  Integer                 $collection_frequency     = $puppet_metrics_collector::collection_frequency,
+  Integer                 $retention_days           = $puppet_metrics_collector::retention_days,
+  Array[String]           $hosts                    = $puppet_metrics_collector::puppetdb_hosts,
+  Integer                 $port                     = $puppet_metrics_collector::puppetdb_port,
+  Optional[String]        $override_metrics_command = $puppet_metrics_collector::override_metrics_command,
+  Optional[Array[String]] $excludes                 = $puppet_metrics_collector::puppetdb_excludes,
+  Optional[Enum['influxdb', 'graphite', 'splunk_hec']] $metrics_server_type = $puppet_metrics_collector::metrics_server_type,
+  Optional[String]        $metrics_server_hostname  = $puppet_metrics_collector::metrics_server_hostname,
+  Optional[Integer]       $metrics_server_port      = $puppet_metrics_collector::metrics_server_port,
+  Optional[String]        $metrics_server_db_name   = $puppet_metrics_collector::metrics_server_db_name,
   ) {
-  Puppet_metrics_collector::Pe_metric {
-    output_dir               => $puppet_metrics_collector::output_dir,
-    scripts_dir              => $puppet_metrics_collector::scripts_dir,
-    cron_minute              => "*/${collection_frequency}",
-    retention_days           => $retention_days,
-    override_metrics_command => $override_metrics_command,
-  }
-
   $activemq_metrics = [
     { 'name' => 'amq_metrics',
       'url'  => 'org.apache.activemq:type=Broker,brokerName=localhost,destinationType=Queue,destinationName=puppetlabs.puppetdb.commands' }
@@ -86,7 +79,8 @@ class puppet_metrics_collector::puppetdb (
       'url'  => 'puppetlabs.puppetdb.storage:name=store-report-time' },
   ]
 
-  #TODO: Track these on a less frequent cadence because they are slow to run
+  # TODO: Track these on a less frequent cadence because they are slow to run
+
   $storage_metrics_db_queries = [
     { 'name' => 'storage_catalog-volitilty',
       'url'  => 'puppetlabs.puppetdb.storage:name=catalog-volitilty' },
@@ -169,33 +163,36 @@ class puppet_metrics_collector::puppetdb (
   ]
 
   $additional_metrics = $::pe_server_version ? {
-    /^2015\./ => $activemq_metrics,
+    /^2015\./       => $activemq_metrics,
     /^2016\.[45]\./ => $activemq_metrics + $base_metrics + $storage_metrics + $connection_pool_metrics + $version_specific_metrics + $ha_sync_metrics,
-    /^2016\./ => $activemq_metrics + $base_metrics + $storage_metrics + $connection_pool_metrics + $version_specific_metrics,
-    default  => $base_metrics + $storage_metrics + $connection_pool_metrics + $version_specific_metrics + $ha_sync_metrics,
+    /^2016\./       => $activemq_metrics + $base_metrics + $storage_metrics + $connection_pool_metrics + $version_specific_metrics,
+    default         => $base_metrics + $storage_metrics + $connection_pool_metrics + $version_specific_metrics + $ha_sync_metrics,
   }
 
-  $_ssl = $hosts ? {
-    [ '127.0.0.1' ] => false,
+  $ssl = $hosts ? {
+    ['127.0.0.1'] => false,
     default         => true,
   }
 
-  if $port == 8081 and $_ssl == false {
+  if $port == 8081 and $ssl == false {
     $_port = 8080
   } else {
     $_port = $port
   }
 
   puppet_metrics_collector::pe_metric { 'puppetdb' :
-    metric_ensure           => $metrics_ensure,
-    hosts                   => $hosts,
-    metrics_port            => $_port,
-    ssl                     => $_ssl,
-    additional_metrics      => $additional_metrics,
-    metrics_server_type     => $metrics_server_type,
-    metrics_server_hostname => $metrics_server_hostname,
-    metrics_server_port     => $metrics_server_port,
-    metrics_server_db_name  => $metrics_server_db_name,
-    excludes                => $excludes,
+    metric_ensure            => $metrics_ensure,
+    cron_minute              => "*/${collection_frequency}",
+    retention_days           => $retention_days,
+    hosts                    => $hosts,
+    metrics_port             => $_port,
+    ssl                      => $ssl,
+    override_metrics_command => $override_metrics_command,
+    excludes                 => $excludes,
+    additional_metrics       => $additional_metrics,
+    metrics_server_type      => $metrics_server_type,
+    metrics_server_hostname  => $metrics_server_hostname,
+    metrics_server_port      => $metrics_server_port,
+    metrics_server_db_name   => $metrics_server_db_name,
   }
 }

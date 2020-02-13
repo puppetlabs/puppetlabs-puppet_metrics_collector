@@ -6,7 +6,7 @@ set -e
 
 while [[ $1 ]]; do
   case "$1" in
-    '-m'|'--metrics-dir')
+    '-m'|'--metrics-directory')
       arg_metrics_dir="$2"
       ;;
     '-r'|'--retention-days')
@@ -26,4 +26,4 @@ find . -type f -ctime -"$RETENTION_DAYS" -regex '\(.*gz$\|.*json$\)' > "$METRICS
 tar --create --gzip --file "$OUTPUT_FILE" --files-from "$METRICS_OUTPUT_DIR.tmp" --transform "s,^,/puppet-metrics-$DATETIME/,"
 rm "$METRICS_OUTPUT_DIR.tmp"
 
-echo "Created metrics archive file: ${OUTPUT_FILE}"
+echo "Created metrics archive: ${OUTPUT_FILE}"
