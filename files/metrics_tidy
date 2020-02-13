@@ -1,21 +1,31 @@
-<%- | String  $metrics_output_dir,
-      String  $metrics_type,
-      Integer $retention_days,
-| -%>
 #!/bin/sh
 
 set -e
 
-DIR='<%= $metrics_output_dir %>';
-METRICS_TYPE='<%= $metrics_type %>';
-RETENTION_DAYS=<%= $retention_days %>;
+# Arguments and defaults.
 
-#delete files past retention days
-find "$DIR" -type f -ctime +$RETENTION_DAYS -delete
+METRICS_OUTPUT_DIR=${1:-/opt/puppetlabs/puppet-metrics-collector}
+METRICS_TYPE=${2:-puppetserver}
+RETENTION_DAYS=${3:-90}
 
-#compress files
-cd "$DIR"
-find . -type f -not -name "*.gz" -a -not -name "*.bz2" > "$DIR.tmp"
-tar -zcf "$DIR/$METRICS_TYPE-$(date +%Y.%m.%d.%H.%M.%S).tar.gz" --files-from "$DIR.tmp"
-xargs -a "$DIR.tmp" rm
-rm "$DIR.tmp"
+METRICS_DIR="$METRICS_OUTPUT_DIR/$METRICS_TYPE"
+
+# Guards!
+
+METRICS_REALPATH=$(realpath "$METRICS_DIR")
+if [ "$METRICS_REALPATH" = "/" ]; then
+  echo "Invalid options resulting in a metrics directory of '/'"
+  exit 1
+fi
+
+# Delete files older than the retention period, in days.
+
+find "$METRICS_DIR" -type f -ctime +"$RETENTION_DAYS" -delete
+
+# Compress the remaining files.
+
+cd "$METRICS_DIR"
+find . -type f -not -name "*.gz" -a -not -name "*.bz2" > "$METRICS_DIR.tmp"
+tar -zcf "$METRICS_DIR-$(date +%Y.%m.%d.%H.%M.%S).tar.gz" --files-from "$METRICS_DIR.tmp"
+xargs -a "$METRICS_DIR.tmp" rm
+rm "$METRICS_DIR.tmp"
