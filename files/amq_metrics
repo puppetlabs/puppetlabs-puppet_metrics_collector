@@ -1,8 +1,8 @@
 #!/opt/puppetlabs/puppet/bin/ruby
 
-require "net/https"
-require "json"
-require "uri"
+require 'net/https'
+require 'json'
+require 'uri'
 require 'time'
 require 'optparse'
 require 'yaml'
@@ -10,10 +10,9 @@ require 'yaml'
 options = {}
 OptionParser.new do |opts|
   opts.banner = "Usage: amq_metrics [options]"
-
   opts.on('-p', '--[no-]print', 'Print to stdout') { |p| options[:print] = p }
   opts.on('-m [TYPE]', '--metrics_type [TYPE]', 'Type of metric to collect') { |v| options[:metrics_type] = v }
-  opts.on('-o [DIR]', '--output-dir [DIR]', 'Directory to save output to') { |o| options[:output_dir] = o }
+  opts.on('-o [DIR]', '--output_dir [DIR]', 'Directory to save output to') { |o| options[:output_dir] = o }
 end.parse!
 
 if options[:metrics_type].nil? then
@@ -22,16 +21,30 @@ if options[:metrics_type].nil? then
 end
 
 METRICS_TYPE = options[:metrics_type]
-config = YAML.load_file(File.join(File.dirname(File.expand_path(__FILE__)),"#{METRICS_TYPE}_config.yaml"))
 
-OUTPUT_DIR = options[:output_dir]
-HOSTS      = config['hosts']
-PORT       = config['metrics_port']
-METRICS    = config['additional_metrics']
-CLIENTCERT = config['clientcert']
-PE_VERSION = config['pe_version']
+config_file = File.expand_path("../../config/#{METRICS_TYPE}.yaml", __FILE__) 
+config = YAML.load_file(config_file)
 
-POST_DATA = METRICS.to_json
+OUTPUT_DIR         = options[:output_dir]
+PE_VERSION         = config['pe_version']
+CERTNAME           = config['clientcert']
+HOSTS              = config['hosts']
+PORT               = config['metrics_port']
+ADDITIONAL_METRICS = config['additional_metrics']
+
+POST_DATA = ADDITIONAL_METRICS.to_json
+
+def get_endpoint(url, post_data)
+  uri  = URI.parse(url)
+  http = Net::HTTP.new(uri.host, uri.port)
+  request = Net::HTTP::Post.new(uri.request_uri)
+  request.basic_auth("admin", "admin")
+  request.body = post_data
+  data = http.request(request)
+rescue Exception => e
+    $error_array << "#{e}"
+    data = {}
+end
 
 def recurse_merge!(a,b)
   a.merge!(b) do |_,aa,bb|
@@ -56,26 +69,14 @@ end
 
 $error_array = []
 
-def get_endpoint(url, post_data)
-  uri  = URI.parse(url)
-  http = Net::HTTP.new(uri.host, uri.port)
-  request = Net::HTTP::Post.new(uri.request_uri)
-  request.basic_auth("admin", "admin")
-  request.body = post_data
-  data = http.request(request)
-rescue Exception => e
-    $error_array << "#{e}"
-    data = {}
-end
-
-filename = Time.now.utc.strftime('%Y%m%dT%H%M%SZ') + '.json'
+output_file = Time.now.utc.strftime('%Y%m%dT%H%M%SZ') + '.json'
 
 HOSTS.each do |host|
   begin
     timestamp = Time.now
     dataset = {'timestamp' => timestamp.utc.iso8601, 'servers' => {}}
     hostkey = host.gsub('.', '-')
-    dataset['servers'][hostkey] = {METRICS_TYPE => {}}
+    dataset['servers'][hostkey] = { METRICS_TYPE => {} }
 
     host_url = "https://#{host}:#{PORT}/api/jolokia"
     response = get_endpoint(host_url, POST_DATA)
@@ -104,7 +105,7 @@ HOSTS.each do |host|
     unless OUTPUT_DIR.nil? then
       Dir.chdir(OUTPUT_DIR) do
         Dir.mkdir(host) unless File.exist?(host)
-        File.open(File.join(host, filename), 'w') do |file|
+        File.open(File.join(host, output_file), 'w') do |file|
           file.write(json_dataset)
         end
       end
