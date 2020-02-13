@@ -20,7 +20,7 @@ require "fileutils"
 # generate_system_metrics --metric_type system_cpu --file_interval 300 --polling_interval 1
 #                         --metrics_dir <path to puppet-metrics-collector data>
 # or
-# generate_system_metrics --metric_type processes --file_interval 300 --polling_interval 1
+# generate_system_metrics --metric_type system_processes --file_interval 300 --polling_interval 1
 #                         --process_expression <custom expression>
 #                         --metrics_dir <path to puppet-metrics-collector data>
 
@@ -32,7 +32,7 @@ module SystemMetrics
   #
   # @attr [integer] polling_interval Time in seconds between calls to poll the system for data.
   # @attr [integer] file_interval Time in seconds between the creation of each output file.
-  # @attr [string] metric_type system_cpu|system_memory|processes
+  # @attr [string] metric_type system_cpu|system_memory|system_processes
   # @attr [string] metrics_dir The puppet_metrics_collector output directory.
   # @attr [string] process_expression Expression to pass to egrep that matches processes to track
   # @attr [boolean] verbose Verbose output
@@ -47,7 +47,7 @@ module SystemMetrics
     #
     # @param [integer] polling_interval Time in seconds between calls to poll the system for data.
     # @param [integer] file_interval Time in seconds between the creation of each output file.
-    # @param [string] metric_type system_cpu|system_memory
+    # @param [string] metric_type system_cpu|system_memory|system_processes
     # @param [string] process_expression Expression to pass to egrep that matches processes to track
     # @param [string] metrics_dir The puppet_metrics_collector output directory.
     # @param [boolean] verbose Verbose output
@@ -391,7 +391,7 @@ module SystemMetrics
     #
     # @return [void]
     def generate_metrics
-      if @metric_type == "processes"
+      if @metric_type == "system_processes"
         metrics_data = generate_process_metrics
       else
         metrics_data = generate_system_metrics
@@ -406,7 +406,7 @@ end
 
 if $PROGRAM_NAME == __FILE__
 
-  VALID_METRIC_TYPES = %w[system_cpu system_memory processes]
+  VALID_METRIC_TYPES = %w[system_cpu system_memory system_processes]
   FILE_INTERVAL_DEFAULT = 60 * 5
   POLLING_INTERVAL_DEFAULT = 1
   METRIC_TYPE_DEFAULT = "system_cpu"

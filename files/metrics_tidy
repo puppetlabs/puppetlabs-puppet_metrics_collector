@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -e
 
@@ -10,11 +10,11 @@ RETENTION_DAYS=${3:-90}
 
 METRICS_DIR="$METRICS_OUTPUT_DIR/$METRICS_TYPE"
 
-# Guards!
+# Guard. 
 
 METRICS_REALPATH=$(realpath "$METRICS_DIR")
 if [ "$METRICS_REALPATH" = "/" ]; then
-  echo "Invalid options resulting in a metrics directory of '/'"
+  echo "Invalid options"
   exit 1
 fi
 
@@ -25,7 +25,10 @@ find "$METRICS_DIR" -type f -ctime +"$RETENTION_DAYS" -delete
 # Compress the remaining files.
 
 cd "$METRICS_DIR"
-find . -type f -not -name "*.gz" -a -not -name "*.bz2" > "$METRICS_DIR.tmp"
-tar -zcf "$METRICS_DIR-$(date +%Y.%m.%d.%H.%M.%S).tar.gz" --files-from "$METRICS_DIR.tmp"
-xargs -a "$METRICS_DIR.tmp" rm
+find . -type f -name "*.json" > "$METRICS_DIR.tmp"
+tar --create --gzip --file "$METRICS_DIR/$METRICS_TYPE-$(date +%Y.%m.%d.%H.%M.%S).tar.gz" --files-from "$METRICS_DIR.tmp"
+
+# Delete the files that have been compressed.
+
+xargs -r -a "$METRICS_DIR.tmp" rm
 rm "$METRICS_DIR.tmp"
