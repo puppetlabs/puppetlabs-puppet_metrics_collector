@@ -9,21 +9,12 @@ RETENTION_DAYS=${2:-90}
 
 METRICS_TYPE=$(basename "$METRICS_DIR")
 
-# Guard against deleting or archiving other files. 
+# Guard. 
 
 INVALID_PATHS=(/ /etc /var /opt /usr)
 METRICS_REALPATH=$(realpath "$METRICS_DIR")
-
-for INVALID_PATH in "${INVALID_PATHS[@]}"
-do
-  if [ " $METRICS_REALPATH " = " $INVALID_PATH " ]; then
-    echo "Invalid metrics directory"
-    exit 1
-  fi
-done
-
-if [ " $METRICS_TYPE " = " puppet-metrics-collector " ]; then
-  echo "Invalid metrics directory"
+if [ "$METRICS_REALPATH" = "/" ]; then
+  echo "Invalid options"
   exit 1
 fi
 
@@ -37,7 +28,7 @@ cd "$METRICS_DIR"
 find . -type f -name "*.json" > "$METRICS_DIR.tmp"
 tar --create --gzip --file "$METRICS_DIR/$METRICS_TYPE-$(date +%Y.%m.%d.%H.%M.%S).tar.gz" --files-from "$METRICS_DIR.tmp"
 
-# Delete metrics files that have been archived.
+# Delete the files that have been compressed.
 
 xargs -r -a "$METRICS_DIR.tmp" rm
 rm "$METRICS_DIR.tmp"
