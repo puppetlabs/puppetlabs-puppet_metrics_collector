@@ -1,14 +1,14 @@
 #!/bin/bash
 
 while [[ $1 ]]; do
-   case "$1" in
-      '-d'|'--directory')
-         metrics_dir="$2"
-         ;;
-      '-r'|'--retention-days')
-         ret_days="$2"
-   esac
-   shift 2
+  case "$1" in
+    '-d'|'--directory')
+      metrics_dir="$2"
+      ;;
+    '-r'|'--retention-days')
+      ret_days="$2"
+  esac
+  shift 2
 done
 
 # Arguments and defaults.
@@ -18,6 +18,6 @@ timestamp="$(date +%Y.%m.%d.%H.%M.%S)"
 output_file="puppet-metrics-collector-${timestamp}.tar.gz"
 
 find "$metrics_dir" -type f -ctime -"$ret_days" -a \( -name "*json" -o -name "*gz" \) | \
-   tar czf "$output_file" --transform "s,^${metrics_dir#/},puppet-metrics-${timestamp}," --files-from - || exit 1
+  tar czf "$output_file" --transform "s,^${metrics_dir#/},puppet-metrics-${timestamp}," --files-from - || exit 1
 
 echo "Created metrics archive: $output_file"

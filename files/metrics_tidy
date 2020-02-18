@@ -1,14 +1,14 @@
 #!/bin/bash
 
 while [[ $1 ]]; do
-   case "$1" in
-      '-d'|'--directory')
-         metrics_dir="$2"
-         ;;
-      '-r'|'--retention-days')
-         ret_days="$2"
-   esac
-   shift 2
+  case "$1" in
+    '-d'|'--directory')
+      metrics_dir="$2"
+      ;;
+    '-r'|'--retention-days')
+      ret_days="$2"
+  esac
+  shift 2
 done
 
 # Arguments and defaults.
@@ -23,8 +23,8 @@ paths_regex="$(IFS='|'; echo "${valid_paths[*]}")"
 
 # Check that the directory ends in one of the Puppet services we collect metrics for
 [[ $metrics_dir =~ ${paths_regex}$ ]] || {
-   echo "Invalid metrics path.  Must end in one of: $(echo -n "${valid_paths[@]}")."
-   exit 1
+  echo "Invalid metrics path.  Must end in one of: $(echo -n "${valid_paths[@]}")."
+  exit 1
 }
 
 # Delete files older than the retention period, in days.
