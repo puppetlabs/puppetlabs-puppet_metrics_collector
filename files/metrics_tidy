@@ -3,32 +3,35 @@
 while [[ $1 ]]; do
   case "$1" in
     '-d'|'--directory')
-      metrics_dir="$2"
+      metrics_directory="$2"
       ;;
     '-r'|'--retention-days')
-      ret_days="$2"
+      retention_days="$2"
   esac
   shift 2
 done
 
 # Arguments and defaults.
-metrics_dir="${metrics_dir:-/opt/puppetlabs/puppet-metrics-collector/puppetserver}"
-ret_days="${ret_days:-90}"
-# Parameter expansion to strip everything before the last '/', giving us the basename
-metrics_type="${metrics_dir##*/}"
 
-# Guard against deleting or archiving other files.
+# Guard against deleting or archiving files outside of a Puppet service metrics directory.
 valid_paths=(puppetserver puppetdb orchestrator ace bolt activemq)
-paths_regex="$(IFS='|'; echo "${valid_paths[*]}")"
 
-# Check that the directory ends in one of the Puppet services we collect metrics for
-[[ $metrics_dir =~ ${paths_regex}$ ]] || {
-  echo "Invalid metrics path.  Must end in one of: $(echo -n "${valid_paths[@]}")."
+metrics_directory="${metrics_directory:-/opt/puppetlabs/puppet-metrics-collector/puppetserver}"
+retention_days="${retention_days:-90}"
+
+# Parameter expansion to strip everything before the last '/', giving us the basename.
+metrics_type="${metrics_directory##*/}"
+
+# Check that $metrics_directory ends in a Puppet service.
+paths_regex="$(IFS='|'; echo "${valid_paths[*]}")"
+[[ $metrics_directory =~ ${paths_regex}$ ]] || {
+  echo "Error: Invalid metrics directory. Must end in one of: $(echo -n "${valid_paths[@]}")."
   exit 1
 }
 
-# Delete files older than the retention period, in days.
-find "$metrics_dir" -type f -ctime +"$ret_days" -delete
+# Delete files in a Puppet service metrics directory older than the retention period, in days.
+find "$metrics_directory" -type f -ctime +"$retention_days" -delete
 
-# Compress the remaining files.
-find "$metrics_dir" -type f -name "*json" | tar zcf "${metrics_dir}/${metrics_type}-$(date +%Y.%m.%d.%H.%M.%S).tar.gz" --files-from -
+# Compress the remaining files in a Puppet service metrics directory.
+find "$metrics_directory" -type f -name "*json" | \
+  tar --create --gzip --file "${metrics_directory}/${metrics_type}-$(date +%Y.%m.%d.%H.%M.%S).tar.gz" --files-from -

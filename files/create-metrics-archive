@@ -3,21 +3,25 @@
 while [[ $1 ]]; do
   case "$1" in
     '-d'|'--directory')
-      metrics_dir="$2"
+      metrics_directory="$2"
       ;;
     '-r'|'--retention-days')
-      ret_days="$2"
+      retention_days="$2"
   esac
   shift 2
 done
 
 # Arguments and defaults.
-metrics_dir="${metrics_dir:-/opt/puppetlabs/puppet-metrics-collector}"
-ret_days="${ret_days:-30}"
-timestamp="$(date +%Y.%m.%d.%H.%M.%S)"
-output_file="puppet-metrics-collector-${timestamp}.tar.gz"
 
-find "$metrics_dir" -type f -ctime -"$ret_days" -a \( -name "*json" -o -name "*gz" \) | \
-  tar czf "$output_file" --transform "s,^${metrics_dir#/},puppet-metrics-${timestamp}," --files-from - || exit 1
+metrics_directory="${metrics_directory:-/opt/puppetlabs/puppet-metrics-collector}"
+retention_days="${retention_days:-30}"
+timestamp="$(date +%Y.%m.%d.%H.%M.%S)"
+output_file="puppet-metrics-${timestamp}.tar.gz"
+
+find "$metrics_directory" -type f -ctime -"$retention_days" -and \( -name "*json" -or -name "*gz" \) | \
+  tar --create --gzip --file "$output_file" --files-from - --transform "s,^${metrics_directory#/},puppet-metrics-${timestamp}," || {
+    echo "Error: could not create metrics archive: $output_file from $metrics_directory"
+    exit 1
+}
 
 echo "Created metrics archive: $output_file"
