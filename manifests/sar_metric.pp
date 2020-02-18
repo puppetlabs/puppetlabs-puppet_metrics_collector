@@ -39,10 +39,11 @@ define puppet_metrics_collector::sar_metric (
 
   # The hardcoded numbers with the fqdn_rand calls are to trigger the metrics_tidy 
   # command to run at a randomly selected time between 12:00 AM and 3:00 AM.
+  # NOTE - if adding a new service, the name of the service must be added to the valid_paths array in files/metrics_tidy
 
   cron { "${metrics_type}_metrics_tidy" :
     ensure  => $metric_ensure,
-    command => "${puppet_metrics_collector::scripts_dir}/metrics_tidy ${metrics_output_dir} ${retention_days}",
+    command => "${puppet_metrics_collector::scripts_dir}/metrics_tidy -d ${metrics_output_dir} -r ${retention_days}",
     user    => 'root',
     hour    => fqdn_rand(3, $metrics_type),
     minute  => (5 * fqdn_rand(11, $metrics_type)),

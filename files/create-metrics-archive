@@ -1,29 +1,23 @@
 #!/bin/bash
 
-set -e
-
-# Arguments and defaults.
-
 while [[ $1 ]]; do
   case "$1" in
-    '-m'|'--metrics-directory')
-      arg_metrics_dir="$2"
+    '-d'|'--directory')
+      metrics_dir="$2"
       ;;
     '-r'|'--retention-days')
-    arg_retention_days="$2"
+      ret_days="$2"
   esac
   shift 2
 done
 
-METRICS_OUTPUT_DIR=${arg_metrics_dir:-/opt/puppetlabs/puppet-metrics-collector}
-RETENTION_DAYS=${arg_retention_days:-30}
+# Arguments and defaults.
+metrics_dir="${metrics_dir:-/opt/puppetlabs/puppet-metrics-collector}"
+ret_days="${ret_days:-30}"
+timestamp="$(date +%Y.%m.%d.%H.%M.%S)"
+output_file="puppet-metrics-collector-${timestamp}.tar.gz"
 
-DATETIME=$(date +%Y.%m.%d.%H.%M.%S)
-OUTPUT_FILE="$(pwd)/puppet-metrics-$DATETIME.tar.gz"
+find "$metrics_dir" -type f -ctime -"$ret_days" -a \( -name "*json" -o -name "*gz" \) | \
+  tar czf "$output_file" --transform "s,^${metrics_dir#/},puppet-metrics-${timestamp}," --files-from - || exit 1
 
-cd "$METRICS_OUTPUT_DIR"
-find . -type f -ctime -"$RETENTION_DAYS" -regex '\(.*gz$\|.*json$\)' > "$METRICS_OUTPUT_DIR.tmp"
-tar --create --gzip --file "$OUTPUT_FILE" --files-from "$METRICS_OUTPUT_DIR.tmp" --transform "s,^,/puppet-metrics-$DATETIME/,"
-rm "$METRICS_OUTPUT_DIR.tmp"
-
-echo "Created metrics archive: ${OUTPUT_FILE}"
+echo "Created metrics archive: $output_file"

@@ -47,7 +47,7 @@ ADDITIONAL_METRICS = config['additional_metrics']
 # Metrics endpoints for our Trapper Keeper services do not require a client certificate.
 
 if USE_CLIENTCERT
-  SSLDIR = `/opt/puppetlabs/bin/puppet config print ssldir`.chomp
+  SSLDIR = `/usr/local/bin/puppet config print ssldir`.chomp
 end
 
 $error_array = []
