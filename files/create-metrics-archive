@@ -14,9 +14,10 @@ done
 # Arguments and defaults.
 metrics_dir="${metrics_dir:-/opt/puppetlabs/puppet-metrics-collector}"
 ret_days="${ret_days:-30}"
-output_file="puppet-metrics-collector-$(date +%Y.%m.%d.%H.%M.%S).tar.gz"
+timestamp="$(date +%Y.%m.%d.%H.%M.%S)"
+output_file="puppet-metrics-collector-${timestamp}.tar.gz"
 
 find "$metrics_dir" -type f -ctime -"$ret_days" -a \( -name "*json" -o -name "*gz" \) | \
-   tar czf "$output_file" --transform "s,^${metrics_dir#/},puppet-metrics," --files-from - || exit 1
+   tar czf "$output_file" --transform "s,^${metrics_dir#/},puppet-metrics-${timestamp}," --files-from - || exit 1
 
 echo "Created metrics archive: $output_file"
