@@ -2,7 +2,7 @@
 
 while [[ $1 ]]; do
    case "$1" in
-      '-m'|'--metrics-dir')
+      '-d'|'--directory')
          metrics_dir="$2"
          ;;
       '-r'|'--retention-days')
@@ -14,9 +14,10 @@ done
 # Arguments and defaults.
 metrics_dir="${metrics_dir:-/opt/puppetlabs/puppet-metrics-collector/puppetserver}"
 ret_days="${ret_days:-90}"
+# Parameter expansion to strip everything before the last '/', giving us the basename
 metrics_type="${metrics_dir##*/}"
 
-# Guard against deleting or archiving other files. 
+# Guard against deleting or archiving other files.
 valid_paths=(puppetserver puppetdb orchestrator ace bolt activemq)
 paths_regex="$(IFS='|'; echo "${valid_paths[*]}")"
 

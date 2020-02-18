@@ -2,7 +2,7 @@
 
 while [[ $1 ]]; do
    case "$1" in
-      '-m'|'--metrics-dir')
+      '-d'|'--directory')
          metrics_dir="$2"
          ;;
       '-r'|'--retention-days')
