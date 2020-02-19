@@ -4,6 +4,7 @@
 # puppetlabs-puppet-metrics-viewer/json2graphite.rb
 # puppetlabs-puppet_metrics_collector/files/json2timeseriesdb
 
+require 'fcntl'
 require 'json'
 require 'time'
 require 'optparse'
@@ -349,21 +350,36 @@ end
 data_files = []
 data_files += Dir.glob($options[:pattern]) if $options[:pattern]
 
-# Collect JSON files to process from ARGF.
-# http://ruby-doc.org/core-1.9.3/ARGF.html#method-i-filename
+# Collect JSON files to process from ARGV.
 
-while ARGF.filename != '-'
-  filename = ARGF.filename
-  data_files += [filename]
-  ARGF.skip
-  break if filename == ARGF.filename
+data_files += ARGV
+
+# Validate STDIN.
+
+data_files_includes_stdin = data_files.include?('-')
+stdin_provided = STDIN.fcntl(Fcntl::F_GETFL, 0) == 0
+
+# Guard against waiting indefinately for non-existant STDIN.
+if data_files_includes_stdin && !stdin_provided
+  STDERR.puts "ERROR: STDIN specified via '-' but STDIN not provided"
+  exit 1
 end
 
-# Process collected JSON files.
+# Guard against not reading STDIN.
+if !data_files_includes_stdin && stdin_provided
+  STDERR.puts "WARNING: STDIN provided but not specified via '-'"
+  data_files += ['-']
+end
 
+# Process collected JSON files (including '-' to process data from STDIN).
+      
 data_files.each do |filename|
   begin
-    converted_data = parse_file(filename)
+    if filename == '-'
+      converted_data = STDIN.each_line.map { |l| parse_input( JSON.parse(l) )}.flatten.join("\n")
+    else
+      converted_data = parse_file(filename)
+    end
     if $options[:host]
       $net_output.write(converted_data)
     else
@@ -371,22 +387,6 @@ data_files.each do |filename|
     end
   rescue => e
     STDERR.puts "ERROR: #{filename}: #{e.message}"
-  end
-end
-
-# Process JSON data from STDIN.
-
-if ARGF.filename == '-'
-  begin
-    input = ARGF.read
-    converted_data = input.lines.map { |l| parse_input( JSON.parse(l) )}
-    if $options[:host]
-      $net_output.write(converted_data.flatten.join("\n"))
-    else
-      STDOUT.puts(converted_data)
-    end
-  rescue => e
-    STDERR.puts "ERROR: During read from STDIN: #{e.message}"
   end
 end
 
