@@ -17,12 +17,12 @@ require "fileutils"
 # sar_metric.pp will setup a cron job to run this similar to how pe_metric runs tk_metrics
 #
 # Example execution
-# generate_system_metrics --metric_type system_cpu --file_interval 300 --polling_interval 1
-#                         --metrics_dir <path to puppet-metrics-collector data>
+# system_metrics --metric_type system_cpu --file_interval 300 --polling_interval 1
+#                --metrics_dir /opt/puppetlabs/puppet-metrics-collector
 # or
-# generate_system_metrics --metric_type system_processes --file_interval 300 --polling_interval 1
-#                         --process_expression <custom expression>
-#                         --metrics_dir <path to puppet-metrics-collector data>
+# system_metrics --metric_type system_processes --file_interval 300 --polling_interval 1
+#                --metrics_dir /opt/puppetlabs/puppet-metrics-collector
+#                --process_expression <custom expression>
 
 # General namespace for SystemMetrics module
 module SystemMetrics
@@ -163,7 +163,7 @@ module SystemMetrics
       processes_to_monitor = {}
       comm = "ps -eo pid,cmd | grep -E \'#{@process_expression}\'"
       # we don't want to track PMC scripts or the grep command itself
-      comm += "| grep -vE 'puppet-metrics-collector|grep|generate_system_metrics'"
+      comm += "| grep -vE 'puppet-metrics-collector|grep|system_metrics'"
       puts "process grep command is: #{comm}" if @verbose
       begin
         process_info = %x[#{comm}]
