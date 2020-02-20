@@ -34,4 +34,4 @@ find "$metrics_directory" -type f -ctime +"$retention_days" -delete
 
 # Compress the remaining files in a Puppet service metrics directory.
 find "$metrics_directory" -type f -name "*json" | \
-  tar --create --gzip --file "${metrics_directory}/${metrics_type}-$(date +%Y.%m.%d.%H.%M.%S).tar.gz" --files-from -
+  tar --create --gzip --file "${metrics_directory}/${metrics_type}-$(date +%Y.%m.%d.%H.%M.%S).tar.gz" --files-from - 2>/dev/null
