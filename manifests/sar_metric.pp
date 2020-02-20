@@ -28,7 +28,7 @@ define puppet_metrics_collector::sar_metric (
                             " --file_interval ${file_interval_seconds}",
                             " --polling_interval ${polling_frequency_seconds}",
                             " --metrics_dir ${puppet_metrics_collector::system::output_dir}",
-                            " > /dev/null",
+                            ' > /dev/null',
                             ], '')
 
   cron { "${metrics_type}_metrics_collection" :
