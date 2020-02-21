@@ -1,3 +1,39 @@
+# Major Release 6.0.0
+
+This major release features a refactor of the code into service and system classes.
+It includes changes to the tagging for the PuppetServer metrics and improvements
+to the metrics processing script.
+
+This version adds new metrics collection for the puma based services, and additional
+metrics from pidstat for existing services. This release fixes some bugs that
+prevented sending metrics to a metric server when muliple compilers are present.
+
+## Improvements
+ - Added tracking for the major puppet services using pidstat
+   - [PR #35](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/35)
+ - Collect data from ace and bolt (puma) services
+   - [PR #36](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/36)
+ - Print STDOUT metrics as line-delimited JSON
+   - [PR #44](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/44)
+ - Major refactor of the code
+   - [PR #47](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/47)
+
+## Changes
+ - Normalize json2graphite.rb and json2timeseriesdb
+   - [PR #37](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/37)
+ - Updated InfluxDB measurement tagging from `puppet_server` to `puppetserver`
+   - [PR #43](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/43)
+ - Better error handling in tidy script
+   - [PR #52](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/52)
+
+## Bug Fixes
+ - Fix bug where process data is missed
+   - [PR #42](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/42)
+ - Allow for handling multiple hashes from STDIN
+   - [PR #45](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/45)
+ - Use ARGV instead of ARGF in json2timeseriesdb
+   - [PR #51](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/51)
+
 # Minor Release 5.3.0
 
 ## Improvements
