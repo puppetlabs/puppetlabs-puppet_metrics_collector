@@ -1,0 +1,37 @@
+#!/bin/bash
+
+while [[ $1 ]]; do
+  case "$1" in
+    '-d'|'--directory')
+      metrics_directory="$2"
+      ;;
+    '-r'|'--retention-days')
+      retention_days="$2"
+  esac
+  shift 2
+done
+
+# Arguments and defaults.
+
+# Guard against deleting or archiving files outside of a Puppet service metrics directory.
+valid_paths=(puppetserver puppetdb orchestrator ace bolt activemq)
+
+metrics_directory="${metrics_directory:-/opt/puppetlabs/puppet-metrics-collector/puppetserver}"
+retention_days="${retention_days:-90}"
+
+# Parameter expansion to strip everything before the last '/', giving us the basename.
+metrics_type="${metrics_directory##*/}"
+
+# Check that $metrics_directory ends in a Puppet service.
+paths_regex="$(IFS='|'; echo "${valid_paths[*]}")"
+[[ $metrics_directory =~ ${paths_regex}$ ]] || {
+  echo "Error: Invalid metrics directory. Must end in one of: $(echo -n "${valid_paths[@]}")."
+  exit 1
+}
+
+# Delete files in a Puppet service metrics directory older than the retention period, in days.
+find "$metrics_directory" -type f -ctime +"$retention_days" -delete
+
+# Compress the remaining files in a Puppet service metrics directory.
+find "$metrics_directory" -type f -name "*json" | \
+  tar --create --gzip --file "${metrics_directory}/${metrics_type}-$(date +%Y.%m.%d.%H.%M.%S).tar.gz" --files-from - 2>/dev/null
