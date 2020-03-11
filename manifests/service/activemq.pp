@@ -12,44 +12,6 @@ class puppet_metrics_collector::service::activemq (
   Optional[Integer]       $metrics_server_port      = $puppet_metrics_collector::metrics_server_port,
   Optional[String]        $metrics_server_db_name   = $puppet_metrics_collector::metrics_server_db_name,
 ) {
-  $additional_metrics = [
-    {
-      'type'      => 'read',
-      'mbean'     => 'java.lang:type=Memory',
-      'attribute' => 'HeapMemoryUsage,NonHeapMemoryUsage'
-    },
-    {
-      'type'      => 'read',
-      'mbean'     => 'java.lang:name=*,type=GarbageCollector',
-      'attribute' => 'CollectionCount'
-    },
-    {
-      'type'      => 'read',
-      'mbean'     => 'java.lang:type=Runtime',
-      'attribute' => 'Uptime'
-    },
-    {
-      'type'      => 'read',
-      'mbean'     => 'java.lang:type=OperatingSystem',
-      'attribute' => 'OpenFileDescriptorCount,MaxFileDescriptorCount'
-    },
-    {
-      'type'      => 'read',
-      'mbean'     => 'org.apache.activemq:brokerName=*,type=Broker',
-      'attribute' => 'MemoryLimit,MemoryPercentUsage,CurrentConnectionsCount'
-    },
-    {
-      'type'      => 'read',
-      'mbean'     => 'org.apache.activemq:type=Broker,brokerName=*,destinationType=Queue,destinationName=mcollective.*',
-      'attribute' => 'AverageBlockedTime,AverageEnqueueTime,AverageMessageSize,ConsumerCount,DequeueCount,DispatchCount,EnqueueCount,ExpiredCount,ForwardCount,InFlightCount,ProducerCount,QueueSize',
-    },
-    {
-      'type'      => 'read',
-      'mbean'     => 'org.apache.activemq:type=Broker,brokerName=*,destinationType=Topic,destinationName=mcollective.*.agent',
-      'attribute' => 'AverageBlockedTime,AverageEnqueueTime,AverageMessageSize,ConsumerCount,DequeueCount,DispatchCount,EnqueueCount,ExpiredCount,ForwardCount,InFlightCount,ProducerCount,QueueSize',
-    },
-  ]
-
   file { "${puppet_metrics_collector::scripts_dir}/amq_metrics" :
     ensure => $metrics_ensure,
     mode   => '0755',
@@ -65,7 +27,7 @@ class puppet_metrics_collector::service::activemq (
     metric_script_file       => 'amq_metrics',
     override_metrics_command => $override_metrics_command,
     excludes                 => $excludes,
-    additional_metrics       => $additional_metrics,
+    additional_metrics       => [],
     metrics_server_type      => $metrics_server_type,
     metrics_server_hostname  => $metrics_server_hostname,
     metrics_server_port      => $metrics_server_port,

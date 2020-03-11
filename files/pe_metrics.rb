@@ -83,10 +83,20 @@ end
 def get_endpoint(url, use_ssl)
   http, uri = setup_connection(url, use_ssl)
 
-  data = JSON.parse(http.get(uri.request_uri).body)
+  endpoint_data = JSON.parse(http.get(uri.request_uri).body)
+  if endpoint_data.key?('status')
+    if endpoint_data['status'] == 200
+      endpoint_data = endpoint_data['value']
+    else
+      $error_array << "HTTP Error #{endpoint_data['status']} for #{url}"
+      endpoint_data = {}
+    end
+  end
+  return endpoint_data
+
 rescue Exception => e
-    $error_array << "#{e}"
-    data = {}
+  $error_array << "#{e}"
+  endpoint_data = {}
 end
 
 def post_endpoint(url, use_ssl, post_data)
@@ -96,50 +106,37 @@ def post_endpoint(url, use_ssl, post_data)
   request.content_type = 'application/json'
   request.body = post_data
 
-  data = JSON.parse(http.request(request).body)
+  endpoint_data = JSON.parse(http.request(request).body)
+  return endpoint_data
+
 rescue Exception => e
-    $error_array << "#{e}"
-    data = {}
+  $error_array << "#{e}"
+  endpoint_data = {}
 end
 
-def individually_retrieve_additional_metrics(host, port, use_ssl, metrics)
-  host_url = generate_host_url(host, port, use_ssl)
+# PE-28451 Disables Metrics API v1 (/metrics/v1/beans/) and restricts v2 (/metrics/v2/read/) to localhost by default.
 
-  metrics_array = []
-  metrics.each do |metric|
-    endpoint = URI.escape("#{host_url}/metrics/v1/mbeans/#{metric['url']}")
-    metrics_array <<  { 'name' => metric['name'], 'data' => get_endpoint(endpoint, use_ssl) }
+def retrieve_additional_metrics(host, port, use_ssl, metrics_type, metrics)
+  if metrics_type == 'puppetdb'
+    host = '127.0.0.1' if host == CERTNAME
+    return [] unless ['127.0.0.1', 'localhost'].include?(host)
   end
 
-  return metrics_array
-end
-
-def bulk_retrieve_additional_metrics(host, port, use_ssl, metrics)
   host_url = generate_host_url(host, port, use_ssl)
 
-  post_data = []
-  metrics.each do |metric|
-    post_data << metric['url']
-  end
+  endpoint = "#{host_url}/metrics/v2/read"
+  metrics_output = post_endpoint(endpoint, use_ssl, metrics.to_json)
 
-  endpoint = "#{host_url}/metrics/v1/mbeans"
-  metrics_output = post_endpoint(endpoint, use_ssl, post_data.to_json)
   metrics_array = []
-
   metrics.each_index do |index|
     metric_name = metrics[index]['name']
     metric_data = metrics_output[index]
-    metrics_array << { 'name' => metric_name, 'data' => metric_data }
-  end
-
-  return metrics_array
-end
-
-def retrieve_additional_metrics(host, port, use_ssl, pe_version, metrics)
-  if Gem::Version.new(pe_version) < Gem::Version.new('2016.2.0') then
-    metrics_array = individually_retrieve_additional_metrics(host, port, use_ssl, metrics)
-  else
-    metrics_array = bulk_retrieve_additional_metrics(host, port, use_ssl, metrics)
+    if metric_data['status'] == 200
+      metrics_array << { 'name' => metric_name, 'data' => metric_data['value'] }
+    else
+      metric_mbean = metrics[index]['mbean']
+      $error_array << "HTTP Error #{metric_data['status']} for #{metric_mbean}"
+    end
   end
 
   return metrics_array

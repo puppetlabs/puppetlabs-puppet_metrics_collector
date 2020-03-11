@@ -21,6 +21,10 @@ Table of Contents
 This module collects metrics provided by the status endpoints of Puppet Enterprise services.
 The metrics can be used to identify performance issues that may be addressed by performance tuning.
 
+> In PE 2018.1.13 and newer and PE 2019.4 and newer, the `/metrics/v1` endpoints are disabled by default and access to the `/metrics/v2` endpoints are restricted to localhost ... in response to CVE-2020-7943. 
+This module requires access those endpoints to collect additional metrics from PuppetDB, and those metrics will not be collected from remote PuppetDB hosts until these restricted are resolved.
+Refer to [Configuration for Distributed Metrics Collection](#Configuration-for-distributed-metrics-collection) for a workaround. 
+
 
 ## Setup
 
