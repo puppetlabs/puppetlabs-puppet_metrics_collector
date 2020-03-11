@@ -28,11 +28,11 @@ class puppet_metrics_collector::service::puppetdb (
       'name'  => 'global_fatal',
       'mbean' => 'puppetlabs.puppetdb.mq:name=global.fatal'
     },
-    {
-      'type'  => 'read',
-      'name'  => 'global_generate-retry-message-time',
-      'mbean' => 'puppetlabs.puppetdb.mq:name=global.generate-retry-message-time'
-    },
+    #{
+    #  'type'  => 'read',
+    #  'name'  => 'global_generate-retry-message-time',
+    #  'mbean' => 'puppetlabs.puppetdb.mq:name=global.generate-retry-message-time'
+    #},
     {
       'type'  => 'read',
       'name'  => 'global_message-persistence-time',
@@ -48,11 +48,11 @@ class puppet_metrics_collector::service::puppetdb (
       'name'  => 'global_retry-counts',
       'mbean' => 'puppetlabs.puppetdb.mq:name=global.retry-counts'
     },
-    {
-      'type'  => 'read',
-      'name'  => 'global_retry-persistence-time',
-      'mbean' => 'puppetlabs.puppetdb.mq:name=global.retry-persistence-time'
-    },
+    #{
+    #  'type'  => 'read',
+    #  'name'  => 'global_retry-persistence-time',
+    #  'mbean' => 'puppetlabs.puppetdb.mq:name=global.retry-persistence-time'
+    #},
     {
       'type'  => 'read',
       'name'  => 'global_seen',
@@ -291,11 +291,11 @@ class puppet_metrics_collector::service::puppetdb (
       'name'  => 'ha_seconds-since-last-successful-sync',
       'mbean' => 'puppetlabs.puppetdb.ha:name=seconds-since-last-successful-sync'
     },
-    {
-      'type'  => 'read',
-      'name'  => 'ha_failed-request-counter',
-      'mbean' => 'puppetlabs.puppetdb.ha:name=failed-request-counter'
-    },
+    #{
+    #  'type'  => 'read',
+    #  'name'  => 'ha_failed-request-counter',
+    #  'mbean' => 'puppetlabs.puppetdb.ha:name=failed-request-counter'
+    #},
     {
       'type'  => 'read',
       'name'  => 'ha_sync-duration',
