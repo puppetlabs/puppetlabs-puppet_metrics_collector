@@ -28,11 +28,11 @@ class puppet_metrics_collector::service::puppetdb (
       'name'  => 'global_fatal',
       'mbean' => 'puppetlabs.puppetdb.mq:name=global.fatal'
     },
-    #{
-    #  'type'  => 'read',
-    #  'name'  => 'global_generate-retry-message-time',
-    #  'mbean' => 'puppetlabs.puppetdb.mq:name=global.generate-retry-message-time'
-    #},
+    { # This counter doesn't exist until a failure occurs.
+      'type'  => 'read',
+      'name'  => 'global_generate-retry-message-time',
+      'mbean' => 'puppetlabs.puppetdb.mq:name=global.generate-retry-message-time'
+    },
     {
       'type'  => 'read',
       'name'  => 'global_message-persistence-time',
@@ -48,11 +48,11 @@ class puppet_metrics_collector::service::puppetdb (
       'name'  => 'global_retry-counts',
       'mbean' => 'puppetlabs.puppetdb.mq:name=global.retry-counts'
     },
-    #{
-    #  'type'  => 'read',
-    #  'name'  => 'global_retry-persistence-time',
-    #  'mbean' => 'puppetlabs.puppetdb.mq:name=global.retry-persistence-time'
-    #},
+    { # This counter doesn't exist until a failure occurs.
+      'type'  => 'read',
+      'name'  => 'global_retry-persistence-time',
+      'mbean' => 'puppetlabs.puppetdb.mq:name=global.retry-persistence-time'
+    },
     {
       'type'  => 'read',
       'name'  => 'global_seen',
@@ -178,42 +178,38 @@ class puppet_metrics_collector::service::puppetdb (
     }
   ]
 
-  # Retaining for future reference.
-  $numbers = $::pe_server_version ? {
-    /^2016\.[45]\./ => {'catalogs' => 9, 'facts' => 5, 'reports' => 8},
-    default         => {'catalogs' => 9, 'facts' => 5, 'reports' => 8},
-  }
+  $version = {'catalogs' => 9, 'facts' => 5, 'reports' => 8},
 
   $version_specific_metrics = [
     {
       'type'  => 'read',
       'name'  => 'mq_replace_catalog_retried',
-      'mbean' => "puppetlabs.puppetdb.mq:name=replace catalog.${numbers['catalogs']}.retried"
+      'mbean' => "puppetlabs.puppetdb.mq:name=replace catalog.${version['catalogs']}.retried"
     },
     {
       'type'  => 'read',
       'name'  => 'mq_replace_catalog_retry-counts',
-      'mbean' => "puppetlabs.puppetdb.mq:name=replace catalog.${numbers['catalogs']}.retry-counts"
+      'mbean' => "puppetlabs.puppetdb.mq:name=replace catalog.${version['catalogs']}.retry-counts"
     },
     {
       'type'  => 'read',
       'name'  => 'mq_replace_facts_retried',
-      'mbean' => "puppetlabs.puppetdb.mq:name=replace facts.${numbers['facts']}.retried"
+      'mbean' => "puppetlabs.puppetdb.mq:name=replace facts.${version['facts']}.retried"
     },
     {
       'type'  => 'read',
       'name'  => 'mq_replace_facts_retry-counts',
-      'mbean' => "puppetlabs.puppetdb.mq:name=replace facts.${numbers['facts']}.retry-counts"
+      'mbean' => "puppetlabs.puppetdb.mq:name=replace facts.${version['facts']}.retry-counts"
     },
     {
       'type'  => 'read',
       'name'  => 'mq_store_report_retried',
-      'mbean' => "puppetlabs.puppetdb.mq:name=store report.${numbers['reports']}.retried"
+      'mbean' => "puppetlabs.puppetdb.mq:name=store report.${version['reports']}.retried"
     },
     {
       'type'  => 'read',
       'name'  => 'mq_store_reports_retry-counts',
-      'mbean' => "puppetlabs.puppetdb.mq:name=store report.${numbers['reports']}.retry-counts"
+      'mbean' => "puppetlabs.puppetdb.mq:name=store report.${version['reports']}.retry-counts"
     }
   ]
 
@@ -291,11 +287,11 @@ class puppet_metrics_collector::service::puppetdb (
       'name'  => 'ha_seconds-since-last-successful-sync',
       'mbean' => 'puppetlabs.puppetdb.ha:name=seconds-since-last-successful-sync'
     },
-    #{
-    #  'type'  => 'read',
-    #  'name'  => 'ha_failed-request-counter',
-    #  'mbean' => 'puppetlabs.puppetdb.ha:name=failed-request-counter'
-    #},
+    { # This counter doesn't exist until a failure occurs.
+      'type'  => 'read',
+      'name'  => 'ha_failed-request-counter',
+      'mbean' => 'puppetlabs.puppetdb.ha:name=failed-request-counter'
+    },
     {
       'type'  => 'read',
       'name'  => 'ha_sync-duration',
