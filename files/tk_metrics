@@ -26,7 +26,7 @@ HOSTS.each do |host|
     dataset['servers'][hostkey][METRICS_TYPE] = status_output
 
     unless ADDITIONAL_METRICS.empty? then
-      metrics_array = retrieve_additional_metrics(host, PORT, USE_SSL, PE_VERSION, ADDITIONAL_METRICS)
+      metrics_array = retrieve_additional_metrics(host, PORT, USE_SSL, METRICS_TYPE, ADDITIONAL_METRICS)
       metrics_array.each do |metric_hash|
         metric_name = metric_hash['name']
         metric_data = metric_hash['data']

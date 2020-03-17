@@ -12,6 +12,7 @@ class puppet_metrics_collector::service::activemq (
   Optional[Integer]       $metrics_server_port      = $puppet_metrics_collector::metrics_server_port,
   Optional[String]        $metrics_server_db_name   = $puppet_metrics_collector::metrics_server_db_name,
 ) {
+  # lint:ignore:140chars
   $additional_metrics = [
     {
       'type'      => 'read',
@@ -49,6 +50,7 @@ class puppet_metrics_collector::service::activemq (
       'attribute' => 'AverageBlockedTime,AverageEnqueueTime,AverageMessageSize,ConsumerCount,DequeueCount,DispatchCount,EnqueueCount,ExpiredCount,ForwardCount,InFlightCount,ProducerCount,QueueSize',
     },
   ]
+  # lint:endignore
 
   file { "${puppet_metrics_collector::scripts_dir}/amq_metrics" :
     ensure => $metrics_ensure,

@@ -21,6 +21,10 @@ Table of Contents
 This module collects metrics provided by the status endpoints of Puppet Enterprise services.
 The metrics can be used to identify performance issues that may be addressed by performance tuning.
 
+> In PE 2018.1.13 and newer and PE 2019.4 and newer, the `/metrics/v1` endpoints are disabled by default and access to the `/metrics/v2` endpoints are restricted to localhost ... in response to CVE-2020-7943. 
+This module requires access those endpoints to collect additional metrics from PuppetDB, and those metrics will not be collected from remote PuppetDB hosts until these restricted are resolved.
+Refer to [Configuration for Distributed Metrics Collection](#Configuration-for-distributed-metrics-collection) for a workaround. 
+
 
 ## Setup
 
@@ -171,22 +175,6 @@ grep queue_depth puppetdb/master.example.com/*.json
 puppetdb/master.example.com/20190404T170501Z.json: "queue_depth": 0,
 puppetdb/master.example.com/20190404T171001Z.json: "queue_depth": 0,
 puppetdb/master.example.com/20190404T171502Z.json: "queue_depth": 0,
-```
-
-Example for PE 2016.5 and older:
-
-```bash
-grep Cursor puppetdb/master.example.com/*.json
-
-puppetdb/master.example.com/20190404T171001Z.json: "CursorMemoryUsage": 0,
-puppetdb/master.example.com/20190404T171001Z.json: "CursorFull": false,
-puppetdb/master.example.com/20190404T171001Z.json: "CursorPercentUsage": 0,
-puppetdb/master.example.com/20190404T171502Z.json: "CursorMemoryUsage": 0,
-puppetdb/master.example.com/20190404T171502Z.json: "CursorFull": false,
-puppetdb/master.example.com/20190404T171502Z.json: "CursorPercentUsage": 0,
-puppetdb/master.example.com/20190404T172002Z.json: "CursorMemoryUsage": 0,
-puppetdb/master.example.com/20190404T172002Z.json: "CursorFull": false,
-puppetdb/master.example.com/20190404T172002Z.json: "CursorPercentUsage": 0,
 ```
 
 ### Sharing Metrics Data
@@ -364,17 +352,23 @@ Classify each PE Infrastructure Host with this module, specifying the following 
 When classifying a Compile Master, specify these additional parameters:
 
 ```puppet
+class { 'puppet_metrics_collector':
+  puppetserver_hosts          => ['127.0.0.1'],
   puppetdb_metrics_ensure     => absent,
   orchestrator_metrics_ensure => absent,
   ace_metrics_ensure          => absent,
   bolt_metrics_ensure         => absent,
+}
 ```
 
 When classifying a PuppetDB Host, specify these additional parameters:
 
 ```puppet
+class { 'puppet_metrics_collector':
+  puppetdb_hosts              => ['127.0.0.1'],
   puppetserver_metrics_ensure => absent,
   orchestrator_metrics_ensure => absent,
   ace_metrics_ensure          => absent,
   bolt_metrics_ensure         => absent,
+}
 ```
