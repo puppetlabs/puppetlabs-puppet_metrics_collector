@@ -48,6 +48,7 @@ define puppet_metrics_collector::pe_metric (
   $metric_script_file_path = "${puppet_metrics_collector::scripts_dir}/${metric_script_file}"
   $conversion_script_file_path = "${puppet_metrics_collector::scripts_dir}/json2timeseriesdb"
 
+  # lint:ignore:140chars
   if empty($override_metrics_command) {
     $base_metrics_command = "${metric_script_file_path} --metrics_type ${metrics_type} --output_dir ${metrics_output_dir}"
 
@@ -79,10 +80,10 @@ define puppet_metrics_collector::pe_metric (
     } else {
       $metrics_command = "${base_metrics_command} --no-print"
     }
-
   } else {
     $metrics_command = $override_metrics_command
   }
+  # lint:endignore
 
   cron { "${metrics_type}_metrics_collection" :
     ensure  => $metric_ensure,

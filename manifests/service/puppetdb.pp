@@ -178,7 +178,7 @@ class puppet_metrics_collector::service::puppetdb (
     }
   ]
 
-  $version = {'catalogs' => 9, 'facts' => 5, 'reports' => 8},
+  $version = {'catalogs' => 9, 'facts' => 5, 'reports' => 8}
 
   $version_specific_metrics = [
     {
