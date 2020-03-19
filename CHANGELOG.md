@@ -1,3 +1,23 @@
+# Major Release 6.0.0
+
+## Improvements
+ - Switch from the v1 to v2 Metrics API for additional metrics (for PuppetDB)
+ - Collect ACE and Bolt service metrics
+ - Reorganize into service and system classes
+ - Move duplicate code from service classes to defined types
+ - Move templated per-service tidy scripts to one common 'metrics_tidy' script
+ - Simplify the 'create-metrics-archive' script, removing the one constant parameter
+ - Do not symlink the 'create-metrics-archive' script to '/opt/puppetlabs/bin/'
+ - Store configuration and code in separate 'config' and 'scripts' directories
+ - Eliminate the '/opt/puppetlabs/puppet_metrics_collector/bin' directory
+ - Add puppet code to delete the resulting legacy directories and files
+ - Resolve various puppet-lint and rubocop issues
+ - Refactor the shell scripts
+ - Merge json2graphite.rb and json2timeseriesdb scripts
+ - Update measurement tagging
+ - Update to PDK 1.16
+ - Update documentation
+
 # Minor Release 5.3.0
 
 ## Improvements
