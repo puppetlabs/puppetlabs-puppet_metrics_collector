@@ -52,9 +52,13 @@ paths_regex="$(IFS='|'; echo "${valid_paths[*]}")"
 find "$metrics_directory" -type f -ctime +"$retention_days" -delete
 
 # Compress the remaining files in a Puppet service metrics directory.
-# The return code of a pipeline is the rightmost command, which means we trigger our trap if tar fails
-find "$metrics_directory" -type f -name "*json" | \
-  tar --create --gzip --file "${metrics_directory}/${metrics_type}-$(date +%Y.%m.%d.%H.%M.%S).tar.gz" --files-from -
+# Store the list of files in a temp file so that `tar` and `rm` will operate on the same files
+metrics_tmp="$(mktemp)"
+find "$metrics_directory" -type f -name "*json" >"$metrics_tmp"
+tar --create --gzip --file "${metrics_directory}/${metrics_type}-$(date +%Y.%m.%d.%H.%M.%S).tar.gz" \
+  --files-from "$metrics_tmp"
 
 # Cleanup the backed up json files so that we do not duplicate files in the tarballs.
-find "$metrics_directory" -type f -name "*json" -delete
+# We can assume that the json files have no spaces as they are created by our scripts
+xargs -a "$metrics_tmp" rm
+rm "$metrics_tmp"
