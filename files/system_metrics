@@ -325,7 +325,7 @@ module SystemMetrics
       hostkey = @hostname.gsub('.', '-')
       metrics_json = {'timestamp' => @time_stamp_obj.utc.iso8601, 'servers' => {}}
       metrics_json['servers'][hostkey] = {@metric_type => metrics_data}
-      JSON.pretty_generate(metrics_json)
+      JSON.generate(metrics_json)
     end
 
     # Create the metric file and put the json data in it
