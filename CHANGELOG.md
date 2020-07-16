@@ -1,3 +1,11 @@
+# Minor Release 6.1.0
+
+## Improvements
+ - Fixes a bug where the tarballs files would contain 90 days worth of files instead of 1
+ - Ensure the system metrics can be tidied up
+ - Stop pretty-printing the system metrics.
+   - [PR #61](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/61)
+
 # Major Release 6.0.0
 
 This is a major release as it drops support for Puppet 4.x and versions of PE
