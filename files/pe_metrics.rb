@@ -30,7 +30,7 @@ config_file = File.expand_path("../../config/#{options[:metrics_type]}.yaml", __
 config = YAML.load_file(config_file)
 
 def coalesce(higher_precedence, lower_precedence, default = nil)
-  [higher_precedence, lower_precedence].find{|x|!x.nil?} || default
+  [higher_precedence, lower_precedence, default].find{|x|!x.nil?}
 end
 
 METRICS_TYPE       = options[:metrics_type]
