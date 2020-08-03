@@ -1,12 +1,12 @@
 # Collect Service Metrics
 class puppet_metrics_collector::service::orchestrator (
-  String                  $metrics_ensure           = $puppet_metrics_collector::puppetserver_metrics_ensure,
+  String                  $metrics_ensure           = $puppet_metrics_collector::orchestrator_metrics_ensure,
   Integer                 $collection_frequency     = $puppet_metrics_collector::collection_frequency,
   Integer                 $retention_days           = $puppet_metrics_collector::retention_days,
-  Array[String]           $hosts                    = $puppet_metrics_collector::puppetserver_hosts,
-  Integer                 $port                     = $puppet_metrics_collector::puppetserver_port,
+  Array[String]           $hosts                    = $puppet_metrics_collector::orchestrator_hosts,
+  Integer                 $port                     = $puppet_metrics_collector::orchestrator_port,
   Optional[String]        $override_metrics_command = $puppet_metrics_collector::override_metrics_command,
-  Optional[Array[String]] $excludes                 = $puppet_metrics_collector::puppetserver_excludes,
+  Optional[Array[String]] $excludes                 = $puppet_metrics_collector::orchestrator_excludes,
   Optional[Enum['influxdb', 'graphite', 'splunk_hec']] $metrics_server_type = $puppet_metrics_collector::metrics_server_type,
   Optional[String]        $metrics_server_hostname  = $puppet_metrics_collector::metrics_server_hostname,
   Optional[Integer]       $metrics_server_port      = $puppet_metrics_collector::metrics_server_port,
