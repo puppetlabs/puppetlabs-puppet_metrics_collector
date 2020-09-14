@@ -1,3 +1,8 @@
+# Patch Release 6.1.1
+
+## Changes:
+ - Fixes a bug where Orchestrator metrics collection used the Puppetserver parameters
+
 # Minor Release 6.1.0
 
 ## Improvements

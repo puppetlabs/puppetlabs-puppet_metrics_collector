@@ -90,7 +90,7 @@ HOSTS.each do |host|
         end
       else
         req = element['request']
-        metrics = treeify(req['mbean'], { req['attribute'] => req['value'] })
+        metrics = treeify(req['mbean'], req['attribute'] => req['value'])
         recurse_merge!(dataset['servers'][hostkey][METRICS_TYPE], metrics)
       end
     end
