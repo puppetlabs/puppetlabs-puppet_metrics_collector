@@ -238,7 +238,7 @@ module SystemMetrics
           unknown_count += 1
           comm_identifier = "#{comm_identifier}_#{unknown_count}"
         end
-        data_hash[k].merge!({"command_full" => v, "pid" => k})
+        data_hash[k].merge!("command_full" => v, "pid" => k)
         data_hash[comm_identifier] = data_hash.delete(k)
       end
 
@@ -309,7 +309,7 @@ module SystemMetrics
       # Time object is created after successful sar run
       # so could be nil when an error occurs. But the file needs a name based on a timestamp
       @time_stamp_obj = Time.now if @time_stamp_obj.nil?
-      metrics_json = metrics_to_json({:error => error_msg})
+      metrics_json = metrics_to_json(:error => error_msg)
       write_metrics_to_file(metrics_json)
       exit 1
     end
