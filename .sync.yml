@@ -13,3 +13,9 @@ spec/default_facts.yml:
     pe_server_version: '2016.4.5'
 .rubocop.yml:
   selected_profile: off
+
+.travis.yml:
+  branches:
+    - master
+    - main
+    - /^v\d/
