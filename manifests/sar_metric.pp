@@ -44,7 +44,7 @@ define puppet_metrics_collector::sar_metric (
 
   cron { "${metrics_type}_metrics_tidy" :
     ensure  => $metric_ensure,
-    command => "${puppet_metrics_collector::scripts_dir}/metrics_tidy -d ${metrics_output_dir} -r ${retention_days}",
+    command => "${puppet_metrics_collector::system::scripts_dir}/metrics_tidy -d ${metrics_output_dir} -r ${retention_days}",
     user    => 'root',
     hour    => fqdn_rand(3, $metrics_type),
     minute  => (5 * fqdn_rand(11, $metrics_type)),
