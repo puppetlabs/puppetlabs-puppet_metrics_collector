@@ -6,6 +6,8 @@ class puppet_metrics_collector::system (
   Integer $retention_days            = 90,
   Integer $polling_frequency_seconds = 1,
   Boolean $manage_sysstat            = true,
+  Boolean $manage_vmware_tools       = false,
+  String  $vmware_tools_pkg          = 'open-vm-tools',
 ) {
   $scripts_dir = "${output_dir}/scripts"
 
@@ -46,6 +48,20 @@ class puppet_metrics_collector::system (
   include puppet_metrics_collector::system::cpu
   include puppet_metrics_collector::system::memory
   include puppet_metrics_collector::system::processes
+
+  if $facts['virtual'] == 'vmware' {
+    if $manage_vmware_tools and ($system_metrics_ensure == 'present') {
+      ensure_packages([$vmware_tools_pkg])
+    }
+
+    file { "${scripts_dir}/vmware_metrics":
+      ensure => file,
+      mode   => '0755',
+      source => 'puppet:///modules/puppet_metrics_collector/vmware_metrics'
+    }
+
+    contain puppet_metrics_collector::system::vmware
+  }
 
   # LEGACY CLEANUP
 
