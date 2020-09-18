@@ -8,6 +8,14 @@ appveyor.yml:
 .project:
   delete: true
 
+.rubocop.yml:
+  default_configs:
+    Style/BracesAroundHashParameters:
+      Description: |
+        Braces are actually required by Ruby 2.7 in order to disambiguate between
+        keword arguments and actual hash parameters. Removed in RuboCop v0.80.0.
+      Enabled: false
+
 spec/default_facts.yml:
   extra_facts:
     pe_server_version: '2016.4.5'
