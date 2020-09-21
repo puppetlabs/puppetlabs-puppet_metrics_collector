@@ -18,6 +18,8 @@ define puppet_metrics_collector::sar_metric (
 
   file { $metrics_output_dir :
     ensure => $metrics_output_dir_ensure,
+    # Allow directories to be removed.
+    force  => true,
   }
 
   $metric_script_file_path = "${puppet_metrics_collector::system::scripts_dir}/${metric_script_file}"
