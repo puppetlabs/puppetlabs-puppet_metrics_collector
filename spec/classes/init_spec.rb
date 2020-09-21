@@ -8,4 +8,16 @@ describe 'puppet_metrics_collector' do
       it { is_expected.to compile }
     end
   end
+
+  context 'when puppet_metrics_collector::system is included first' do
+    let(:pre_condition) { 'include puppet_metrics_collector::system' }
+
+    it { is_expected.to compile }
+  end
+
+  context 'when puppet_metrics_collector::system is included last' do
+    let(:post_condition) { 'include puppet_metrics_collector::system' }
+
+    it { is_expected.to compile }
+  end
 end
