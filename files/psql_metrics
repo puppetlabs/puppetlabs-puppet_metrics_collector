@@ -1,0 +1,304 @@
+#!/opt/puppetlabs/puppet/bin/ruby
+# frozen_string_literal: true
+
+require 'fileutils'
+require 'json'
+require 'optparse'
+require 'rubygems'
+require 'time'
+require 'timeout'
+
+module PuppetMetricsCollector
+  # Gather performance metrics from Postgres
+  #
+  # This script uses the `psql` CLI from the `pe-postgres` package to gather
+  # metrics from Postgres servers.
+  class PSQLMetrics
+    module Exec
+      Result = Struct.new(:stdout, :stderr, :status, :error)
+
+      # Execute a command and return a Result
+      #
+      # This is basically `Open3.popen3`, but with added logic to time the
+      # executed command out if it runs for too long.
+      #
+      # @param cmd [Array<String>] Command and arguments to execute.
+      # @param timeout [Integer] Number of seconds to allow for command
+      #   execution to complete.
+      #
+      # @raise [RuntimeError] If the command does not exit before the timeout
+      #   expires.
+      def self.exec_cmd(*cmd, env: {}, stdin_data: nil, timeout: 10)
+        out_r, out_w = IO.pipe
+        err_r, err_w = IO.pipe
+        _env = {'LC_ALL' => 'C', 'LANG' => 'C'}.merge(env)
+
+        input = if stdin_data.nil?
+                  :close
+                else
+                  # NOTE: Pipe capacity is limited. Probably at least 4096 bytes.
+                  #       65536 bytes at most.
+                  in_r, in_w = IO.pipe
+                  in_w.binmode
+                  in_w.sync = true
+
+                  in_w.write(stdin_data)
+                  in_w.close
+
+                  in_r
+                end
+
+        opts = {in: input,
+                out: out_w,
+                err: err_w}
+
+        pid = Process.spawn(_env, *cmd, opts)
+
+        [out_w, err_w].each(&:close)
+        stdout_reader = Thread.new do
+          stdout = out_r.read
+          out_r.close
+          stdout
+        end
+        stderr_reader = Thread.new do
+          stderr = err_r.read
+          err_r.close
+          stderr
+        end
+
+        deadline = (Process.clock_gettime(Process::CLOCK_MONOTONIC, :float_second) + timeout)
+        status = nil
+
+        loop do
+          _, status = Process.waitpid2(pid, Process::WNOHANG)
+          break if status
+          raise Timeout::Error if (deadline < Process.clock_gettime(Process::CLOCK_MONOTONIC, :float_second))
+          # Sleep for a bit so that we don't spin in a tight loop burning
+          # CPU on waitpid() syscalls.
+          sleep(0.01)
+        end
+
+        Result.new(stdout_reader.value, stderr_reader.value, status)
+      rescue Timeout::Error
+        Process.kill(:TERM, pid)
+        Process.detach(pid)
+
+        Result.new(nil, nil, -1, '"%{command}" failed to complete after %{timeout} seconds.' %
+                    {command: cmd.join(' '),
+                     timeout: timeout})
+      end
+    end
+
+    def initialize(timeout: 10, **opts)
+      @timeout = timeout
+      @errors = []
+      @result = nil
+
+      if File.executable?('/opt/puppetlabs/server/bin/psql')
+        @psql = '/opt/puppetlabs/server/bin/psql'
+      else
+        raise 'this tool requires /opt/puppetlabs/server/bin/psql.'
+      end
+    end
+
+    # Executes a query via the psql CLI
+    #
+    # This method uses the `psql` CLI to execute a query string and returns
+    # the result. Several CLI options are set to ensure:
+    #
+    #   - The CLI produces raw output with minimal formatting. This allows
+    #     JSON results to be parsed.
+    #
+    #   - No customizations from user psqlrc files are loaded.
+    #
+    #   - The UTC time zone is used.
+    #
+    #   - Any error in a SQL statement aborts the entire transaction.
+    #
+    # @param query [String] The SQL statement to execute.
+    # @param database [String] The database to connect to when executing
+    #   the SQL statement. Optional.
+    # @param timeout [Integer] The maximum abount of time to allow the
+    #   statement to execute for.
+    #
+    # @return [Exec::Result] The result of the SQL statement.
+    def exec_psql(query, database: nil, timeout: @timeout)
+      psql_command = [@psql, '--file=-',
+                             '--no-align', '--no-psqlrc',
+                             '--pset=pager=off', '--set=ON_ERROR_STOP=on',
+                             '--single-transaction', '--tuples-only', '--quiet']
+      psql_command += ["--dbname=#{database}"] unless database.nil?
+
+      command_line = ['/usr/bin/su', '-s', '/bin/bash', 'pe-postgres',
+                      '-c', psql_command.join(' ')]
+
+      env = {'PGOPTIONS' => "-c statement_timeout=#{timeout}s",
+             'PGTZ' => 'GMT'}
+
+      Exec.exec_cmd(*command_line, stdin_data: query, env: env, timeout: timeout + 1)
+    end
+
+    # Add an error message to a result hash
+    #
+    # @param error_msg [Sting] An error message that will be appended to
+    #   a list of errors.
+    #
+    # @return [void]
+    def add_error!(error_msg)
+      @errors.push(error_msg)
+      nil
+    end
+
+    # Execute a SQL query and return the result
+    #
+    # This method is a thin wrapper around {#exec_psql} that adds error
+    # handling and optional parsing of JSON results.
+    #
+    # @param parse_json [Boolean] Whether or not to parse the query result
+    #   as JSON.
+    #
+    # @return [String, Hash, Array] The results, if the query was successful.
+    # @return [nil] If the query was unsuccessful. An error message will
+    #   be recorded via {#add_error!}.
+    #
+    # @see #exec_psql
+    def sql_query(query, parse_json: true, **opts)
+      result = exec_psql(query, **opts)
+
+      if (! result.error.nil?)
+        raise result.error
+      elsif (! result.status.success?)
+        raise 'psql command exited with code %{code}' %
+                {code: result.status.exitstatus}
+      end
+
+      if parse_json
+        JSON.parse(result.stdout)
+      else
+        result.stdout
+      end
+    rescue => e
+      add_error!('Error raised while executing "%{query}": %{err_class} %{message}' %
+                   {query: query,
+                    err_class: e.class,
+                    message: e.message})
+
+      nil
+    end
+
+    # @!visibility private
+    def collect_data
+      @pg_version = sql_query('SHOW server_version;', parse_json: false)
+
+      if @pg_version.nil?
+        # Error occurred.
+        return
+      else
+        @pg_version = Gem::Version.new(@pg_version.strip)
+      end
+    end
+
+    # Collect metrics and return as a hash
+    #
+    # @return [Hash] A hash containing various metrics. An `:error`
+    #   key will be present if failures occurred during collection.
+    def to_h
+      return @result unless @result.nil?
+
+      @result = {}
+      collect_data
+      @result[:error] = @errors unless @errors.empty?
+
+      @result
+    end
+
+    class CLI
+      ARG_SPECS = [['--timeout INT',
+                    Integer,
+                    'Number of seconds to allow for psql invocations to complete.',
+                    'Defaults to 10.'],
+                   ['--output_dir DIR',
+                    'Write metrics to a timestamped file under DIR instead of',
+                    'printing to STDOUT']]
+
+      def initialize(argv = [])
+        @action = :collect_data
+        @options = {debug: false}
+
+        @optparser = OptionParser.new do |parser|
+          parser.banner = 'Usage: psql_metrics [options]'
+
+          parser.on_tail('-h', '--help', 'Show help') do
+            @action = :show_help
+          end
+
+          parser.on_tail('--debug', 'Enable backtraces from errors.') do
+            @options[:debug] = true
+          end
+        end
+
+        store_option = lambda do |hash, key, val|
+          hash[key] = val
+        end
+
+        ARG_SPECS.each do |spec|
+          # TODO: Yell if ARG_SPECS entry contains no --long-flag.
+          long_flag = spec.find {|e| e.start_with?('--')}.split(' ').first
+          option_name = long_flag.sub(/\A-+(?:\[no-\])?/, '').gsub('-', '_').to_sym
+
+          @optparser.on(store_option.curry[@options][option_name], *spec)
+        end
+
+        args = argv.dup
+        @optparser.parse!(args)
+      end
+
+      def run
+        case @action
+        when :show_help
+          $stdout.puts(@optparser.help)
+          return 0
+        end
+
+        # NOTE: A little odd, since tk_metrics uses the certname. But, this
+        #   matches what system_metrics does.
+        hostname = PSQLMetrics::Exec.exec_cmd('/bin/sh', '-c', 'hostname').stdout.strip.gsub('.', '-')
+
+        metrics = PSQLMetrics.new(**@options)
+        data = {servers: {hostname => {postgres: metrics.to_h}}}
+
+        if (output_dir = @options[:output_dir])
+          host_dir = File.join(output_dir, hostname)
+          FileUtils.mkdir_p(host_dir) unless File.directory?(host_dir)
+          output_file = File.join(host_dir, Time.now.utc.strftime('%Y%m%dT%H%M%SZ') + '.json')
+
+          File.write(output_file, JSON.generate(data))
+        else
+          $stdout.puts(JSON.generate(data))
+        end
+
+        if data[:servers][hostname][:postgres].key?(:error)
+          return 1
+        else
+          return 0
+        end
+      rescue => e
+        message = if @options[:debug]
+                    ["ERROR #{e.class}: #{e.message}",
+                     e.backtrace].join("\n\t")
+                  else
+                    "ERROR #{e.class}: #{e.message}"
+                  end
+
+        $stderr.puts(message)
+        return 1
+      end
+    end
+  end
+end
+
+# Entrypoint for when this file is executed directly.
+if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
+  exit_code = PuppetMetricsCollector::PSQLMetrics::CLI.new(ARGV).run
+  exit exit_code
+end
