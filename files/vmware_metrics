@@ -1,0 +1,235 @@
+#!/opt/puppetlabs/puppet/bin/ruby
+# frozen_string_literal: true
+
+require 'fileutils'
+require 'json'
+require 'optparse'
+require 'time'
+require 'timeout'
+
+module PuppetMetricsCollector
+  # Gather performance metrics from VMware Tools
+  #
+  # This script uses the `vmware-toolbox-cmd` CLI from the `vmware-tools` or
+  # `open-vm-tools` packages to gather guest performance data from an ESXi
+  # hypervisor.
+  #
+  # Data gathered usually includes:
+  #
+  #   - session: The VM session ID along with uptime since being booted or
+  #       migrated along with ESXi version info.
+  #   - host: Information about the hypervisor, CPU counts and frequencies.
+  #   - resources: CPU and memory resources allocated to the VM.
+  #       Shows CPU time that has been lost to hypervisor overprovisioning
+  #       and overhead along with memory usage, memory swapping, memory lost
+  #       to ESXi ballooning, and NUMA distribution.
+  #   - vscsi: I/O performance for each virtual disk attached to the VM.
+  #   - vnet: I/O performance for each virtual NIC attached to the VM.
+  #
+  # @see https://github.com/vmware/open-vm-tools
+  # @see https://vdc-download.vmware.com/vmwb-repository/dcr-public/85c3d4fa-0d0d-4c88-97b1-dc1391c39427/9197d2bf-9f0e-4ccf-97ce-63b996b29d25/Guest-HA-70-DevGuide.pdf
+  class VMwareMetrics
+    attr_reader :hostname
+
+    def initialize(timeout: 10, **opts)
+      @timeout = timeout
+      @vmware_tools, have_vmtools = exec_cmd('/bin/sh', '-c', 'command -v vmware-toolbox-cmd', catch_err: true)
+
+      if have_vmtools.success?
+        @vmware_tools.chomp!
+      else
+        raise 'this tool requires vmware-toolbox-cmd from the VMware Tools package to be on the $PATH.'
+      end
+
+      # NOTE: A little odd, since tk_metrics uses the certname. But, this
+      #   matches what system_metrics does.
+      @hostname = exec_cmd('/bin/sh', '-c', 'hostname').strip.gsub('.', '-')
+    end
+
+    # Gather VMware metrics
+    #
+    # Invokes `vmware-toolbox-cmd stat raw` to list available metrics and
+    # then invokes `vmware-toolbox-cmd stat raw json` to retrieve each one.
+    #
+    # @return [Hash] A hash of VMware performance data.
+    def to_h
+      available_metrics = exec_cmd(@vmware_tools, 'stat', 'raw')
+
+      result = {}
+
+      available_metrics.lines.each do |metric|
+        type, name = metric.strip.split(' ')
+
+        case type
+        when 'vscsi', 'vnet'
+          result[type] ||= {}
+          result[type][name] = JSON.parse(exec_cmd(@vmware_tools, 'stat', 'raw', 'json', type, name))
+        else
+          result[type] = JSON.parse(exec_cmd(@vmware_tools, 'stat', 'raw', 'json', type))
+        end
+      end
+
+      {servers: {
+        @hostname => {
+          vmware: result}},
+       timestamp: Time.now.utc.iso8601}
+    rescue => e
+      {servers: {
+        @hostname => {
+          vmware: {
+            error: "#{e.class}: #{e.message}"}}},
+       timestamp: Time.now.utc.iso8601}
+    end
+
+    # Execute a command and return stdout
+    #
+    # This is basically `Open3.popen3`, but with added logic to time the
+    # executed command out if it runs for too long.
+    #
+    # @param cmd [Array<String>] Command and arguments to execute.
+    # @param catch_err [Boolean] When set to `true`, results of failed
+    #   execution will be returned to the caller along with the exit status.
+    #   Timeouts will not be caught.
+    # @param timeout [Integer] Number of seconds to allow for command
+    #   execution to complete.
+    #
+    # @return [String] Data written to `stdout` by the command.
+    # @return [Array<String, Process::Status>] A two-element array containing
+    #   data written to `stdout` by the command and the command exit status
+    #   if `catch_err` is set to `true`.
+    #
+    # @raise [RuntimeError] If the command exits with a non-zero status and
+    #   `catch_err` iis set to `false`.
+    # @raise [RuntimeError] If the command does not exit before the timeout
+    #   expires.
+    def exec_cmd(*cmd, catch_err: false, timeout: @timeout)
+      out_r, out_w = IO.pipe
+      err_r, err_w = IO.pipe
+
+      opts = {in: '/dev/null',
+              out: out_w,
+              err: err_w}
+
+      pid = Process.spawn(*cmd, opts)
+
+      [out_w, err_w].each(&:close)
+      stdout_reader = Thread.new { out_r.read }
+      stderr_reader = Thread.new { err_r.read }
+
+      deadline = (Process.clock_gettime(Process::CLOCK_MONOTONIC, :float_second) + timeout)
+      status = nil
+
+      loop do
+        _, status = Process.waitpid2(pid, Process::WNOHANG)
+        break if status
+        raise Timeout::Error if (deadline < Process.clock_gettime(Process::CLOCK_MONOTONIC, :float_second))
+        # Sleep for a bit so that we don't spin in a tight loop burning
+        # CPU on waitpid() syscalls.
+        sleep(0.01)
+      end
+
+      return [stdout_reader.value, status] if catch_err
+
+      if status.success?
+        stdout_reader.value
+      else
+        raise '"%{command}" failed with exit code %{code}: %{stderr}' %
+          {command: cmd.join(' '),
+           code: status.exitstatus,
+           stderr: stderr_reader.value}
+      end
+    rescue Timeout::Error
+      Process.kill(:TERM, pid)
+      Process.detach(pid)
+
+      raise '"%{command}" failed to complete after %{timeout} seconds.' %
+        {command: cmd.join(' '),
+         timeout: timeout}
+    end
+
+    class CLI
+      ARG_SPECS = [['--timeout INT',
+                    Integer,
+                    'Number of seconds to allow for vmware-tools-cmd invocations to complete.',
+                    'Defaults to 10.'],
+                   ['--output_dir DIR',
+                    'Write metrics to a timestamed file under DIR instead of',
+                    'printing to STDOUT']]
+
+      def initialize(argv = [])
+        @action = :collect_data
+        @options = {debug: false}
+
+        @optparser = OptionParser.new do |parser|
+          parser.banner = 'Usage: vmware_metrics [options]'
+
+          parser.on_tail('-h', '--help', 'Show help') do
+            @action = :show_help
+          end
+
+          parser.on_tail('--debug', 'Enable backtraces from errors.') do
+            @options[:debug] = true
+          end
+        end
+
+        store_option = lambda do |hash, key, val|
+          hash[key] = val
+        end
+
+        ARG_SPECS.each do |spec|
+          # TODO: Yell if ARG_SPECS entry contains no --long-flag.
+          long_flag = spec.find {|e| e.start_with?('--')}.split(' ').first
+          option_name = long_flag.sub(/\A-+(?:\[no-\])?/, '').gsub('-', '_').to_sym
+
+          @optparser.on(store_option.curry[@options][option_name], *spec)
+        end
+
+        args = argv.dup
+        @optparser.parse!(args)
+      end
+
+      def run
+        case @action
+        when :show_help
+          $stdout.puts(@optparser.help)
+          return 0
+        end
+
+        metrics = VMwareMetrics.new(**@options)
+        data = metrics.to_h
+
+        if (output_dir = @options[:output_dir])
+          host_dir = File.join(output_dir, metrics.hostname)
+          FileUtils.mkdir_p(host_dir) unless File.directory?(host_dir)
+          output_file = File.join(host_dir, Time.now.utc.strftime('%Y%m%dT%H%M%SZ') + '.json')
+
+          File.write(output_file, JSON.generate(data))
+        else
+          $stdout.puts(JSON.generate(data))
+        end
+
+        if data[:servers].values.any? {|s| s[:vmware].keys.include?(:error) }
+          return 1
+        else
+          return 0
+        end
+      rescue => e
+        message = if @options[:debug]
+                    ["ERROR #{e.class}: #{e.message}",
+                     e.backtrace].join("\n\t")
+                  else
+                    "ERROR #{e.class}: #{e.message}"
+                  end
+
+        $stderr.puts(message)
+        return 1
+      end
+    end
+  end
+end
+
+# Entrypoint for when this file is executed directly.
+if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
+  exit_code = PuppetMetricsCollector::VMwareMetrics::CLI.new(ARGV).run
+  exit exit_code
+end
