@@ -26,6 +26,8 @@ define puppet_metrics_collector::pe_metric (
 
   file { $metrics_output_dir :
     ensure => $metrics_output_dir_ensure,
+    # Allow directories to be removed.
+    force  => true,
   }
 
   $config_hash = {
