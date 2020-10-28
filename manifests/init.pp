@@ -36,26 +36,34 @@ class puppet_metrics_collector (
   $config_dir  = "${output_dir}/config"
   $scripts_dir = "${output_dir}/scripts"
 
-  file { [$output_dir, $config_dir, $scripts_dir] :
-    ensure => directory,
+  # If the puppet_metrics_collector::system class is evaluted first,
+  # File[$output_dir] will already be defined along with common scripts.
+  if !defined(File[$output_dir]) {
+    file { [$output_dir, $scripts_dir]:
+      ensure => directory,
+    }
+
+    file { "${scripts_dir}/create-metrics-archive":
+      ensure => file,
+      mode   => '0755',
+      source => 'puppet:///modules/puppet_metrics_collector/create-metrics-archive'
+    }
+
+    file { "${scripts_dir}/metrics_tidy":
+      ensure => file,
+      mode   => '0744',
+      source => 'puppet:///modules/puppet_metrics_collector/metrics_tidy'
+    }
   }
 
-  file { "${scripts_dir}/create-metrics-archive":
-    ensure => file,
-    mode   => '0755',
-    source => 'puppet:///modules/puppet_metrics_collector/create-metrics-archive'
+  file { $config_dir:
+    ensure => directory,
   }
 
   file { "${scripts_dir}/json2timeseriesdb" :
     ensure => file,
     mode   => '0755',
     source => 'puppet:///modules/puppet_metrics_collector/json2timeseriesdb'
-  }
-
-  file { "${scripts_dir}/metrics_tidy":
-    ensure => file,
-    mode   => '0744',
-    source => 'puppet:///modules/puppet_metrics_collector/metrics_tidy'
   }
 
   file { "${scripts_dir}/pe_metrics.rb" :
