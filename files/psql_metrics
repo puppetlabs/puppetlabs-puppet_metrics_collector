@@ -231,6 +231,29 @@ SELECT json_build_object(
 FROM
   pg_stat_bgwriter;
 EOS
+
+      add_data!(@result, :oldest_transaction, sql_query(<<-EOS))
+SELECT json_build_object(
+  'datname', datname,
+  'pid', pid,
+  'application_name', application_name,
+  'client_addr', client_addr,
+  'xact_start', extract(epoch FROM xact_start),
+  'state_change', extract(epoch FROM state_change),
+  'age', extract(epoch FROM CURRENT_TIMESTAMP) - extract(epoch FROM xact_start),
+  'wait_event', wait_event,
+  'state', state,
+  'backend_xmin', backend_xmin
+)
+FROM
+  pg_stat_activity
+WHERE
+  xact_start IS NOT NULL
+  AND pid != pg_backend_pid()
+ORDER BY
+  xact_start ASC
+LIMIT 1;
+EOS
     end
 
     # Collect metrics and return as a hash
