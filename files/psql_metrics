@@ -149,6 +149,20 @@ module PuppetMetricsCollector
       nil
     end
 
+    # Add data to a result hash if not nil
+    #
+    # @param hash [Hash] The hash to add data to.
+    # @param key [String, Symbol] The key to store the data under.
+    # @param data [Object] The data to add.
+    #
+    # @return [void]
+    def add_data!(hash, key, data)
+      return if data.nil?
+
+      hash[key] = data
+      nil
+    end
+
     # Execute a SQL query and return the result
     #
     # This method is a thin wrapper around {#exec_psql} that adds error
@@ -173,6 +187,8 @@ module PuppetMetricsCollector
       end
 
       if parse_json
+        # Output is empty if a WHERE clause matches no rows.
+        return nil if result.stdout.empty?
         JSON.parse(result.stdout)
       else
         result.stdout
@@ -188,6 +204,7 @@ module PuppetMetricsCollector
 
     # @!visibility private
     def collect_data
+      @result = {}
       @pg_version = sql_query('SHOW server_version;', parse_json: false)
 
       if @pg_version.nil?
@@ -196,6 +213,24 @@ module PuppetMetricsCollector
       else
         @pg_version = Gem::Version.new(@pg_version.strip)
       end
+
+      add_data!(@result, :checkpoints, sql_query(<<-EOS))
+SELECT json_build_object(
+  'checkpoints_timed', checkpoints_timed,
+  'checkpoints_req', checkpoints_req,
+  'checkpoint_write_time', checkpoint_write_time,
+  'checkpoint_sync_time', checkpoint_sync_time,
+  'buffers_checkpoint', buffers_checkpoint,
+  'buffers_clean', buffers_clean,
+  'maxwritten_clean', maxwritten_clean,
+  'buffers_backend', buffers_backend,
+  'buffers_backend_fsync', buffers_backend_fsync,
+  'buffers_alloc', buffers_alloc,
+  'stats_reset', extract(epoch FROM stats_reset)
+)
+FROM
+  pg_stat_bgwriter;
+EOS
     end
 
     # Collect metrics and return as a hash
@@ -205,7 +240,6 @@ module PuppetMetricsCollector
     def to_h
       return @result unless @result.nil?
 
-      @result = {}
       collect_data
       @result[:error] = @errors unless @errors.empty?
 
