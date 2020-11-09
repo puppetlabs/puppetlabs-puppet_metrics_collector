@@ -298,6 +298,40 @@ SELECT json_object_agg(
 FROM
   pg_replication_slots;
 EOS
+
+      @databases = sql_query(<<-EOS)
+SELECT
+  json_agg(datname)
+FROM
+  pg_stat_database
+WHERE
+  datname LIKE 'pe-%'
+  AND datname != 'pe-postgres';
+EOS
+      @databases ||= [] # If the query fails and returns nil.
+
+      @databases.each do |db|
+        @result[:databases] ||= {}
+        @result[:databases][db] = {}
+        db_result = @result[:databases][db]
+
+        has_pglogical = sql_query(<<-EOS, database: db)
+SELECT row_to_json(pg_extension.*) FROM pg_extension WHERE extname = 'pglogical';
+EOS
+        add_data!(db_result, :replication_subs, sql_query(<<-EOS, database: db)) unless has_pglogical.nil?
+SELECT json_object_agg(
+  sub_slot_name,
+  json_build_object('status', (sub.s).status)
+)
+FROM (
+  SELECT
+    sub_slot_name,
+    pglogical.show_subscription_status(sub_name) AS s
+  FROM
+    pglogical.subscription
+) sub;
+EOS
+      end
     end
 
     # Collect metrics and return as a hash
