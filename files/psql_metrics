@@ -188,7 +188,7 @@ module PuppetMetricsCollector
 
       if parse_json
         # Output is empty if a WHERE clause matches no rows.
-        return nil if result.stdout.empty?
+        return nil if result.stdout.strip.empty?
         JSON.parse(result.stdout)
       else
         result.stdout
@@ -213,6 +213,8 @@ module PuppetMetricsCollector
       else
         @pg_version = Gem::Version.new(@pg_version.strip)
       end
+      # Some functions and statistics views were re-named in Postgres 10.0.
+      @is_pg10 = Gem::Requirement.new('>= 10.0').satisfied_by?(@pg_version)
 
       add_data!(@result, :checkpoints, sql_query(<<-EOS))
 SELECT json_build_object(
@@ -279,6 +281,22 @@ WHERE
 ORDER BY
   xact_start ASC
 LIMIT 1;
+EOS
+
+      lsn_diff = @is_pg10 ? 'pg_wal_lsn_diff' : 'pg_xlog_location_diff'
+      current_lsn = @is_pg10 ? 'pg_current_wal_lsn()' : 'pg_current_xlog_location()'
+      add_data!(@result, :replication_slots, sql_query(<<-EOS))
+SELECT json_object_agg(
+  slot_name,
+  json_build_object(
+    'active', active,
+    'xmin', xmin,
+    'catalog_xmin', catalog_xmin,
+    'lag_bytes', #{lsn_diff}(#{current_lsn}, restart_lsn)
+  )
+)
+FROM
+  pg_replication_slots;
 EOS
     end
 
