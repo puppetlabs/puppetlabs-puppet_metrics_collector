@@ -358,6 +358,92 @@ FROM
 WHERE
   datname = '#{db}';
 EOS
+
+        add_data!(db_result, :table_stats, sql_query(<<-EOS, database: db))
+SELECT json_object_agg(
+  n.nspname || '.' || c.relname,
+  json_build_object(
+    'size_bytes', pg_relation_size(c.oid),
+    'seq_scan', s.seq_scan,
+    'seq_tup_read', s.seq_tup_read,
+    'idx_scan', s.idx_scan,
+    'idx_tup_fetch', s.idx_tup_fetch,
+    'n_tup_ins', s.n_tup_ins,
+    'n_tup_upd', s.n_tup_upd,
+    'n_tup_del', s.n_tup_del,
+    'n_tup_hot_upd', s.n_tup_hot_upd,
+    'n_live_tup', s.n_live_tup,
+    'n_dead_tup', s.n_dead_tup,
+    'n_mod_since_analyze', s.n_mod_since_analyze,
+    'vacuum_count', s.vacuum_count,
+    'autovacuum_count', s.autovacuum_count,
+    'analyze_count', s.analyze_count,
+    'autoanalyze_count', s.autoanalyze_count,
+    'heap_blks_read', si.heap_blks_read,
+    'heap_blks_hit', si.heap_blks_hit,
+    'idx_blks_read', si.idx_blks_read,
+    'idx_blks_hit', si.idx_blks_hit,
+    'toast_blks_read', si.toast_blks_read,
+    'toast_blks_hit', si.toast_blks_hit,
+    'tidx_blks_read', si.tidx_blks_read,
+    'tidx_blks_hit', si.tidx_blks_hit
+  )
+)
+FROM
+  pg_catalog.pg_class AS c
+JOIN
+  pg_catalog.pg_namespace AS n ON c.relnamespace = n.oid
+JOIN
+  pg_catalog.pg_stat_all_tables AS s ON c.oid = s.relid
+JOIN
+  pg_catalog.pg_statio_all_tables AS si ON c.oid = si.relid
+WHERE
+  n.nspname NOT IN ('pg_catalog', 'information_schema')
+  AND c.relkind = 'r'
+  AND pg_relation_size(c.oid) > 16384;
+EOS
+
+        add_data!(db_result, :toast_stats, sql_query(<<-EOS, database: db))
+SELECT json_object_agg(
+  'pg_toast' || '.' || c.relname || '.' || t.relname,
+  json_build_object(
+    'size_bytes', pg_relation_size(c.oid),
+    'seq_scan', s.seq_scan,
+    'seq_tup_read', s.seq_tup_read,
+    'idx_scan', s.idx_scan,
+    'idx_tup_fetch', s.idx_tup_fetch,
+    'n_tup_ins', s.n_tup_ins,
+    'n_tup_upd', s.n_tup_upd,
+    'n_tup_del', s.n_tup_del,
+    'n_tup_hot_upd', s.n_tup_hot_upd,
+    'n_live_tup', s.n_live_tup,
+    'n_dead_tup', s.n_dead_tup,
+    'n_mod_since_analyze', s.n_mod_since_analyze,
+    'vacuum_count', s.vacuum_count,
+    'autovacuum_count', s.autovacuum_count,
+    'analyze_count', s.analyze_count,
+    'autoanalyze_count', s.autoanalyze_count,
+    'heap_blks_read', si.heap_blks_read,
+    'heap_blks_hit', si.heap_blks_hit,
+    'idx_blks_read', si.idx_blks_read,
+    'idx_blks_hit', si.idx_blks_hit
+  )
+)
+FROM
+  pg_catalog.pg_class AS c
+JOIN
+  pg_catalog.pg_class AS t ON c.oid = t.reltoastrelid
+JOIN
+  pg_catalog.pg_namespace AS n ON t.relnamespace = n.oid
+JOIN
+  pg_catalog.pg_stat_all_tables AS s ON c.oid = s.relid
+JOIN
+  pg_catalog.pg_statio_all_tables AS si ON c.oid = si.relid
+WHERE
+  n.nspname NOT IN ('pg_catalog', 'information_schema')
+  AND c.relkind = 't'
+  AND pg_relation_size(c.oid) > 16384;
+EOS
       end
     end
 
