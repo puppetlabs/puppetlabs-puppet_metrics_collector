@@ -13,6 +13,26 @@ module PuppetMetricsCollector
   #
   # This script uses the `psql` CLI from the `pe-postgres` package to gather
   # metrics from Postgres servers.
+  #
+  # The {#collect_data} function contains the queries used, which currently
+  # gather:
+  #
+  #   - Checkpoint activity from `pg_stat_bgwriter`.
+  #   - Details of the oldest open transaction from `pg_stat_activity`.
+  #   - Connection counts grouped by status (`idle`, `active`, etc.)
+  #     along with the maximum number of connections allowed.
+  #   - Primary replica status from `pg_replication_slots`.
+  #   - For each database:
+  #     - Secondary replica status from `pglogical.subscription`.
+  #     - Database statistics from `pg_stat_database`.
+  #     - Table statistics from `pg_stat_all_tables` and `pg_statio_all_tables`
+  #       for each user-facing table with more than 16 kB of data stored.
+  #     - Index statistics from `pg_stat_all_indexes` and `pg_statio_all_indexes`
+  #       for each user-facing index with more than 16 kB of data stored.
+  #
+  # @see https://www.postgresql.org/docs/11/monitoring-stats.html
+  # @see https://www.postgresql.org/docs/11/view-pg-replication-slots.html
+  # @see https://www.2ndquadrant.com/en/resources/pglogical/pglogical-docs/
   class PSQLMetrics
     module Exec
       Result = Struct.new(:stdout, :stderr, :status, :error)
@@ -202,7 +222,7 @@ module PuppetMetricsCollector
       nil
     end
 
-    # @!visibility private
+    # Execute SQL statements to gather metrics
     def collect_data
       @result = {}
       @pg_version = sql_query('SHOW server_version;', parse_json: false)
