@@ -32,7 +32,7 @@ done
 
 
 # Guard against deleting or archiving files outside of a Puppet service metrics directory.
-valid_paths=(puppetserver puppetdb orchestrator ace bolt activemq system_processes system_memory system_cpu vmware)
+valid_paths=(puppetserver puppetdb orchestrator ace bolt activemq postgres system_processes system_memory system_cpu vmware)
 
 # Arguments and defaults.
 metrics_directory="${metrics_directory:-/opt/puppetlabs/puppet-metrics-collector/puppetserver}"

@@ -8,4 +8,12 @@ Facter.add(:puppet_metrics_collector, type: :aggregate) do
       {have_vmware_tools: false}
     end
   end
+
+  chunk(:pe_psql) do
+    if File.executable?('/opt/puppetlabs/server/bin/psql')
+      {have_pe_psql: true}
+    else
+      {have_pe_psql: false}
+    end
+  end
 end
