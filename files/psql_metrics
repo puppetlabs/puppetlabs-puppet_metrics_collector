@@ -556,15 +556,17 @@ EOS
 
         # NOTE: A little odd, since tk_metrics uses the certname. But, this
         #   matches what system_metrics does.
-        hostname = PSQLMetrics::Exec.exec_cmd('/bin/sh', '-c', 'hostname').stdout.strip.gsub('.', '-')
+        hostname = PSQLMetrics::Exec.exec_cmd('/bin/sh', '-c', 'hostname').stdout.strip
+        timestamp = Time.now.utc
 
         metrics = PSQLMetrics.new(**@options)
-        data = {servers: {hostname => {postgres: metrics.to_h}}}
+        data = {servers: {hostname.gsub('.', '-') => {postgres: metrics.to_h}},
+                timestamp: timestamp.iso8601}
 
         if (output_dir = @options[:output_dir])
           host_dir = File.join(output_dir, hostname)
           FileUtils.mkdir_p(host_dir) unless File.directory?(host_dir)
-          output_file = File.join(host_dir, Time.now.utc.strftime('%Y%m%dT%H%M%SZ') + '.json')
+          output_file = File.join(host_dir, timestamp.strftime('%Y%m%dT%H%M%SZ') + '.json')
 
           File.write(output_file, JSON.generate(data))
         else
