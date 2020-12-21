@@ -43,7 +43,7 @@ module PuppetMetricsCollector
 
       # NOTE: A little odd, since tk_metrics uses the certname. But, this
       #   matches what system_metrics does.
-      @hostname = exec_cmd('/bin/sh', '-c', 'hostname').strip.gsub('.', '-')
+      @hostname = exec_cmd('/bin/sh', '-c', 'hostname').strip
     end
 
     # Gather VMware metrics
@@ -70,12 +70,12 @@ module PuppetMetricsCollector
       end
 
       {servers: {
-        @hostname => {
+        @hostname.gsub('.', '-') => {
           vmware: result}},
        timestamp: Time.now.utc.iso8601}
     rescue => e
       {servers: {
-        @hostname => {
+        @hostname.gsub('.', '-') => {
           vmware: {
             error: "#{e.class}: #{e.message}"}}},
        timestamp: Time.now.utc.iso8601}

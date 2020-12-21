@@ -63,6 +63,16 @@ class puppet_metrics_collector::system (
     contain puppet_metrics_collector::system::vmware
   }
 
+  if $facts.dig('puppet_metrics_collector', 'have_pe_psql') {
+    file { "${scripts_dir}/psql_metrics":
+      ensure => file,
+      mode   => '0755',
+      source => 'puppet:///modules/puppet_metrics_collector/psql_metrics'
+    }
+
+    contain puppet_metrics_collector::system::postgres
+  }
+
   # LEGACY CLEANUP
 
   $metric_legacy_files = [

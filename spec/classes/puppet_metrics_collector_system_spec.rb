@@ -32,4 +32,16 @@ describe 'puppet_metrics_collector::system' do
       it { is_expected.to contain_cron('vmware_metrics_collection').with_ensure('absent') }
     end
   end
+
+  context 'when /opt/puppetlabs/server/bin/psql is present' do
+    let(:facts) { {puppet_metrics_collector: {have_pe_psql: true}} }
+
+    it { is_expected.to contain_cron('postgres_metrics_collection').with_ensure('present') }
+  end
+
+  context 'when /opt/puppetlabs/server/bin/psql is absent' do
+    let(:facts) { {puppet_metrics_collector: {have_pe_psql: false}} }
+
+    it { is_expected.not_to contain_cron('postgres_metrics_collection') }
+  end
 end
