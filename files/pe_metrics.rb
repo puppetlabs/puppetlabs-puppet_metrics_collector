@@ -133,6 +133,8 @@ def retrieve_additional_metrics(host, port, use_ssl, metrics_type, metrics)
     metric_data = metrics_output[index]
     if metric_data['status'] == 200
       metrics_array << { 'name' => metric_name, 'data' => metric_data['value'] }
+    elsif metric_data['status'] == 404
+      metrics_array << { 'name' => metric_name, 'data' => nil}
     else
       metric_mbean = metrics[index]['mbean']
       $error_array << "HTTP Error #{metric_data['status']} for #{metric_mbean}"
