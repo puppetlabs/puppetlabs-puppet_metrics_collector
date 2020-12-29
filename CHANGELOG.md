@@ -1,3 +1,15 @@
+# Minor Release 6.2.0
+
+## Improvements
+- Gather metrics from pe-postgresql [#71](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/71)
+- Add VMware metrics collection [#68](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/68)
+
+## Changes:
+- Mbeans that return a 404 will default to null instead of an error [#76](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/76)
+- A warning is no longer printed when shipping metrics to a remote database [#75](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/75)
+- Fix duplicate declaration of common files [#70](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/70)
+- Fix ensure => absent for metrics [#69](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/69)
+
 # Patch Release 6.1.1
 
 ## Changes:
