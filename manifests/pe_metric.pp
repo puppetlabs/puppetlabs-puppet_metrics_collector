@@ -64,7 +64,7 @@ define puppet_metrics_collector::pe_metric (
         fail('When specifying an InfluxDB metrics server, you must specify a metrics server db_name')
       }
 
-      $conv_metrics_command = "${base_metrics_command} | ${conversion_script_file_path} --netcat ${server_hostname} --convert-to ${server_type}"
+      $conv_metrics_command = "${base_metrics_command} | ${conversion_script_file_path} --netcat ${server_hostname} --convert-to ${server_type} -"
 
       $full_metrics_command = empty($server_port) ? {
         false => "${conv_metrics_command} --port ${server_port}",
