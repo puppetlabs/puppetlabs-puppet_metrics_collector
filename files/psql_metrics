@@ -557,10 +557,15 @@ EOS
         # NOTE: A little odd, since tk_metrics uses the certname. But, this
         #   matches what system_metrics does.
         hostname = PSQLMetrics::Exec.exec_cmd('/bin/sh', '-c', 'hostname').stdout.strip
+        # Sanitized to accommodate the dot-delimited naming scheme used
+        # by the Graphite time-series database. This is the wrong place to
+        # do this as it destroys useful hostname info, but we do it anyway
+        # to be consistent with the other metrics collection scripts.
+        server_name = hostname.gsub('.', '-')
         timestamp = Time.now.utc
 
         metrics = PSQLMetrics.new(**@options)
-        data = {servers: {hostname.gsub('.', '-') => {postgres: metrics.to_h}},
+        data = {servers: {server_name => {postgres: metrics.to_h}},
                 timestamp: timestamp.iso8601}
 
         if (output_dir = @options[:output_dir])
@@ -573,7 +578,7 @@ EOS
           $stdout.puts(JSON.generate(data))
         end
 
-        if data[:servers][hostname][:postgres].key?(:error)
+        if data[:servers][server_name][:postgres].key?(:error)
           return 1
         else
           return 0
