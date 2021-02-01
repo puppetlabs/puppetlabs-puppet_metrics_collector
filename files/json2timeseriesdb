@@ -240,6 +240,35 @@ def influx_tag_parser(tag)
     tag.delete('broker-service')
   end
 
+  if tag.include?('postgres') && tag.include?('databases')
+    n = tag.index('databases')
+    db_name = tag[n + 1]
+    tag_set = "#{tag_set}database=#{db_name},"
+    tag.delete_at(n + 1)
+  end
+
+  if tag.include?('postgres') && tag.include?('replication_slots')
+    n = tag.index('replication_slots')
+    slot_name = tag[n + 1]
+    tag_set = "#{tag_set}replication_slot=#{slot_name}"
+    tag.delete_at(n + 1)
+  end
+
+  if tag.include?('postgres') && tag.include?('replication_subs')
+    n = tag.index('replication_subs')
+    slot_name = tag[n + 1]
+    tag_set = "#{tag_set}replication_slot=#{slot_name}"
+    tag.delete_at(n + 1)
+  end
+
+  if tag.include?('postgres') && ['table_stats', 'index_stats', 'toast_stats'].any? {|e| tag.include?(e)}
+    metric = ['table_stats', 'index_stats', 'toast_stats'].find {|e| tag.include?(e)}
+    n = tag.index(metric)
+    relation = tag[n + 1]
+    tag_set = "#{tag_set}relation=#{relation}"
+    tag.delete_at(n + 1)
+  end
+
   if tag.include?('Queue')
     n = tag.index('Queue')
     amq_destination_name = tag[n + 1]
