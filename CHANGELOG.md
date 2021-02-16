@@ -1,3 +1,11 @@
+# Minor Release 6.3.0
+
+## Improvements
+- Update json2timeseriesdb to tag Postgres metrics [#79](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/79)
+
+## Changes:
+- Fix psql_metrics error checking [#78](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/78)
+
 # Minor Release 6.2.0
 
 ## Improvements
