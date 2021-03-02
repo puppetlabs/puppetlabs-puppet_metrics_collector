@@ -464,11 +464,6 @@ Style/BlockComments:
   Enabled: false
 Style/BlockDelimiters:
   Enabled: false
-Style/BracesAroundHashParameters:
-  Description: |
-    Braces are actually required by Ruby 2.7 in order to disambiguate between
-    keword arguments and actual hash parameters. Removed in RuboCop v0.80.0.
-  Enabled: false
 Style/CaseEquality:
   Enabled: false
 Style/CharacterLiteral:
