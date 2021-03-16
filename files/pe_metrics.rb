@@ -124,10 +124,11 @@ def retrieve_additional_metrics(host, port, use_ssl, metrics_type, metrics)
 
   host_url = generate_host_url(host, port, use_ssl)
 
+  metrics_array = []
   endpoint = "#{host_url}/metrics/v2/read"
   metrics_output = post_endpoint(endpoint, use_ssl, metrics.to_json)
+  return metrics_array if metrics_output.empty?
 
-  metrics_array = []
   metrics.each_index do |index|
     metric_name = metrics[index]['name']
     metric_data = metrics_output[index]
