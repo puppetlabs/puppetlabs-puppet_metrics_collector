@@ -1,7 +1,6 @@
 #!/opt/puppetlabs/puppet/bin/ruby
 
-# Metrics endpoints for our Trapper Keeper services do not require a client certificate.
-USE_CLIENTCERT = false
+USE_CLIENTCERT = true
 
 require_relative 'pe_metrics'
 
