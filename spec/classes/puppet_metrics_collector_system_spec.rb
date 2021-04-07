@@ -20,13 +20,13 @@ describe 'puppet_metrics_collector::system' do
     end
 
     context 'when vmware-toolbox-cmd is present on the PATH' do
-      let(:facts) { super().merge({puppet_metrics_collector: {have_vmware_tools: true}}) }
+      let(:facts) { super().merge(puppet_metrics_collector: {have_vmware_tools: true}) }
 
       it { is_expected.to contain_cron('vmware_metrics_collection').with_ensure('present') }
     end
 
     context 'when vmware-toolbox-cmd is not present on the PATH' do
-      let(:facts) { super().merge({puppet_metrics_collector: {have_vmware_tools: false}}) }
+      let(:facts) { super().merge(puppet_metrics_collector: {have_vmware_tools: false}) }
 
       it { is_expected.to contain_notify('vmware_tools_warning') }
       it { is_expected.to contain_cron('vmware_metrics_collection').with_ensure('absent') }
