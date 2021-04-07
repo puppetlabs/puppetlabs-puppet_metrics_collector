@@ -3,20 +3,24 @@
 fail() {
   # Restore stdout by pointing it to fd 3 and send any errors to it
   exec >&3
-  cat "$tmp"
-  rm "$tmp"
+  [[ -e $tmp ]] && cat "$tmp"
 
   exit 1
 }
 
 cleanup() {
-  rm "$tmp"
+  for f in "${temp_files[@]}"; do
+    [[ -e $f ]] && rm -- "$f"
+  done
 }
+
+temp_files=()
 
 # Clone, i.e. preserve, original stdout using fd 3.
 exec 3>&1
 # Send stderr and stdout to a temp file
 tmp="$(mktemp)"
+temp_files+=("$tmp")
 exec &>"$tmp"
 
 # Run the fail() method on error
@@ -61,11 +65,12 @@ find "$metrics_directory" -type f -ctime +"$retention_days" -delete
 # Compress the remaining files in a Puppet service metrics directory.
 # Store the list of files in a temp file so that `tar` and `rm` will operate on the same files
 metrics_tmp="$(mktemp)"
+temp_files+=("$metrics_tmp")
 find "$metrics_directory" -type f -name "*json" >"$metrics_tmp"
 tar --create --gzip --file "${metrics_directory}/${metrics_type}-$(date +%Y.%m.%d.%H.%M.%S).tar.gz" \
   --files-from "$metrics_tmp"
 
 # Cleanup the backed up json files so that we do not duplicate files in the tarballs.
 # We can assume that the json files have no spaces as they are created by our scripts
-xargs -a "$metrics_tmp" rm
-rm "$metrics_tmp"
+# Only run xargs if the file is >0 bytes
+[[ -s $metrics_tmp ]] && xargs -a "$metrics_tmp" rm
