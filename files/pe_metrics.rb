@@ -42,6 +42,7 @@ PORT               = coalesce(options[:metrics_port], config['metrics_port'])
 USE_SSL            = coalesce(options[:ssl], config['ssl'], true)
 EXCLUDES           = config['excludes']
 ADDITIONAL_METRICS = config['additional_metrics']
+REMOTE_METRICS_ENABLED = config['remote_metrics_enabled']
 
 # Metrics endpoints for our Puma services require a client certificate with SSL.
 # Metrics endpoints for our Trapper Keeper services do not require a client certificate.
@@ -114,12 +115,15 @@ rescue Exception => e
   endpoint_data = {}
 end
 
-# PE-28451 Disables Metrics API v1 (/metrics/v1/beans/) and restricts v2 (/metrics/v2/read/) to localhost by default.
-
 def retrieve_additional_metrics(host, port, use_ssl, metrics_type, metrics)
   if metrics_type == 'puppetdb'
     host = '127.0.0.1' if host == CERTNAME
-    return [] unless ['127.0.0.1', 'localhost'].include?(host)
+    unless REMOTE_METRICS_ENABLED || ['127.0.0.1', 'localhost'].include?(host)
+      # Puppet services released between May, 2020 and Feb 2021 had
+      # the /metrics API disabled due to:
+      #   https://puppet.com/security/cve/CVE-2020-7943/
+      return []
+    end
   end
 
   host_url = generate_host_url(host, port, use_ssl)
