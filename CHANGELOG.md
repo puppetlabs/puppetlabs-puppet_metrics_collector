@@ -1,3 +1,12 @@
+# Minor Release 6.4.0
+
+## Improvements
+- Clean up temp files when metrics_tidy exits cleanly [#86](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/86)
+- Enable client ssl cert for metrics [#82](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/82)
+- Update to PDK 2.0, Updated Supported Puppet versions, and OS's [#83](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/83)
+## Changes:
+- Re-enable remote metric collection  [#85](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/85)
+
 # Minor Release 6.3.0
 
 ## Improvements
