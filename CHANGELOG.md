@@ -1,3 +1,8 @@
+# Patch Release 6.4.1
+
+## Changes:
+- Standardize cleanup of temp files [#88](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/88)
+
 # Minor Release 6.4.0
 
 ## Improvements
