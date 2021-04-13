@@ -51,7 +51,9 @@ class puppet_metrics_collector::system (
 
   if $facts['virtual'] == 'vmware' {
     if $manage_vmware_tools and ($system_metrics_ensure == 'present') {
-      ensure_packages([$vmware_tools_pkg])
+      package {$vmware_tools_pkg:
+        ensure => present,
+      }
     }
 
     file { "${scripts_dir}/vmware_metrics":

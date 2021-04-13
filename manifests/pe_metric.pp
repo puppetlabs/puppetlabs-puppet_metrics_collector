@@ -33,8 +33,8 @@ define puppet_metrics_collector::pe_metric (
 
   $_remote_metrics_enabled = if $remote_metrics_enabled =~ Boolean {
     $remote_metrics_enabled
-  } elsif fact('pe_server_version') =~ NotUndef {
-    if versioncmp(fact('pe_server_version'), '2019.8.5') >= 0 {
+  } elsif $facts.dig('pe_server_version') =~ NotUndef {
+    if versioncmp($facts.dig('pe_server_version'), '2019.8.5') >= 0 {
       true
     } else {
       false
