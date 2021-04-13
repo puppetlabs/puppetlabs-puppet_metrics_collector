@@ -7,8 +7,7 @@
   "source": "https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector",
   "project_page": "https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector",
   "issues_url": "https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/issues",
-  "dependencies": [
-  ],
+  "dependencies": [],
   "operatingsystem_support": [
     {
       "operatingsystem": "RedHat",

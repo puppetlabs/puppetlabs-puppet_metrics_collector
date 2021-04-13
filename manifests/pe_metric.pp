@@ -47,7 +47,7 @@ define puppet_metrics_collector::pe_metric (
     'metrics_type'           => $metrics_type,
     'pe_version'             => $facts['pe_server_version'],
     'clientcert'             => $::clientcert,
-    'hosts'                  => $hosts.sort(),
+    'hosts'                  => $hosts,
     'metrics_port'           => $metrics_port,
     'ssl'                    => $ssl,
     'excludes'               => $excludes,
