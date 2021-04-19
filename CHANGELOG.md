@@ -1,3 +1,9 @@
+# Minor Release 6.5.0
+
+## Changes:
+- The `puppet_metrics_collector` can now be used without requiring the
+  installation of additional dependencies, such as `puppetlabs-stdlib`.
+
 # Patch Release 6.4.1
 
 ## Changes:
