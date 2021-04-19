@@ -33,8 +33,8 @@ define puppet_metrics_collector::pe_metric (
 
   $_remote_metrics_enabled = if $remote_metrics_enabled =~ Boolean {
     $remote_metrics_enabled
-  } elsif fact('pe_server_version') =~ NotUndef {
-    if versioncmp(fact('pe_server_version'), '2019.8.5') >= 0 {
+  } elsif $facts.dig('pe_server_version') =~ NotUndef {
+    if versioncmp($facts.dig('pe_server_version'), '2019.8.5') >= 0 {
       true
     } else {
       false
@@ -47,7 +47,7 @@ define puppet_metrics_collector::pe_metric (
     'metrics_type'           => $metrics_type,
     'pe_version'             => $facts['pe_server_version'],
     'clientcert'             => $::clientcert,
-    'hosts'                  => $hosts.sort(),
+    'hosts'                  => $hosts,
     'metrics_port'           => $metrics_port,
     'ssl'                    => $ssl,
     'excludes'               => $excludes,
