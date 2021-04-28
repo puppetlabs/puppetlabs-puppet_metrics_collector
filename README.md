@@ -373,7 +373,7 @@ class { 'puppet_metrics_collector':
 ```
 
 
-### How to Report an issue or contribute to the module
+## How to Report an issue or contribute to the module
 
 If you are a PE user and need support using this module or are encountering issues, our Support team would be happy to help you resolve your issue and help reproduce any bugs. Just raise a ticket on the [support portal](https://support.puppet.com/hc/en-us/requests/new).
  If you have a reproducible bug or are a community user you can raise it directly on the Github issues page of the module [here](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/issues). We also welcome PR contributions to improve the module. Please see further details about contributing [here](https://puppet.com/docs/puppet/7.5/contributing.html#contributing_changes_to_module_repositories).
