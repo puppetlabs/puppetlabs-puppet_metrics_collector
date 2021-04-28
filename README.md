@@ -15,6 +15,7 @@ Table of Contents
   * [Temporary Installation](#temporary-installation)
   * [Manual Configuration of Hosts](#manual-configuration-of-hosts)
   * [Configuration for Distributed Metrics Collection](#Configuration-for-distributed-metrics-collection)
+* [How to Report an issue or contribute to the module](#How-to-Report-an-issue-or-contribute-to-the-module)
 
 ## Overview
 
