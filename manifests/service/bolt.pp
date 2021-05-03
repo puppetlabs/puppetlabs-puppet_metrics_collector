@@ -13,6 +13,7 @@ class puppet_metrics_collector::service::bolt (
   Optional[Integer]       $metrics_server_port      = $puppet_metrics_collector::metrics_server_port,
   Optional[String]        $metrics_server_db_name   = $puppet_metrics_collector::metrics_server_db_name,
   ) {
+<<<<<<< HEAD
   puppet_metrics_collector::pe_metric { 'bolt' :
     metric_ensure           => $metrics_ensure,
     cron_minute             => "0/${collection_frequency}",
@@ -26,5 +27,21 @@ class puppet_metrics_collector::service::bolt (
     metrics_server_port     => $metrics_server_port,
     metrics_server_db_name  => $metrics_server_db_name,
     excludes                => $excludes,
+=======
+  puppet_metrics_collector::pe_metric { 'bolt' :
+    metric_ensure            => $metrics_ensure,
+    cron_minute              => "0/${collection_frequency}",
+    retention_days           => $retention_days,
+    hosts                    => $hosts,
+    metrics_port             => $port,
+    additional_metrics       => $extra_metrics,
+    metric_script_file       => 'puma_metrics',
+    override_metrics_command => $override_metrics_command,
+    metrics_server_type      => $metrics_server_type,
+    metrics_server_hostname  => $metrics_server_hostname,
+    metrics_server_port      => $metrics_server_port,
+    metrics_server_db_name   => $metrics_server_db_name,
+    excludes                 => $excludes,
+>>>>>>> 67e0950 ((SUP-1969) Reconcile pe_metric parameter differences)
   }
 }
