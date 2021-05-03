@@ -7,6 +7,7 @@ define puppet_metrics_collector::sar_metric (
   Integer                   $collection_frequency      = 5, # minutes
   Integer                   $polling_frequency_seconds = 1,
   String                    $metric_script_file        = 'system_metrics',
+  String                    $metrics_shipping_command  = $puppet_metrics_collector::system::metrics_shipping_command,
 ) {
 
   $metrics_output_dir = "${puppet_metrics_collector::system::output_dir}/${metrics_type}"
@@ -25,13 +26,14 @@ define puppet_metrics_collector::sar_metric (
   $metric_script_file_path = "${puppet_metrics_collector::system::scripts_dir}/${metric_script_file}"
   $file_interval_seconds = $collection_frequency * 60
 
-  $metrics_command = join([$metric_script_file_path,
-                            " --metric_type ${metrics_type}",
-                            " --file_interval ${file_interval_seconds}",
-                            " --polling_interval ${polling_frequency_seconds}",
-                            " --metrics_dir ${puppet_metrics_collector::system::output_dir}",
-                            ' > /dev/null',
-                            ], '')
+  $base_metrics_command = join([$metric_script_file_path,
+                          "--metric_type ${metrics_type}",
+                          "--file_interval ${file_interval_seconds}",
+                          "--polling_interval ${polling_frequency_seconds}",
+                          "--metrics_dir ${puppet_metrics_collector::system::output_dir}",
+                          ], ' ')
+
+  $metrics_command = "${base_metrics_command} ${metrics_shipping_command} > /dev/null"
 
   # The hardcoded numbers with the fqdn_rand calls are to trigger the metrics_tidy 
   # command to run at a randomly selected time between 12:00 AM and 3:00 AM.

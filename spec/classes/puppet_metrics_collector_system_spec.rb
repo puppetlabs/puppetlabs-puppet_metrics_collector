@@ -78,4 +78,39 @@ describe 'puppet_metrics_collector::system' do
 
     it { is_expected.not_to contain_service('puppet_postgres-metrics.timer') }
   end
+
+  context 'when metrics shipping is enabled' do
+    let(:params) { {
+      metrics_server_type: "influxdb",
+      metrics_server_db_name: "puppet_metrics",
+      metrics_server_hostname: "influxdb.example"
+      }
+    }
+
+    it { is_expected.to contain_cron('system_cpu_metrics_collection').with_command(/--influx-db\s+puppet_metrics/) }
+  end
+
+  context 'when metrics shipping is enabled in puppet_metrics_collector' do
+    let(:pre_condition) do
+      <<-PRE_COND
+      class {'puppet_metrics_collector':
+        metrics_server_type => "influxdb",
+        metrics_server_db_name => "puppet_metrics",
+        metrics_server_hostname => "influxdb.example"
+      }
+      PRE_COND
+    end
+
+    it { is_expected.to contain_cron('system_cpu_metrics_collection').with_command(/--influx-db\s+puppet_metrics/) }
+  end
+
+  context 'when metrics shipping is not enabled' do
+    let(:params) { {
+      metrics_server_db_name: "puppet_metrics",
+      metrics_server_hostname: "influxdb.example"
+      }
+    }
+
+    it { is_expected.not_to contain_cron('system_cpu_metrics_collection').with_command(/--influx-db\s+puppet_metrics/) }
+  end
 end
