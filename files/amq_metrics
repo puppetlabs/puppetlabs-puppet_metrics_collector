@@ -8,21 +8,21 @@ require 'optparse'
 require 'yaml'
 
 options = {}
-OptionParser.new do |opts|
-  opts.banner = "Usage: amq_metrics [options]"
+OptionParser.new { |opts|
+  opts.banner = 'Usage: amq_metrics [options]'
   opts.on('-p', '--[no-]print', 'Print to stdout') { |p| options[:print] = p }
   opts.on('-m [TYPE]', '--metrics_type [TYPE]', 'Type of metric to collect') { |v| options[:metrics_type] = v }
   opts.on('-o [DIR]', '--output_dir [DIR]', 'Directory to save output to') { |o| options[:output_dir] = o }
-end.parse!
+}.parse!
 
-if options[:metrics_type].nil? then
+if options[:metrics_type].nil?
   STDERR.puts '--metrics_type (-m) is a required argument'
   exit 1
 end
 
 METRICS_TYPE = options[:metrics_type]
 
-config_file = File.expand_path("../../config/#{METRICS_TYPE}.yaml", __FILE__) 
+config_file = File.expand_path("../../config/#{METRICS_TYPE}.yaml", __FILE__)
 config = YAML.load_file(config_file)
 
 OUTPUT_DIR         = options[:output_dir]
@@ -38,22 +38,22 @@ def get_endpoint(url, post_data)
   uri  = URI.parse(url)
   http = Net::HTTP.new(uri.host, uri.port)
   request = Net::HTTP::Post.new(uri.request_uri)
-  request.basic_auth("admin", "admin")
+  request.basic_auth('admin', 'admin')
   request.body = post_data
   data = http.request(request)
 rescue Exception => e
-    $error_array << "#{e}"
-    data = {}
+  $error_array << e.to_s
+  data = {}
 end
 
-def recurse_merge!(a,b)
-  a.merge!(b) do |_,aa,bb|
-    (aa.is_a?(Hash) && bb.is_a?(Hash)) ? recurse_merge!(aa,bb) : bb
+def recurse_merge!(a, b)
+  a.merge!(b) do |_, aa, bb|
+    (aa.is_a?(Hash) && bb.is_a?(Hash)) ? recurse_merge!(aa, bb) : bb
   end
 end
 
 def tree_components(string)
-  attributes = string.split(/[:,]/).map { |e| e.split('=').last }
+  attributes = string.split(%r{[:,]}).map { |e| e.split('=').last }
   components = [attributes.shift]
   until attributes.empty?
     components << attributes.pop
@@ -74,8 +74,8 @@ output_file = Time.now.utc.strftime('%Y%m%dT%H%M%SZ') + '.json'
 HOSTS.each do |host|
   begin
     timestamp = Time.now
-    dataset = {'timestamp' => timestamp.utc.iso8601, 'servers' => {}}
-    hostkey = host.gsub('.', '-')
+    dataset = { 'timestamp' => timestamp.utc.iso8601, 'servers' => {} }
+    hostkey = host.tr('.', '-')
     dataset['servers'][hostkey] = { METRICS_TYPE => {} }
 
     host_url = "https://#{host}:#{PORT}/api/jolokia"
@@ -84,7 +84,7 @@ HOSTS.each do |host|
     JSON.parse(response.body).each do |element|
       case element['value']
       when Hash
-        element['value'].each do |mbean,attributes|
+        element['value'].each do |mbean, attributes|
           metrics = treeify(mbean, attributes)
           recurse_merge!(dataset['servers'][hostkey][METRICS_TYPE], metrics)
         end
@@ -102,7 +102,7 @@ HOSTS.each do |host|
 
     json_dataset = JSON.generate(dataset)
 
-    unless OUTPUT_DIR.nil? then
+    unless OUTPUT_DIR.nil?
       Dir.chdir(OUTPUT_DIR) do
         Dir.mkdir(host) unless File.exist?(host)
         File.open(File.join(host, output_file), 'w') do |file|
@@ -110,7 +110,7 @@ HOSTS.each do |host|
         end
       end
     end
-    if options[:print] != false then
+    if options[:print] != false
       # Use puts so that data gatherd from each host is written to stdout
       # with a newline separator. This enables parsing of multiple datasets
       # as the output stream is in line-delimited JSON form.

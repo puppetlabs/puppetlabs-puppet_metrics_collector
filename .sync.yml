@@ -25,3 +25,30 @@ appveyor.yml:
 
 Rakefile:
   changelog_user: "puppetlabs"
+
+.rubocop.yml:
+  default_configs:
+    "Rspec/NamedSubject":
+       Enabled: False
+    "Style/ClassAndModuleChildren":
+       Enabled: False
+    "Style/CollectionMethods":
+       Enabled: False
+    "Style/LineEndConcatenation":
+       Enabled: False
+    "Lint/AssignmentInCondition":
+       Enabled: False
+    "Lint/RescueException":
+       Enabled: False
+    "Lint/UnderscorePrefixedVariableName":
+       Enabled: False
+    "Lint/UselessAssignment":
+       Enabled: False
+    "Style/Documentation":
+       Enabled: False
+    "Style/GlobalVars":
+       Enabled: False
+    "Style/GuardClause":
+       Enabled: False
+    "RSpec/EmptyExampleGroup":
+       Enabled: False

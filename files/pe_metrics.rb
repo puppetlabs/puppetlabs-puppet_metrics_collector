@@ -9,16 +9,16 @@ require 'yaml'
 
 options = {}
 
-OptionParser.new do |opts|
+OptionParser.new { |opts|
   opts.banner = "Usage: #{File.basename(__FILE__)} [options]"
   opts.on('-p', '--[no-]print', 'Print to STDOUT') { |p| options[:print] = p }
   opts.on('-m [TYPE]', '--metrics_type [TYPE]', 'Type of metrics to collect') { |v| options[:metrics_type] = v }
   opts.on('-o [DIR]', '--output_dir [DIR]', 'Directory to save output to') { |o| options[:output_dir] = o }
   opts.on('--metrics_port [PORT]', 'The port the metrics service runs on') { |port| options[:metrics_port] = port }
   opts.on('--[no-]ssl', 'Use SSL when collecting metrics') { |ssl| options[:ssl] = ssl }
-end.parse!
+}.parse!
 
-if options[:metrics_type].nil? then
+if options[:metrics_type].nil?
   STDERR.puts '--metrics_type (-m) is a required argument'
   exit 1
 end
@@ -30,7 +30,7 @@ config_file = File.expand_path("../../config/#{options[:metrics_type]}.yaml", __
 config = YAML.load_file(config_file)
 
 def coalesce(higher_precedence, lower_precedence, default = nil)
-  [higher_precedence, lower_precedence, default].find{|x|!x.nil?}
+  [higher_precedence, lower_precedence, default].find { |x| !x.nil? }
 end
 
 METRICS_TYPE       = options[:metrics_type]
@@ -63,7 +63,7 @@ def setup_connection(url, use_ssl)
   uri  = URI.parse(url)
   http = Net::HTTP.new(uri.host, uri.port)
 
-  if use_ssl then
+  if use_ssl
     http.use_ssl = true
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
@@ -78,7 +78,7 @@ def setup_connection(url, use_ssl)
     end
   end
 
-  return http, uri
+  [http, uri]
 end
 
 def get_endpoint(url, use_ssl)
@@ -93,10 +93,9 @@ def get_endpoint(url, use_ssl)
       endpoint_data = {}
     end
   end
-  return endpoint_data
-
+  endpoint_data
 rescue Exception => e
-  $error_array << "#{e}"
+  $error_array << e.to_s
   endpoint_data = {}
 end
 
@@ -108,10 +107,9 @@ def post_endpoint(url, use_ssl, post_data)
   request.body = post_data
 
   endpoint_data = JSON.parse(http.request(request).body)
-  return endpoint_data
-
+  endpoint_data
 rescue Exception => e
-  $error_array << "#{e}"
+  $error_array << e.to_s
   endpoint_data = {}
 end
 
@@ -139,14 +137,14 @@ def retrieve_additional_metrics(host, port, use_ssl, metrics_type, metrics)
     if metric_data['status'] == 200
       metrics_array << { 'name' => metric_name, 'data' => metric_data['value'] }
     elsif metric_data['status'] == 404
-      metrics_array << { 'name' => metric_name, 'data' => nil}
+      metrics_array << { 'name' => metric_name, 'data' => nil }
     else
       metric_mbean = metrics[index]['mbean']
       $error_array << "HTTP Error #{metric_data['status']} for #{metric_mbean}"
     end
   end
 
-  return metrics_array
+  metrics_array
 end
 
 def filter_metrics(dataset, filters)
@@ -154,10 +152,10 @@ def filter_metrics(dataset, filters)
 
   case dataset
   when Hash
-    dataset = dataset.inject({}) {|m, (k, v)| m[k] = filter_metrics(v,filters) unless filters.include? k ; m }
+    dataset = dataset.each_with_object({}) { |(k, v), m| m[k] = filter_metrics(v, filters) unless filters.include? k; }
   when Array
-    dataset.map! {|e| filter_metrics(e,filters)}
+    dataset.map! { |e| filter_metrics(e, filters) }
   end
 
-  return dataset
+  dataset
 end

@@ -24,39 +24,36 @@ end
 output_file = Time.now.utc.strftime('%Y%m%dT%H%M%SZ') + '.json'
 
 HOSTS.each do |host|
-  begin
-    timestamp = Time.now
-    dataset = {'timestamp' => timestamp.utc.iso8601, 'servers' => {}}
-    hostkey = host.gsub('.', '-')
-    dataset['servers'][hostkey] = { METRICS_TYPE => {} }
+  timestamp = Time.now
+  dataset = { 'timestamp' => timestamp.utc.iso8601, 'servers' => {} }
+  hostkey = host.tr('.', '-')
+  dataset['servers'][hostkey] = { METRICS_TYPE => {} }
 
-    status_output = get_status_endpoint(host, PORT, USE_SSL)
-    gc_status_output = get_gc_status_endpoint(host, PORT, USE_SSL)
+  status_output = get_status_endpoint(host, PORT, USE_SSL)
+  gc_status_output = get_gc_status_endpoint(host, PORT, USE_SSL)
 
-    dataset['servers'][hostkey][METRICS_TYPE] = status_output
-    dataset['servers'][hostkey][METRICS_TYPE]['gc_stats'] = gc_status_output
+  dataset['servers'][hostkey][METRICS_TYPE] = status_output
+  dataset['servers'][hostkey][METRICS_TYPE]['gc_stats'] = gc_status_output
 
-    dataset['servers'][hostkey][METRICS_TYPE]['error'] = $error_array
-    dataset['servers'][hostkey][METRICS_TYPE]['error_count'] = $error_array.count
-    dataset['servers'][hostkey][METRICS_TYPE]['api-query-start'] = timestamp.utc.iso8601
-    dataset['servers'][hostkey][METRICS_TYPE]['api-query-duration'] = Time.now - timestamp
+  dataset['servers'][hostkey][METRICS_TYPE]['error'] = $error_array
+  dataset['servers'][hostkey][METRICS_TYPE]['error_count'] = $error_array.count
+  dataset['servers'][hostkey][METRICS_TYPE]['api-query-start'] = timestamp.utc.iso8601
+  dataset['servers'][hostkey][METRICS_TYPE]['api-query-duration'] = Time.now - timestamp
 
-    filtered_dataset = filter_metrics(dataset, EXCLUDES)
-    json_dataset = JSON.generate(filtered_dataset)
+  filtered_dataset = filter_metrics(dataset, EXCLUDES)
+  json_dataset = JSON.generate(filtered_dataset)
 
-    unless OUTPUT_DIR.nil? then
-      Dir.chdir(OUTPUT_DIR) do
-        Dir.mkdir(host) unless File.exist?(host)
-        File.open(File.join(host, output_file), 'w') do |file|
-          file.write(json_dataset)
-        end
+  unless OUTPUT_DIR.nil?
+    Dir.chdir(OUTPUT_DIR) do
+      Dir.mkdir(host) unless File.exist?(host)
+      File.open(File.join(host, output_file), 'w') do |file|
+        file.write(json_dataset)
       end
     end
-    if OPTIONS[:print] != false then
-      # Use puts so that data gatherd from each host is written to stdout
-      # with a newline separator. This enables parsing of multiple datasets
-      # as the output stream is in line-delimited JSON form.
-      STDOUT.puts(json_dataset)
-    end
   end
+  next unless OPTIONS[:print] != false
+  # Use puts so that data gatherd from each host is written to stdout
+  # with a newline separator. This enables parsing of multiple datasets
+  # as the output stream is in line-delimited JSON form.
+  STDOUT.puts(json_dataset)
 end
