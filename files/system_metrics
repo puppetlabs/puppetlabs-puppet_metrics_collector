@@ -144,7 +144,7 @@ module SystemMetrics
       process_ids = processes_to_monitor.keys.join(",")
       times_to_poll = (@file_interval / @polling_interval).round
       # pidstat inputs are process_ids polling interval and how many times to poll
-      comm = "pidstat -rud -p #{process_ids}  #{@polling_interval} #{times_to_poll}"
+      comm = "pidstat -Irud -p #{process_ids}  #{@polling_interval} #{times_to_poll}"
       puts "pidstat command is: #{comm}" if @verbose
       begin
         %x[#{comm}]
