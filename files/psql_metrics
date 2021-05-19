@@ -149,8 +149,8 @@ module PuppetMetricsCollector
                       '--single-transaction', '--tuples-only', '--quiet']
       psql_command += ["--dbname=#{database}"] unless database.nil?
 
-      command_line = ['/usr/bin/su', '-s', '/bin/bash', 'pe-postgres',
-                      '-c', psql_command.join(' ')]
+      command_line = ['/usr/sbin/runuser', '-u', 'pe-postgres',
+                      '--', *psql_command]
 
       env = { 'PGOPTIONS' => "-c statement_timeout=#{timeout}s",
              'PGTZ' => 'GMT' }

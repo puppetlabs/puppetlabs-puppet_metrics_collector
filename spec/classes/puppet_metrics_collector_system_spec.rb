@@ -20,28 +20,27 @@ describe 'puppet_metrics_collector::system' do
     end
 
     context 'when vmware-toolbox-cmd is present on the PATH' do
-      let(:facts) { super().merge(puppet_metrics_collector: { have_vmware_tools: true }) }
+      let(:facts) { super().merge(puppet_metrics_collector: { have_vmware_tools: true, have_systemd: true }) }
 
-      it { is_expected.to contain_cron('vmware_metrics_collection').with_ensure('present') }
+      it { is_expected.to contain_service('puppet_vmware-metrics.timer').with_ensure('running') }
     end
 
     context 'when vmware-toolbox-cmd is not present on the PATH' do
-      let(:facts) { super().merge(puppet_metrics_collector: { have_vmware_tools: false }) }
+      let(:facts) { super().merge(puppet_metrics_collector: { have_vmware_tools: false, have_systemd: true }) }
 
       it { is_expected.to contain_notify('vmware_tools_warning') }
-      it { is_expected.to contain_cron('vmware_metrics_collection').with_ensure('absent') }
     end
   end
 
   context 'when /opt/puppetlabs/server/bin/psql is present' do
-    let(:facts) { { puppet_metrics_collector: { have_pe_psql: true } } }
+    let(:facts) { { puppet_metrics_collector: { have_pe_psql: true, have_systemd: true } } }
 
-    it { is_expected.to contain_cron('postgres_metrics_collection').with_ensure('present') }
+    it { is_expected.to contain_service('puppet_postgres-metrics.timer').with_ensure('running') }
   end
 
   context 'when /opt/puppetlabs/server/bin/psql is absent' do
-    let(:facts) { { puppet_metrics_collector: { have_pe_psql: false } } }
+    let(:facts) { { puppet_metrics_collector: { have_pe_psql: false, have_systemd: true } } }
 
-    it { is_expected.not_to contain_cron('postgres_metrics_collection') }
+    it { is_expected.not_to contain_service('puppet_postgres-metrics.timer') }
   end
 end

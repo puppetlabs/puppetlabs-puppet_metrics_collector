@@ -1,0 +1,11 @@
+<%- | String $tidy_command, String $service | -%>
+[Unit]
+Description=Oneshot service to tidy Puppet metrics
+Wants=<%= $service%>-tidy.timer
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c '<%= $tidy_command %>'
+
+[Install]
+WantedBy=multi-user.target

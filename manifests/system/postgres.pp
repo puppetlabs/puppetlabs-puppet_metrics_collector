@@ -28,22 +28,18 @@ class puppet_metrics_collector::system::postgres (
                       '--output_dir', $metrics_output_dir,
                       '> /dev/null'].join(' ')
 
-  cron { 'postgres_metrics_collection':
-    ensure  => $metrics_ensure,
-    command => $metrics_command,
-    user    => 'root',
-    minute  => "*/${collection_frequency}",
+  $tidy_command = "${puppet_metrics_collector::system::scripts_dir}/metrics_tidy -d ${metrics_output_dir} -r ${retention_days}"
+
+  puppet_metrics_collector::collect {'puppet_postgres':
+    metrics_command => $metrics_command,
+    tidy_command    => $tidy_command,
+    metric_ensure   => $metrics_ensure,
+    minute          => String($collection_frequency),
+    notify          => Exec['puppet_metrics_collector_system_daemon_reload'],
   }
 
-  # The hardcoded numbers with the fqdn_rand calls are to trigger the metrics_tidy
-  # command to run at a randomly selected time between 12:00 AM and 3:00 AM.
-  # NOTE - if adding a new service, the name of the service must be added to the valid_paths array in files/metrics_tidy
-
-  cron { 'postgres_metrics_tidy':
-    ensure  => $metrics_ensure,
-    command => "${puppet_metrics_collector::system::scripts_dir}/metrics_tidy -d ${metrics_output_dir} -r ${retention_days}",
-    user    => 'root',
-    hour    => fqdn_rand(3, 'postgres'),
-    minute  => (5 * fqdn_rand(11, 'postgres')),
+  # Legacy cleanup
+  cron { ['postgres_metrics_tidy', 'postgres_metrics_collection']:
+    ensure => absent
   }
 }

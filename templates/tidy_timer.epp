@@ -1,0 +1,13 @@
+<%- | String $service | -%>
+[Unit]
+Description=Timer to tidy Puppet metrics
+Requires=<%= $service %>-tidy.service
+
+[Timer]
+OnCalendar=*-*-* 00:00:00
+RandomizedDelaySec=10800
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+

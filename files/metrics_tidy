@@ -74,3 +74,4 @@ tar --create --gzip --file "${metrics_directory}/${metrics_type}-$(date +%Y.%m.%
 # We can assume that the json files have no spaces as they are created by our scripts
 # Only run xargs if the file is >0 bytes
 [[ -s $metrics_tmp ]] && xargs -a "$metrics_tmp" rm
+exit 0

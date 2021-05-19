@@ -13,7 +13,25 @@ describe 'puppet_metrics_collector::pe_metric' do
     expect(subject).to compile
   end
 
+  context 'when capturing Puppet server metrics' do
+    it { is_expected.to contain_service('puppet_puppetserver-metrics.timer').with_ensure('running') }
+  end
+
+  context 'when not capturing metrics' do
+    let(:params) { super().merge({ metric_ensure: 'absent' }) }
+
+    it { is_expected.to contain_service('test-service-metrics.timer').with_ensure('stopped') }
+  end
+
+  context 'when customizing collection frequency' do
+    let(:params) { super().merge({ cron_minute: '0/12' }) }
+
+    it { is_expected.to contain_file('/etc/systemd/system/test-service-metrics.timer').with_content(%r{OnCalendar=.*0\/12}) }
+  end
+
   describe 'remote metric collection' do
+    let(:facts) { { pe_server_version: '2019.8.3' } }
+
     it 'is disabled by default due to CVE-2020-7943' do
       expect(subject).to contain_file('/opt/puppetlabs/puppet-metrics-collector/config/test-service.yaml').with_content(%r{remote_metrics_enabled: false})
     end

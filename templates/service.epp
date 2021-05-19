@@ -1,0 +1,11 @@
+<%- | String $metrics_command, String $service | -%>
+[Unit]
+Description=Oneshot service to capture Puppet metrics
+Wants=<%= $service%>-metrics.timer
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c '<%= $metrics_command %>'
+
+[Install]
+WantedBy=multi-user.target

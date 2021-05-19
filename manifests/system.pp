@@ -32,7 +32,6 @@ class puppet_metrics_collector::system (
     }
   }
 
-
   file { "${scripts_dir}/system_metrics":
     ensure => file,
     mode   => '0755',
@@ -43,6 +42,12 @@ class puppet_metrics_collector::system (
     package { 'sysstat':
       ensure => installed,
     }
+  }
+
+  exec { 'puppet_metrics_collector_system_daemon_reload':
+    command     => 'systemctl daemon-reload',
+    path        => ['/bin', '/usr/bin'],
+    refreshonly => true,
   }
 
   include puppet_metrics_collector::system::cpu
