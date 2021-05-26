@@ -3,10 +3,10 @@
 
 # rubocop::disable GetText/DecorateFunctionMessage
 
-require "optparse"
-require "json"
-require "time"
-require "fileutils"
+require 'optparse'
+require 'json'
+require 'time'
+require 'fileutils'
 
 # This script is intended to be run on a puppet infrastructure node as part of the
 # puppet_metrics_collector module.  It will generate system/process statistics in the file format
@@ -62,7 +62,7 @@ module SystemMetrics
       @metrics_dir = metrics_dir
       @verbose = verbose
 
-      @hostname = %x[hostname].strip
+      @hostname = `hostname`.strip
       puts "Hostname is: #{@hostname}" if @verbose
       FileUtils.mkdir_p(@metrics_dir) unless File.directory?(@metrics_dir)
       # The time object is set after the sar run for consistency
@@ -77,13 +77,13 @@ module SystemMetrics
     def run_sar
       times_to_poll = (@file_interval / @polling_interval).round
       # sar inputs are polling interval and how many times to poll
-      comm_flags = " -r" if @metric_type =~ /system_memory/
+      comm_flags = ' -r' if %r{system_memory}.match?(@metric_type)
       comm = "sar #{comm_flags} #{@polling_interval} #{times_to_poll}"
       puts "sar command is: #{comm}" if @verbose
       begin
-        %x[#{comm}]
+        `#{comm}`
       rescue Exception => e
-        error_msg = [e.class, e.message].join " "
+        error_msg = [e.class, e.message].join ' '
         send_error_to_output_file_and_exit(error_msg)
       end
     end
@@ -96,13 +96,13 @@ module SystemMetrics
     #
     # @return [hash] The metrics data
     def parse_sar_output(sar_output)
-      sar_output_arr = sar_output.split(/\n+|\r+/).reject(&:empty?).map { |line| line.split }
+      sar_output_arr = sar_output.split(%r{\n+|\r+}).reject(&:empty?).map { |line| line.split }
 
-      if ( @metric_type == "system_memory")
-        unique_header_str = "%memused"
-      else
-        unique_header_str = "%user"
-      end
+      unique_header_str = if @metric_type == 'system_memory'
+                            '%memused'
+                          else
+                            '%user'
+                          end
       headers_line = sar_output_arr.find { |e| e.include? unique_header_str }
       sar_error_missing_headers = <<-EOF
         sar output invalid or missing headers. Failed to find line with #{unique_header_str}.
@@ -111,7 +111,7 @@ module SystemMetrics
       EOF
       send_error_to_output_file_and_exit(sar_error_missing_headers) if headers_line.nil?
 
-      averages_line = sar_output_arr.find { |e| e.include? "Average:" }
+      averages_line = sar_output_arr.find { |e| e.include? 'Average:' }
       sar_error_missing_averages = <<-EOF
         sar output missing "Average:"
         Full output:
@@ -121,15 +121,15 @@ module SystemMetrics
 
       Hash[headers_line.reverse.zip(averages_line.reverse).reverse]
 
-      puts "sar headers and averages:\n#{headers_line.join(",")}\n#{averages_line.join(",")}" if @verbose
+      puts "sar headers and averages:\n#{headers_line.join(',')}\n#{averages_line.join(',')}" if @verbose
 
-      #example of array data
+      # example of array data
       # 04:59:13,PM,CPU,%user,%nice,%system,%iowait,%steal,%idle
       # Average:,all,0.58,0.00,0.08,0.00,0.00,99.33
-      #combine the arrays into a hash starting from the deal with the unmatched columns in the front
+      # combine the arrays into a hash starting from the deal with the unmatched columns in the front
       data_hash = Hash[headers_line.reverse.zip(averages_line.reverse).reverse]
       # remove anything that doesn't have a number for an average like "Average:" or "all"
-      data_hash.select!{ |k,v| v =~ /\A[-+]?[0-9]*\.?[0-9]+\Z/ }
+      data_hash.select! { |_k, v| v =~ %r{\A[-+]?[0-9]*\.?[0-9]+\Z} }
       data_hash.transform_values!(&:to_f)
     end
 
@@ -141,15 +141,15 @@ module SystemMetrics
     #
     # @return [string] raw output from pidstat
     def run_pidstat(processes_to_monitor)
-      process_ids = processes_to_monitor.keys.join(",")
+      process_ids = processes_to_monitor.keys.join(',')
       times_to_poll = (@file_interval / @polling_interval).round
       # pidstat inputs are process_ids polling interval and how many times to poll
       comm = "pidstat -rud -p #{process_ids}  #{@polling_interval} #{times_to_poll}"
       puts "pidstat command is: #{comm}" if @verbose
       begin
-        %x[#{comm}]
+        `#{comm}`
       rescue Exception => e
-        error_msg = [e.class, e.message].join " "
+        error_msg = [e.class, e.message].join ' '
         send_error_to_output_file_and_exit(error_msg)
       end
     end
@@ -166,9 +166,9 @@ module SystemMetrics
       comm += "| grep -vE 'puppet-metrics-collector|grep|system_metrics'"
       puts "process grep command is: #{comm}" if @verbose
       begin
-        process_info = %x[#{comm}]
+        process_info = `#{comm}`
       rescue Exception => e
-        error_msg = [e.class, e.message].join " "
+        error_msg = [e.class, e.message].join ' '
         send_error_to_output_file_and_exit(error_msg)
       end
       process_info.each_line do |line|
@@ -178,7 +178,7 @@ module SystemMetrics
         # Where command can and usually does have spaces in it.
         processes_to_monitor[line.split(' ').first] = line.split(' ')[1..-1].join(' ')
       end
-      return processes_to_monitor
+      processes_to_monitor
     end
 
     # Parse the pidstat output and extract the metrics data, add in processes information
@@ -204,27 +204,26 @@ module SystemMetrics
     #
     # @return [hash] The metrics data
     def parse_pidstat_output(pidstat_output, processes_to_monitor)
-      pidstat_output_arr = pidstat_output.split(/\n+|\r+/).reject(&:empty?)
+      pidstat_output_arr = pidstat_output.split(%r{\n+|\r+}).reject(&:empty?)
 
       data_hash = {}
-      fields = Array.new(9,"bogus") # make it clear something went wrong if this ends up in the file
+      fields = Array.new(9, 'bogus') # make it clear something went wrong if this ends up in the file
       pidstat_output_arr.each do |line|
-        if line =~ /^Average:\s+UID/ #find a header row
+        if %r{^Average:\s+UID}.match?(line) # find a header row
           fields = line.split(' ').drop(3)
         end
-        if line =~ /^Average:\s+\d/ #find a row with averages data
-          value_array = line.split(' ')
-          values = value_array.drop(3)
-          pid = value_array[2]
-          line_data = Hash[fields.zip(values)]
-          command_pidstat = line_data["Command"]
-          # remove anything that doesn't have a number for the value like "-" or "puma"
-          line_data.select!{ |k,v| v =~ /\A[-+]?[0-9]*\.?[0-9]+\Z/ }
-          line_data.transform_values!(&:to_f)
-          line_data["command_pidstat"] = command_pidstat
-          data_hash[pid] = {} if data_hash[pid].nil?
-          data_hash[pid].merge!(line_data)
-        end
+        next unless %r{^Average:\s+\d}.match?(line) # find a row with averages data
+        value_array = line.split(' ')
+        values = value_array.drop(3)
+        pid = value_array[2]
+        line_data = Hash[fields.zip(values)]
+        command_pidstat = line_data['Command']
+        # remove anything that doesn't have a number for the value like "-" or "puma"
+        line_data.select! { |_k, v| v =~ %r{\A[-+]?[0-9]*\.?[0-9]+\Z} }
+        line_data.transform_values!(&:to_f)
+        line_data['command_pidstat'] = command_pidstat
+        data_hash[pid] = {} if data_hash[pid].nil?
+        data_hash[pid].merge!(line_data)
       end
 
       # replace key with unique command identifier
@@ -233,16 +232,16 @@ module SystemMetrics
       unknown_count = 0
       processes_to_monitor.each do |k, v|
         next unless data_hash.key?(k)
-        comm_identifier = determine_relevant_command_name(v,data_hash[k]["command_pidstat"])
-        if comm_identifier == "unknown" #needs to be unique so adding a counter
+        comm_identifier = determine_relevant_command_name(v, data_hash[k]['command_pidstat'])
+        if comm_identifier == 'unknown' # needs to be unique so adding a counter
           unknown_count += 1
           comm_identifier = "#{comm_identifier}_#{unknown_count}"
         end
-        data_hash[k].merge!("command_full" => v, "pid" => k)
+        data_hash[k].merge!('command_full' => v, 'pid' => k)
         data_hash[comm_identifier] = data_hash.delete(k)
       end
 
-      return data_hash
+      data_hash
     end
 
     # Determine the relevant command name for the process based on command information
@@ -256,35 +255,35 @@ module SystemMetrics
     # @return [string] The service name or unknown
     def determine_relevant_command_name(command_full, command_pidstat)
       case command_pidstat
-      when  /^java$/
+      when %r{^java$}
         case command_full
-        when /puppetserver/
-          return "puppetserver"
-        when /puppetdb/
-          return "puppetdb"
-        when /console-services/
-          return "console"
-        when /orchestration-services/
-          return "orchestrator"
+        when %r{puppetserver}
+          return 'puppetserver'
+        when %r{puppetdb}
+          return 'puppetdb'
+        when %r{console-services}
+          return 'console'
+        when %r{orchestration-services}
+          return 'orchestrator'
         end
-      when /^postgres$/
-        return "postgres"
-      when /^pxp-agent$/
-        return "pxp-agent"
-      when /^puma$/
+      when %r{^postgres$}
+        return 'postgres'
+      when %r{^pxp-agent$}
+        return 'pxp-agent'
+      when %r{^puma$}
         case command_full
-        when /bolt-server/
-          return "bolt"
-        when /ace-server/
-          if command_full =~ /ruby/
-            return "ace-cleanup"
+        when %r{bolt-server}
+          return 'bolt'
+        when %r{ace-server}
+          if %r{ruby}.match?(command_full)
+            return 'ace-cleanup'
           end
-          return "ace"
+          return 'ace'
         end
-      when /^nginx$/
-        return "nginx"
+      when %r{^nginx$}
+        return 'nginx'
       end
-      return "unknown"
+      'unknown'
     end
 
     # Generate metrics data for the case where there are no processes to monitor on the host
@@ -293,8 +292,8 @@ module SystemMetrics
     #
     # @return [hash] The metrics data
     def generate_no_processes_metrics_data
-      warning_msg = "No processes matching the process_expression found on the host to monitor"
-      {:warning => warning_msg, :process_expression => @process_expression}
+      warning_msg = 'No processes matching the process_expression found on the host to monitor'
+      { warning: warning_msg, process_expression: @process_expression }
     end
 
     # Create the file and put the json data with the error in it
@@ -309,7 +308,7 @@ module SystemMetrics
       # Time object is created after successful sar run
       # so could be nil when an error occurs. But the file needs a name based on a timestamp
       @time_stamp_obj = Time.now if @time_stamp_obj.nil?
-      metrics_json = metrics_to_json(:error => error_msg)
+      metrics_json = metrics_to_json(error: error_msg)
       write_metrics_to_file(metrics_json)
       exit 1
     end
@@ -322,9 +321,9 @@ module SystemMetrics
     #
     # @return [string] json
     def metrics_to_json(metrics_data)
-      hostkey = @hostname.gsub('.', '-')
-      metrics_json = {'timestamp' => @time_stamp_obj.utc.iso8601, 'servers' => {}}
-      metrics_json['servers'][hostkey] = {@metric_type => metrics_data}
+      hostkey = @hostname.tr('.', '-')
+      metrics_json = { 'timestamp' => @time_stamp_obj.utc.iso8601, 'servers' => {} }
+      metrics_json['servers'][hostkey] = { @metric_type => metrics_data }
       JSON.generate(metrics_json)
     end
 
@@ -382,7 +381,7 @@ module SystemMetrics
         metrics_data = parse_pidstat_output(pidstat_output, processes_to_monitor)
       end
 
-      return metrics_data
+      metrics_data
     end
 
     # Get the data and create the metric json file
@@ -391,11 +390,11 @@ module SystemMetrics
     #
     # @return [void]
     def generate_metrics
-      if @metric_type == "system_processes"
-        metrics_data = generate_process_metrics
-      else
-        metrics_data = generate_system_metrics
-      end
+      metrics_data = if @metric_type == 'system_processes'
+                       generate_process_metrics
+                     else
+                       generate_system_metrics
+                     end
 
       metrics_json = metrics_to_json(metrics_data)
 
@@ -406,12 +405,12 @@ end
 
 if $PROGRAM_NAME == __FILE__
 
-  VALID_METRIC_TYPES = %w[system_cpu system_memory system_processes]
+  VALID_METRIC_TYPES = ['system_cpu', 'system_memory', 'system_processes'].freeze
   FILE_INTERVAL_DEFAULT = 60 * 5
   POLLING_INTERVAL_DEFAULT = 1
-  METRIC_TYPE_DEFAULT = "system_cpu"
-  PROCESS_EXPRESSION_DEFAULT = "/opt/puppetlabs.*(java|postgres)|puma.*/etc/puppetlabs/(ace|bolt)"
-  METRICS_DIR_DEFAULT = "/opt/puppetlabs/puppet-metrics-collector"
+  METRIC_TYPE_DEFAULT = 'system_cpu'
+  PROCESS_EXPRESSION_DEFAULT = '/opt/puppetlabs.*(java|postgres)|puma.*/etc/puppetlabs/(ace|bolt)'
+  METRICS_DIR_DEFAULT = '/opt/puppetlabs/puppet-metrics-collector'
 
   DESCRIPTION = <<-DESCRIPTION
     This script is intended to be run on a puppet infrastructure node as part of the
@@ -432,43 +431,43 @@ if $PROGRAM_NAME == __FILE__
 
   options = {}
 
-  OptionParser.new do |opts|
-    opts.banner = "Usage: generate_system_stats.rb [options]"
+  OptionParser.new { |opts|
+    opts.banner = 'Usage: generate_system_stats.rb [options]'
 
-    opts.on("-h", "--help", "Display the help text") do
+    opts.on('-h', '--help', 'Display the help text') do
       puts DESCRIPTION
       puts opts
       puts DEFAULTS
       exit
     end
 
-    opts.on("-p", "--polling_interval seconds", Integer,
-            "Time in seconds between calls to poll the system for data.") do |interval|
+    opts.on('-p', '--polling_interval seconds', Integer,
+            'Time in seconds between calls to poll the system for data.') do |interval|
       options[:polling_interval] = interval
     end
-    opts.on("-f", "--file_interval seconds", Integer,
-            "Time in seconds between the creation of each output file.") do |interval|
+    opts.on('-f', '--file_interval seconds', Integer,
+            'Time in seconds between the creation of each output file.') do |interval|
       options[:file_interval] = interval
     end
-    opts.on("-t", "--metric_type type", String,
+    opts.on('-t', '--metric_type type', String,
             "One of: #{VALID_METRIC_TYPES.join(', ')}") do |type|
       options[:metric_type] = type.downcase
     end
-    opts.on("-e", "--process_expression expression_list", String,
-            "Expression to pass to egrep that matches processes to track") do |expression_list|
+    opts.on('-e', '--process_expression expression_list', String,
+            'Expression to pass to egrep that matches processes to track') do |expression_list|
       options[:process_expression] = expression_list.downcase
     end
-    opts.on("-m", "--metrics_dir dir_path", String,
-            "The puppet_metrics_collector output directory") do |metrics_dir|
+    opts.on('-m', '--metrics_dir dir_path', String,
+            'The puppet_metrics_collector output directory') do |metrics_dir|
       options[:metrics_dir] = metrics_dir
     end
-    opts.on("-v", "--verbose", String, "Enable Verbose output") { options[:verbose] = true }
-  end.parse!
+    opts.on('-v', '--verbose', String, 'Enable Verbose output') { options[:verbose] = true }
+  }.parse!
 
   if options[:metric_type]
     unless VALID_METRIC_TYPES.include?(options[:metric_type])
       options_error = "Invalid metric type #{options[:metric_type]}." +
-      " Must be one of: #{VALID_METRIC_TYPES.join(', ')}."
+                      " Must be one of: #{VALID_METRIC_TYPES.join(', ')}."
       raise options_error
     end
   end
@@ -481,7 +480,7 @@ if $PROGRAM_NAME == __FILE__
   verbose = options[:verbose] || false
 
   if options[:polling_interval] || options[:file_interval]
-    options_error = "Polling interval must be less than file interval"
+    options_error = 'Polling interval must be less than file interval'
     raise options_error unless polling_interval < file_interval
   end
 

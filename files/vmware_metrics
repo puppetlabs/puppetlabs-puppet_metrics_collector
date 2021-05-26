@@ -31,7 +31,7 @@ module PuppetMetricsCollector
   class VMwareMetrics
     attr_reader :hostname
 
-    def initialize(timeout: 10, **opts)
+    def initialize(timeout: 10, **_opts)
       @timeout = timeout
       @vmware_tools, have_vmtools = exec_cmd('/bin/sh', '-c', 'command -v vmware-toolbox-cmd', catch_err: true)
 
@@ -69,16 +69,21 @@ module PuppetMetricsCollector
         end
       end
 
-      {servers: {
-        @hostname.gsub('.', '-') => {
-          vmware: result}},
-       timestamp: Time.now.utc.iso8601}
+      { servers: {
+        @hostname.tr('.', '-') => {
+          vmware: result
+        }
+      },
+       timestamp: Time.now.utc.iso8601 }
     rescue => e
-      {servers: {
-        @hostname.gsub('.', '-') => {
+      { servers: {
+        @hostname.tr('.', '-') => {
           vmware: {
-            error: "#{e.class}: #{e.message}"}}},
-       timestamp: Time.now.utc.iso8601}
+            error: "#{e.class}: #{e.message}"
+          }
+        }
+      },
+       timestamp: Time.now.utc.iso8601 }
     end
 
     # Execute a command and return stdout
@@ -106,9 +111,9 @@ module PuppetMetricsCollector
       out_r, out_w = IO.pipe
       err_r, err_w = IO.pipe
 
-      opts = {in: '/dev/null',
+      opts = { in: '/dev/null',
               out: out_w,
-              err: err_w}
+              err: err_w }
 
       pid = Process.spawn(*cmd, opts)
 
@@ -122,7 +127,7 @@ module PuppetMetricsCollector
       loop do
         _, status = Process.waitpid2(pid, Process::WNOHANG)
         break if status
-        raise Timeout::Error if (deadline < Process.clock_gettime(Process::CLOCK_MONOTONIC, :float_second))
+        raise Timeout::Error if deadline < Process.clock_gettime(Process::CLOCK_MONOTONIC, :float_second)
         # Sleep for a bit so that we don't spin in a tight loop burning
         # CPU on waitpid() syscalls.
         sleep(0.01)
@@ -134,17 +139,17 @@ module PuppetMetricsCollector
         stdout_reader.value
       else
         raise '"%{command}" failed with exit code %{code}: %{stderr}' %
-          {command: cmd.join(' '),
-           code: status.exitstatus,
-           stderr: stderr_reader.value}
+              { command: cmd.join(' '),
+               code: status.exitstatus,
+               stderr: stderr_reader.value }
       end
     rescue Timeout::Error
       Process.kill(:TERM, pid)
       Process.detach(pid)
 
       raise '"%{command}" failed to complete after %{timeout} seconds.' %
-        {command: cmd.join(' '),
-         timeout: timeout}
+            { command: cmd.join(' '),
+             timeout: timeout }
     end
 
     class CLI
@@ -154,11 +159,11 @@ module PuppetMetricsCollector
                     'Defaults to 10.'],
                    ['--output_dir DIR',
                     'Write metrics to a timestamed file under DIR instead of',
-                    'printing to STDOUT']]
+                    'printing to STDOUT']].freeze
 
       def initialize(argv = [])
         @action = :collect_data
-        @options = {debug: false}
+        @options = { debug: false }
 
         @optparser = OptionParser.new do |parser|
           parser.banner = 'Usage: vmware_metrics [options]'
@@ -172,14 +177,14 @@ module PuppetMetricsCollector
           end
         end
 
-        store_option = lambda do |hash, key, val|
+        store_option = ->(hash, key, val) do
           hash[key] = val
         end
 
         ARG_SPECS.each do |spec|
           # TODO: Yell if ARG_SPECS entry contains no --long-flag.
-          long_flag = spec.find {|e| e.start_with?('--')}.split(' ').first
-          option_name = long_flag.sub(/\A-+(?:\[no-\])?/, '').gsub('-', '_').to_sym
+          long_flag = spec.find { |e| e.start_with?('--') }.split(' ').first
+          option_name = long_flag.sub(%r{\A-+(?:\[no-\])?}, '').tr('-', '_').to_sym
 
           @optparser.on(store_option.curry[@options][option_name], *spec)
         end
@@ -208,10 +213,10 @@ module PuppetMetricsCollector
           $stdout.puts(JSON.generate(data))
         end
 
-        if data[:servers].values.any? {|s| s[:vmware].keys.include?(:error) }
-          return 1
+        if data[:servers].values.any? { |s| s[:vmware].keys.include?(:error) }
+          1
         else
-          return 0
+          0
         end
       rescue => e
         message = if @options[:debug]
@@ -222,7 +227,7 @@ module PuppetMetricsCollector
                   end
 
         $stderr.puts(message)
-        return 1
+        1
       end
     end
   end

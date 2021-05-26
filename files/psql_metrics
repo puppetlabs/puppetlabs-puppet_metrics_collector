@@ -51,7 +51,7 @@ module PuppetMetricsCollector
       def self.exec_cmd(*cmd, env: {}, stdin_data: nil, timeout: 10)
         out_r, out_w = IO.pipe
         err_r, err_w = IO.pipe
-        _env = {'LC_ALL' => 'C', 'LANG' => 'C'}.merge(env)
+        _env = { 'LC_ALL' => 'C', 'LANG' => 'C' }.merge(env)
 
         input = if stdin_data.nil?
                   :close
@@ -68,9 +68,9 @@ module PuppetMetricsCollector
                   in_r
                 end
 
-        opts = {in: input,
+        opts = { in: input,
                 out: out_w,
-                err: err_w}
+                err: err_w }
 
         pid = Process.spawn(_env, *cmd, opts)
 
@@ -92,7 +92,7 @@ module PuppetMetricsCollector
         loop do
           _, status = Process.waitpid2(pid, Process::WNOHANG)
           break if status
-          raise Timeout::Error if (deadline < Process.clock_gettime(Process::CLOCK_MONOTONIC, :float_second))
+          raise Timeout::Error if deadline < Process.clock_gettime(Process::CLOCK_MONOTONIC, :float_second)
           # Sleep for a bit so that we don't spin in a tight loop burning
           # CPU on waitpid() syscalls.
           sleep(0.01)
@@ -104,12 +104,12 @@ module PuppetMetricsCollector
         Process.detach(pid)
 
         Result.new(nil, nil, -1, '"%{command}" failed to complete after %{timeout} seconds.' %
-                    {command: cmd.join(' '),
-                     timeout: timeout})
+                    { command: cmd.join(' '),
+                     timeout: timeout })
       end
     end
 
-    def initialize(timeout: 10, **opts)
+    def initialize(timeout: 10, **_opts)
       @timeout = timeout
       @errors = []
       @result = nil
@@ -144,16 +144,16 @@ module PuppetMetricsCollector
     # @return [Exec::Result] The result of the SQL statement.
     def exec_psql(query, database: nil, timeout: @timeout)
       psql_command = [@psql, '--file=-',
-                             '--no-align', '--no-psqlrc',
-                             '--pset=pager=off', '--set=ON_ERROR_STOP=on',
-                             '--single-transaction', '--tuples-only', '--quiet']
+                      '--no-align', '--no-psqlrc',
+                      '--pset=pager=off', '--set=ON_ERROR_STOP=on',
+                      '--single-transaction', '--tuples-only', '--quiet']
       psql_command += ["--dbname=#{database}"] unless database.nil?
 
       command_line = ['/usr/bin/su', '-s', '/bin/bash', 'pe-postgres',
                       '-c', psql_command.join(' ')]
 
-      env = {'PGOPTIONS' => "-c statement_timeout=#{timeout}s",
-             'PGTZ' => 'GMT'}
+      env = { 'PGOPTIONS' => "-c statement_timeout=#{timeout}s",
+             'PGTZ' => 'GMT' }
 
       Exec.exec_cmd(*command_line, stdin_data: query, env: env, timeout: timeout + 1)
     end
@@ -199,11 +199,11 @@ module PuppetMetricsCollector
     def sql_query(query, parse_json: true, **opts)
       result = exec_psql(query, **opts)
 
-      if (! result.error.nil?)
+      if !result.error.nil?
         raise result.error
-      elsif (! result.status.success?)
+      elsif !result.status.success?
         raise 'psql command exited with code %{code}' %
-                {code: result.status.exitstatus}
+              { code: result.status.exitstatus }
       end
 
       if parse_json
@@ -215,9 +215,9 @@ module PuppetMetricsCollector
       end
     rescue => e
       add_error!('Error raised while executing "%{query}": %{err_class} %{message}' %
-                   {query: query,
+                   { query: query,
                     err_class: e.class,
-                    message: e.message})
+                    message: e.message })
 
       nil
     end
@@ -513,11 +513,11 @@ EOS
                     'Defaults to 10.'],
                    ['--output_dir DIR',
                     'Write metrics to a timestamped file under DIR instead of',
-                    'printing to STDOUT']]
+                    'printing to STDOUT']].freeze
 
       def initialize(argv = [])
         @action = :collect_data
-        @options = {debug: false}
+        @options = { debug: false }
 
         @optparser = OptionParser.new do |parser|
           parser.banner = 'Usage: psql_metrics [options]'
@@ -531,14 +531,14 @@ EOS
           end
         end
 
-        store_option = lambda do |hash, key, val|
+        store_option = ->(hash, key, val) do
           hash[key] = val
         end
 
         ARG_SPECS.each do |spec|
           # TODO: Yell if ARG_SPECS entry contains no --long-flag.
-          long_flag = spec.find {|e| e.start_with?('--')}.split(' ').first
-          option_name = long_flag.sub(/\A-+(?:\[no-\])?/, '').gsub('-', '_').to_sym
+          long_flag = spec.find { |e| e.start_with?('--') }.split(' ').first
+          option_name = long_flag.sub(%r{\A-+(?:\[no-\])?}, '').tr('-', '_').to_sym
 
           @optparser.on(store_option.curry[@options][option_name], *spec)
         end
@@ -561,12 +561,12 @@ EOS
         # by the Graphite time-series database. This is the wrong place to
         # do this as it destroys useful hostname info, but we do it anyway
         # to be consistent with the other metrics collection scripts.
-        server_name = hostname.gsub('.', '-')
+        server_name = hostname.tr('.', '-')
         timestamp = Time.now.utc
 
         metrics = PSQLMetrics.new(**@options)
-        data = {servers: {server_name => {postgres: metrics.to_h}},
-                timestamp: timestamp.iso8601}
+        data = { servers: { server_name => { postgres: metrics.to_h } },
+                timestamp: timestamp.iso8601 }
 
         if (output_dir = @options[:output_dir])
           host_dir = File.join(output_dir, hostname)
@@ -579,9 +579,9 @@ EOS
         end
 
         if data[:servers][server_name][:postgres].key?(:error)
-          return 1
+          1
         else
-          return 0
+          0
         end
       rescue => e
         message = if @options[:debug]
@@ -592,7 +592,7 @@ EOS
                   end
 
         $stderr.puts(message)
-        return 1
+        1
       end
     end
   end

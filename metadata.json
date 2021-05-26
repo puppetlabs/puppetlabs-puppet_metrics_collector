@@ -7,7 +7,9 @@
   "source": "https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector",
   "project_page": "https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector",
   "issues_url": "https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/issues",
-  "dependencies": [],
+  "dependencies": [
+
+  ],
   "operatingsystem_support": [
     {
       "operatingsystem": "RedHat",
@@ -55,7 +57,7 @@
       "version_requirement": ">= 5.5.1 < 8.0.0"
     }
   ],
-  "pdk-version": "2.0.0",
-  "template-url": "https://github.com/puppetlabs/pdk-templates#master",
-  "template-ref": "remotes/origin/master-0-ga58fd92"
+  "pdk-version": "2.1.0",
+  "template-url": "https://github.com/puppetlabs/pdk-templates#2.1.0",
+  "template-ref": "tags/2.1.0-0-ga675ea5"
 }

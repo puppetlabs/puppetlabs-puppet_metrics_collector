@@ -1,29 +1,54 @@
 ---
-mock_with: ':rspec'
+common:
 
+".gitlab-ci.yml":
+  delete: true
 appveyor.yml:
   delete: true
-.gitlab-ci.yml:
+.gitpod.Dockerfile:
+  unmanaged: true
+.gitpod.yml:
+  unmanaged: true
+.github/workflows/nightly.yml:
+  unmanaged: true
+.github/workflows/pr_test.yml:
+  unmanaged: true
+.github/workflows/auto_release.yml:
+  unmanaged: true
+.github/workflows/spec.yml:
+  checks: 'syntax lint metadata_lint check:symlinks check:git_ignore check:dot_underscore check:test_file rubocop'
+  unmanaged: true
+.github/workflows/release.yml:
+  unmanaged: true
+.travis.yml:
   delete: true
-.project:
-  delete: true
+
+Rakefile:
+  changelog_user: "puppetlabs"
 
 .rubocop.yml:
   default_configs:
-    Style/BracesAroundHashParameters:
-      Description: |
-        Braces are actually required by Ruby 2.7 in order to disambiguate between
-        keword arguments and actual hash parameters. Removed in RuboCop v0.80.0.
-      Enabled: false
-
-spec/default_facts.yml:
-  extra_facts:
-    pe_server_version: '2016.4.5'
-.rubocop.yml:
-  selected_profile: off
-
-.travis.yml:
-  branches:
-    - master
-    - main
-    - /^v\d/
+    "Rspec/NamedSubject":
+       Enabled: False
+    "Style/ClassAndModuleChildren":
+       Enabled: False
+    "Style/CollectionMethods":
+       Enabled: False
+    "Style/LineEndConcatenation":
+       Enabled: False
+    "Lint/AssignmentInCondition":
+       Enabled: False
+    "Lint/RescueException":
+       Enabled: False
+    "Lint/UnderscorePrefixedVariableName":
+       Enabled: False
+    "Lint/UselessAssignment":
+       Enabled: False
+    "Style/Documentation":
+       Enabled: False
+    "Style/GlobalVars":
+       Enabled: False
+    "Style/GuardClause":
+       Enabled: False
+    "RSpec/EmptyExampleGroup":
+       Enabled: False
