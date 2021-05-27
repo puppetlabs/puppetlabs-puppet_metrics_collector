@@ -67,6 +67,11 @@ class puppet_metrics_collector::service::puppetdb (
       'type'  => 'read',
       'name'  => 'global_processing-time',
       'mbean' => 'puppetlabs.puppetdb.mq:name=global.processing-time'
+    },
+    {
+      'type'  => 'read',
+      'name'  => 'global_concurrent-depth',
+      'mbean' => 'puppetlabs.puppetdb.mq:name=global.concurrent-depth'
     }
   ]
 
