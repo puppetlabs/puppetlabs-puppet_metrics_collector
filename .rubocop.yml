@@ -75,7 +75,7 @@ Style/SymbolArray:
 Rspec/NamedSubject:
   Enabled: false
 Style/CollectionMethods:
-  Enabled: true
+  Enabled: false 
 Style/LineEndConcatenation:
   Enabled: false
 Lint/AssignmentInCondition:
