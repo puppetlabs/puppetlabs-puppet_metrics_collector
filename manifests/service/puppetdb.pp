@@ -5,6 +5,7 @@ class puppet_metrics_collector::service::puppetdb (
   Integer                 $retention_days           = $puppet_metrics_collector::retention_days,
   Array[String]           $hosts                    = $puppet_metrics_collector::puppetdb_hosts,
   Integer                 $port                     = $puppet_metrics_collector::puppetdb_port,
+  Array[Hash]             $extra_metrics            = [],
   Optional[String]        $override_metrics_command = $puppet_metrics_collector::override_metrics_command,
   Optional[Array[String]] $excludes                 = $puppet_metrics_collector::puppetdb_excludes,
   Optional[Enum['influxdb', 'graphite', 'splunk_hec']] $metrics_server_type = $puppet_metrics_collector::metrics_server_type,
@@ -334,7 +335,8 @@ class puppet_metrics_collector::service::puppetdb (
     },
   ]
 
-  $additional_metrics = $base_metrics + $storage_metrics + $connection_pool_metrics + $version_specific_metrics + $ha_sync_metrics
+  $additional_metrics = $base_metrics + $storage_metrics + $connection_pool_metrics +
+                        $version_specific_metrics + $ha_sync_metrics + $extra_metrics
 
   $ssl = $hosts ? {
     ['127.0.0.1'] => false,

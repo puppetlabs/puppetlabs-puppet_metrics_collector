@@ -5,6 +5,7 @@ class puppet_metrics_collector::service::activemq (
   Integer                 $retention_days           = $puppet_metrics_collector::retention_days,
   Array[String]           $hosts                    = $puppet_metrics_collector::activemq_hosts,
   Integer                 $port                     = $puppet_metrics_collector::activemq_port,
+  Array[Hash]             $extra_metrics            = [],
   Optional[String]        $override_metrics_command = $puppet_metrics_collector::override_metrics_command,
   Optional[Array[String]] $excludes                 = $puppet_metrics_collector::activemq_excludes,
   Optional[Enum['influxdb', 'graphite', 'splunk_hec']] $metrics_server_type = $puppet_metrics_collector::metrics_server_type,
@@ -13,7 +14,7 @@ class puppet_metrics_collector::service::activemq (
   Optional[String]        $metrics_server_db_name   = $puppet_metrics_collector::metrics_server_db_name,
 ) {
   # lint:ignore:140chars
-  $additional_metrics = [
+  $base_metrics = [
     {
       'type'      => 'read',
       'mbean'     => 'java.lang:type=Memory',
@@ -57,6 +58,8 @@ class puppet_metrics_collector::service::activemq (
     mode   => '0755',
     source => 'puppet:///modules/puppet_metrics_collector/amq_metrics',
   }
+
+  $additional_metrics = $base_metrics + $extra_metrics
 
   puppet_metrics_collector::pe_metric { 'activemq' :
     metric_ensure            => $metrics_ensure,
