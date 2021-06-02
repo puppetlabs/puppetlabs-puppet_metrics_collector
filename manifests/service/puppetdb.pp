@@ -72,6 +72,11 @@ class puppet_metrics_collector::service::puppetdb (
       'type'  => 'read',
       'name'  => 'global_concurrent-depth',
       'mbean' => 'puppetlabs.puppetdb.mq:name=global.concurrent-depth'
+    },
+    {
+      'type'  => 'read',
+      'name'  => 'jetty-queuedthreadpool',
+      'mbean' => 'org.eclipse.jetty.util.thread:id=*,type=queuedthreadpool'
     }
   ]
 
