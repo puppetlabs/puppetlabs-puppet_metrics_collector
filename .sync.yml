@@ -52,3 +52,8 @@ Rakefile:
        Enabled: False
     "RSpec/EmptyExampleGroup":
        Enabled: False
+
+Gemfile:
+  optional:
+    ":development":
+    - gem: github_changelog_generator
