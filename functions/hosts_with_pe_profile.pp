@@ -22,7 +22,7 @@ function puppet_metrics_collector::hosts_with_pe_profile($profile) {
                type = 'Class' and
                title = 'Puppet_enterprise::Profile::${_profile}' and
                nodes { deactivated is null and expired is null }
-               order by certname
+               order by certname asc
               }").map |$nodes| { $nodes['certname'] }
   }
   else {
