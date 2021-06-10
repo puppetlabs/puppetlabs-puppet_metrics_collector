@@ -22,13 +22,15 @@ appveyor.yml:
   unmanaged: true
 .travis.yml:
   delete: true
-
+spec/spec_helper.rb:
+  mock_with: ":rspec"
+  coverage_report: true
 Rakefile:
   changelog_user: "puppetlabs"
 
 .rubocop.yml:
   default_configs:
-    "Rspec/NamedSubject":
+    "RSpec/NamedSubject":
        Enabled: False
     "Style/ClassAndModuleChildren":
        Enabled: False

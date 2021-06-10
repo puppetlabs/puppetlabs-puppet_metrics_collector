@@ -72,7 +72,7 @@ Style/TrailingCommaInArrayLiteral:
 Style/SymbolArray:
   Description: Using percent style obscures symbolic intent of array's contents.
   EnforcedStyle: brackets
-Rspec/NamedSubject:
+RSpec/NamedSubject:
   Enabled: false
 Style/CollectionMethods:
   Enabled: false
