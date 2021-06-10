@@ -30,7 +30,7 @@ Rakefile:
 
 .rubocop.yml:
   default_configs:
-    "Rspec/NamedSubject":
+    "RSpec/NamedSubject":
        Enabled: False
     "Style/ClassAndModuleChildren":
        Enabled: False

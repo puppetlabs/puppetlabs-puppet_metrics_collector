@@ -5,3 +5,5 @@ fixtures:
     facts: 'https://github.com/puppetlabs/puppetlabs-facts.git'
     puppet_agent: 'https://github.com/puppetlabs/puppetlabs-puppet_agent.git'
     provision: 'https://github.com/puppetlabs/provision.git'
+    bootstrap: "https://github.com/puppetlabs/puppetlabs-bootstrap"
+    puppet_conf: "https://github.com/puppetlabs/puppetlabs-puppet_conf"
