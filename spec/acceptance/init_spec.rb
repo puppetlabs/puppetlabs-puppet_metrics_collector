@@ -1,9 +1,5 @@
 require 'spec_helper_acceptance'
 
-def have_systemd?
-  host_inventory['facter']['puppet_metrics_collector']['have_systemd'] == 'true'
-end
-
 describe 'puppet_metrics_collector class' do
   context 'activates module default parameters' do
     it 'applies the class with default parameters' do
@@ -18,7 +14,7 @@ describe 'puppet_metrics_collector class' do
     end
     describe 'check systemd fact' do
       it 'is true on all supported OS' do
-        have_systemd?
+      expect(host_inventory['facter']['puppet_metrics_collector']['have_systemd']).to eq "true"
       end
     end
   end
