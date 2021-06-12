@@ -34,7 +34,6 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 
-- 6.4.0 release prep [\#87](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/87) ([MartyEwings](https://github.com/MartyEwings))
 - \(PE-31705\) Re-enable remote metric collection [\#85](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/85) ([Sharpie](https://github.com/Sharpie))
 - \(GH-81\) Enable client ssl cert for metrics [\#82](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/82) ([jarretlavallee](https://github.com/jarretlavallee))
 
