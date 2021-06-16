@@ -71,6 +71,31 @@ class puppet_metrics_collector::service::puppetdb (
     },
     {
       'type'  => 'read',
+      'name'  => 'global_ignored',
+      'mbean' => 'puppetlabs.puppetdb.mq:name=global.ignored'
+    },
+    {
+      'type'  => 'read',
+      'name'  => 'global_invalidated',
+      'mbean' => 'puppetlabs.puppetdb.mq:name=global.invalidated'
+    },
+    {
+      'type'  => 'read',
+      'name'  => 'global_queue-time',
+      'mbean' => 'puppetlabs.puppetdb.mq:name=global.queue-time'
+    },
+    {
+      'type'  => 'read',
+      'name'  => 'global_awaiting-retry',
+      'mbean' => 'puppetlabs.puppetdb.mq:name=global.awaiting-retry'
+    },
+    {
+      'type'  => 'read',
+      'name'  => 'global_command-size',
+      'mbean' => 'puppetlabs.puppetdb.mq:name=global.size'
+    },
+    {
+      'type'  => 'read',
       'name'  => 'global_concurrent-depth',
       'mbean' => 'puppetlabs.puppetdb.mq:name=global.concurrent-depth'
     },
@@ -189,7 +214,7 @@ class puppet_metrics_collector::service::puppetdb (
     }
   ]
 
-  $version = {'catalogs' => 9, 'facts' => 5, 'reports' => 8}
+  $version = {'catalogs' => 9, 'facts' => 5, 'reports' => 8, 'deactivate' => 3, 'inputs' => 1}
 
   $version_specific_metrics = [
     {
@@ -204,6 +229,46 @@ class puppet_metrics_collector::service::puppetdb (
     },
     {
       'type'  => 'read',
+      'name'  => 'mq_replace_catalog_size',
+      'mbean' => "puppetlabs.puppetdb.mq:name=replace catalog.${version['catalogs']}.size"
+    },
+    {
+      'type'  => 'read',
+      'name'  => 'mq_replace_catalog_processing-time',
+      'mbean' => "puppetlabs.puppetdb.mq:name=replace catalog.${version['catalogs']}.processing-time"
+    },
+    {
+      'type'  => 'read',
+      'name'  => 'mq_replace_catalog_processed',
+      'mbean' => "puppetlabs.puppetdb.mq:name=replace catalog.${version['catalogs']}.processed"
+    },
+    {
+      'type'  => 'read',
+      'name'  => 'mq_replace_catalog_inputs_retried',
+      'mbean' => "puppetlabs.puppetdb.mq:name=replace catalog inputs.${version['inputs']}.retried"
+    },
+    {
+      'type'  => 'read',
+      'name'  => 'mq_replace_catalog_inputs_retry-counts',
+      'mbean' => "puppetlabs.puppetdb.mq:name=replace catalog inputs.${version['inputs']}.retry-counts"
+    },
+    {
+      'type'  => 'read',
+      'name'  => 'mq_replace_catalog_inputs_ize',
+      'mbean' => "puppetlabs.puppetdb.mq:name=replace catalog inputs.${version['inputs']}.size"
+    },
+    {
+      'type'  => 'read',
+      'name'  => 'mq_replace_catalog_inputs_processing-time',
+      'mbean' => "puppetlabs.puppetdb.mq:name=replace catalog inputs.${version['inputs']}.processing-time"
+    },
+    {
+      'type'  => 'read',
+      'name'  => 'mq_replace_catalog_inputs_processed',
+      'mbean' => "puppetlabs.puppetdb.mq:name=replace catalog inputs.${version['inputs']}.processed"
+    },
+    {
+      'type'  => 'read',
       'name'  => 'mq_replace_facts_retried',
       'mbean' => "puppetlabs.puppetdb.mq:name=replace facts.${version['facts']}.retried"
     },
@@ -214,6 +279,21 @@ class puppet_metrics_collector::service::puppetdb (
     },
     {
       'type'  => 'read',
+      'name'  => 'mq_replace_facts_size',
+      'mbean' => "puppetlabs.puppetdb.mq:name=replace facts.${version['facts']}.size"
+    },
+    {
+      'type'  => 'read',
+      'name'  => 'mq_replace_facts_processing-time',
+      'mbean' => "puppetlabs.puppetdb.mq:name=replace facts.${version['facts']}.processing-time"
+    },
+    {
+      'type'  => 'read',
+      'name'  => 'mq_replace_facts_processed',
+      'mbean' => "puppetlabs.puppetdb.mq:name=replace facts.${version['facts']}.processed"
+    },
+    {
+      'type'  => 'read',
       'name'  => 'mq_store_report_retried',
       'mbean' => "puppetlabs.puppetdb.mq:name=store report.${version['reports']}.retried"
     },
@@ -221,6 +301,31 @@ class puppet_metrics_collector::service::puppetdb (
       'type'  => 'read',
       'name'  => 'mq_store_reports_retry-counts',
       'mbean' => "puppetlabs.puppetdb.mq:name=store report.${version['reports']}.retry-counts"
+    },
+    {
+      'type'  => 'read',
+      'name'  => 'mq_store_reports_size',
+      'mbean' => "puppetlabs.puppetdb.mq:name=store report.${version['reports']}.size"
+    },
+    {
+      'type'  => 'read',
+      'name'  => 'mq_store_reports_processing-time',
+      'mbean' => "puppetlabs.puppetdb.mq:name=store report.${version['reports']}.processing-time"
+    },
+    {
+      'type'  => 'read',
+      'name'  => 'mq_store_reports_processed',
+      'mbean' => "puppetlabs.puppetdb.mq:name=store report.${version['reports']}.processed"
+    },
+    {
+      'type'  => 'read',
+      'name'  => 'mq_deactivate_node_processed',
+      'mbean' => "puppetlabs.puppetdb.mq:name=deactivate node.${version['deactivate']}.processed"
+    },
+    {
+      'type'  => 'read',
+      'name'  => 'mq_deactivate_node_processing-time',
+      'mbean' => "puppetlabs.puppetdb.mq:name=deactivate node.${version['deactivate']}.processing-time"
     }
   ]
 
