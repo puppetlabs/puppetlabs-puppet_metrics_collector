@@ -28,6 +28,11 @@ spec/spec_helper.rb:
 Rakefile:
   changelog_user: "puppetlabs"
 
+spec/default_facts.yml:
+  extra_facts:
+    pe_server_version: '2019.8.6'
+    puppet_metrics_collector:
+      have_systemd: true
 .rubocop.yml:
   default_configs:
     "RSpec/NamedSubject":

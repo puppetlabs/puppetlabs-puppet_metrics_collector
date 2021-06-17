@@ -29,33 +29,25 @@ class puppet_metrics_collector::system::vmware (
                       '--output_dir', $metrics_output_dir,
                       '> /dev/null'].join(' ')
 
+  $tidy_command = "${puppet_metrics_collector::system::scripts_dir}/metrics_tidy -d ${metrics_output_dir} -r ${retention_days}"
+
   if ($metrics_ensure == 'present') and (!$facts.dig('puppet_metrics_collector', 'have_vmware_tools')) {
     notify { 'vmware_tools_warning':
       message  => 'VMware metrics collection requires vmware-toolbox-cmd to be on the PATH',
       loglevel => warning,
     }
-    # Set cron job to absent to avoid spamming mailboxes with errors.
-    $_cron_ensure = 'absent'
-  } else {
-    $_cron_ensure = $metrics_ensure
   }
 
-  cron { 'vmware_metrics_collection':
-    ensure  => $_cron_ensure,
-    command => $metrics_command,
-    user    => 'root',
-    minute  => "*/${collection_frequency}",
+  puppet_metrics_collector::collect {'puppet_vmware':
+    metrics_command => $metrics_command,
+    tidy_command    => $tidy_command,
+    metric_ensure   => $metrics_ensure,
+    minute          => String($collection_frequency),
+    notify          => Exec['puppet_metrics_collector_system_daemon_reload'],
   }
 
-  # The hardcoded numbers with the fqdn_rand calls are to trigger the metrics_tidy
-  # command to run at a randomly selected time between 12:00 AM and 3:00 AM.
-  # NOTE - if adding a new service, the name of the service must be added to the valid_paths array in files/metrics_tidy
-
-  cron { 'vmware_metrics_tidy':
-    ensure  => $metrics_ensure,
-    command => "${puppet_metrics_collector::system::scripts_dir}/metrics_tidy -d ${metrics_output_dir} -r ${retention_days}",
-    user    => 'root',
-    hour    => fqdn_rand(3, 'vmware'),
-    minute  => (5 * fqdn_rand(11, 'vmware')),
+  # Legacy cleanup
+  cron { ['vmware_metrics_tidy', 'vmware_metrics_collection']:
+    ensure => absent
   }
 }

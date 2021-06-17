@@ -9,6 +9,14 @@ Facter.add(:puppet_metrics_collector, type: :aggregate) do
     end
   end
 
+  chunk(:have_systemd) do
+    if Puppet::FileSystem.exist?('/proc/1/comm') && Puppet::FileSystem.read('/proc/1/comm').include?('systemd')
+      { have_systemd: true }
+    else
+      { have_systemd: false }
+    end
+  end
+
   chunk(:pe_psql) do
     if File.executable?('/opt/puppetlabs/server/bin/psql')
       { have_pe_psql: true }

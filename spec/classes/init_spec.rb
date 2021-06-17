@@ -9,6 +9,12 @@ describe 'puppet_metrics_collector' do
     end
   end
 
+  context 'when systemd is not the init provider' do
+    let(:facts) { { puppet_metrics_collector: { have_systemd: false } } }
+
+    it { is_expected.to contain_notify('systemd_provider_warning') }
+  end
+
   context 'when puppet_metrics_collector::system is included first' do
     let(:pre_condition) { 'include puppet_metrics_collector::system' }
 

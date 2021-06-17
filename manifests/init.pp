@@ -37,6 +37,7 @@ class puppet_metrics_collector (
   $config_dir  = "${output_dir}/config"
   $scripts_dir = "${output_dir}/scripts"
 
+  if $facts.dig('puppet_metrics_collector', 'have_systemd') {
     # If the puppet_metrics_collector::system class is evaluted first,
     # File[$output_dir] will already be defined along with common scripts.
     if !defined(File[$output_dir]) {
@@ -85,6 +86,12 @@ class puppet_metrics_collector (
       source => 'puppet:///modules/puppet_metrics_collector/tk_metrics'
     }
 
+    exec { 'puppet_metrics_collector_daemon_reload':
+      command     => 'systemctl daemon-reload',
+      path        => ['/bin', '/usr/bin'],
+      refreshonly => true,
+    }
+
     include puppet_metrics_collector::service::puppetserver
     include puppet_metrics_collector::service::puppetdb
     include puppet_metrics_collector::service::orchestrator
@@ -119,4 +126,10 @@ class puppet_metrics_collector (
     cron { ['activemq_metrics_collection', 'activemq_metrics_tidy']:
       ensure => absent,
     }
+  } else {
+    notify { 'systemd_provider_warning':
+      message  => 'This module only works with systemd as the provider',
+      loglevel => warning,
+    }
   }
+}
