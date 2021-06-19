@@ -8,7 +8,6 @@
 
 * [`puppet_metrics_collector`](#puppet_metrics_collector): Collect Metrics
 * [`puppet_metrics_collector::service::ace`](#puppet_metrics_collectorserviceace): Collect Service Metrics
-* [`puppet_metrics_collector::service::activemq`](#puppet_metrics_collectorserviceactivemq): Collect ActiveMQ Metrics
 * [`puppet_metrics_collector::service::bolt`](#puppet_metrics_collectorservicebolt): Collect Service Metrics
 * [`puppet_metrics_collector::service::orchestrator`](#puppet_metrics_collectorserviceorchestrator): Collect Service Metrics
 * [`puppet_metrics_collector::service::puppetdb`](#puppet_metrics_collectorservicepuppetdb): Collect Service Metrics
@@ -22,6 +21,7 @@
 
 ### Defined types
 
+* [`puppet_metrics_collector::collect`](#puppet_metrics_collectorcollect): Create systemd units for collecting a given metric
 * [`puppet_metrics_collector::pe_metric`](#puppet_metrics_collectorpe_metric): Collect Puma or TrapperKeeper Metrics
 * [`puppet_metrics_collector::sar_metric`](#puppet_metrics_collectorsar_metric): Collect System Metrics
 
@@ -232,7 +232,7 @@ Data type: `Array[String]`
 
 
 
-Default value: `puppet_metrics_collector::hosts_with_pe_profile('amq::broker')`
+Default value: `[]`
 
 ##### <a name="activemq_port"></a>`activemq_port`
 
@@ -414,123 +414,6 @@ Data type: `Optional[Array[String]]`
 
 
 Default value: `$puppet_metrics_collector::ace_excludes`
-
-##### <a name="metrics_server_type"></a>`metrics_server_type`
-
-Data type: `Optional[Enum['influxdb', 'graphite', 'splunk_hec']]`
-
-
-
-Default value: `$puppet_metrics_collector::metrics_server_type`
-
-##### <a name="metrics_server_hostname"></a>`metrics_server_hostname`
-
-Data type: `Optional[String]`
-
-
-
-Default value: `$puppet_metrics_collector::metrics_server_hostname`
-
-##### <a name="metrics_server_port"></a>`metrics_server_port`
-
-Data type: `Optional[Integer]`
-
-
-
-Default value: `$puppet_metrics_collector::metrics_server_port`
-
-##### <a name="metrics_server_db_name"></a>`metrics_server_db_name`
-
-Data type: `Optional[String]`
-
-
-
-Default value: `$puppet_metrics_collector::metrics_server_db_name`
-
-### <a name="puppet_metrics_collectorserviceactivemq"></a>`puppet_metrics_collector::service::activemq`
-
-Collect ActiveMQ Metrics
-
-#### Parameters
-
-The following parameters are available in the `puppet_metrics_collector::service::activemq` class:
-
-* [`metrics_ensure`](#metrics_ensure)
-* [`collection_frequency`](#collection_frequency)
-* [`retention_days`](#retention_days)
-* [`hosts`](#hosts)
-* [`port`](#port)
-* [`extra_metrics`](#extra_metrics)
-* [`override_metrics_command`](#override_metrics_command)
-* [`excludes`](#excludes)
-* [`metrics_server_type`](#metrics_server_type)
-* [`metrics_server_hostname`](#metrics_server_hostname)
-* [`metrics_server_port`](#metrics_server_port)
-* [`metrics_server_db_name`](#metrics_server_db_name)
-
-##### <a name="metrics_ensure"></a>`metrics_ensure`
-
-Data type: `String`
-
-
-
-Default value: `$puppet_metrics_collector::activemq_metrics_ensure`
-
-##### <a name="collection_frequency"></a>`collection_frequency`
-
-Data type: `Integer`
-
-
-
-Default value: `$puppet_metrics_collector::collection_frequency`
-
-##### <a name="retention_days"></a>`retention_days`
-
-Data type: `Integer`
-
-
-
-Default value: `$puppet_metrics_collector::retention_days`
-
-##### <a name="hosts"></a>`hosts`
-
-Data type: `Array[String]`
-
-
-
-Default value: `$puppet_metrics_collector::activemq_hosts`
-
-##### <a name="port"></a>`port`
-
-Data type: `Integer`
-
-
-
-Default value: `$puppet_metrics_collector::activemq_port`
-
-##### <a name="extra_metrics"></a>`extra_metrics`
-
-Data type: `Array[Hash]`
-
-
-
-Default value: `[]`
-
-##### <a name="override_metrics_command"></a>`override_metrics_command`
-
-Data type: `Optional[String]`
-
-
-
-Default value: `$puppet_metrics_collector::override_metrics_command`
-
-##### <a name="excludes"></a>`excludes`
-
-Data type: `Optional[Array[String]]`
-
-
-
-Default value: `$puppet_metrics_collector::activemq_excludes`
 
 ##### <a name="metrics_server_type"></a>`metrics_server_type`
 
@@ -1335,6 +1218,60 @@ Default value: `$puppet_metrics_collector::system::retention_days`
 
 ## Defined types
 
+### <a name="puppet_metrics_collectorcollect"></a>`puppet_metrics_collector::collect`
+
+Create systemd units for collecting a given metric
+
+#### Parameters
+
+The following parameters are available in the `puppet_metrics_collector::collect` defined type:
+
+* [`metrics_type`](#metrics_type)
+* [`metrics_command`](#metrics_command)
+* [`tidy_command`](#tidy_command)
+* [`metric_ensure`](#metric_ensure)
+* [`minute`](#minute)
+
+##### <a name="metrics_type"></a>`metrics_type`
+
+Data type: `String`
+
+
+
+Default value: `$title`
+
+##### <a name="metrics_command"></a>`metrics_command`
+
+Data type: `String`
+
+
+
+Default value: ``undef``
+
+##### <a name="tidy_command"></a>`tidy_command`
+
+Data type: `String`
+
+
+
+Default value: ``undef``
+
+##### <a name="metric_ensure"></a>`metric_ensure`
+
+Data type: `String`
+
+
+
+Default value: `'present'`
+
+##### <a name="minute"></a>`minute`
+
+Data type: `String`
+
+
+
+Default value: `'5'`
+
 ### <a name="puppet_metrics_collectorpe_metric"></a>`puppet_metrics_collector::pe_metric`
 
 Collect Puma or TrapperKeeper Metrics
@@ -1382,7 +1319,7 @@ Data type: `String`
 
 
 
-Default value: `'*/5'`
+Default value: `'0/5'`
 
 ##### <a name="retention_days"></a>`retention_days`
 
@@ -1526,7 +1463,7 @@ Data type: `String`
 
 
 
-Default value: `'*/5'`
+Default value: `'0/5'`
 
 ##### <a name="retention_days"></a>`retention_days`
 

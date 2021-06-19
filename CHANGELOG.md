@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v7.0.0](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/tree/v7.0.0) (2021-06-19)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v6.6.0...v7.0.0)
+
+### Changed
+
+- Remove collection of AMQ metrics [\#111](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/111) ([m0dular](https://github.com/m0dular))
+- SUP-2192 Migration from Cron, to SystemD timers for Database Maintenance  [\#99](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/99) ([m0dular](https://github.com/m0dular))
+
 ## [v6.6.0](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/tree/v6.6.0) (2021-06-02)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v6.5.0...v6.6.0)
@@ -34,7 +43,6 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 
-- 6.4.0 release prep [\#87](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/87) ([MartyEwings](https://github.com/MartyEwings))
 - \(PE-31705\) Re-enable remote metric collection [\#85](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/85) ([Sharpie](https://github.com/Sharpie))
 - \(GH-81\) Enable client ssl cert for metrics [\#82](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/82) ([jarretlavallee](https://github.com/jarretlavallee))
 
