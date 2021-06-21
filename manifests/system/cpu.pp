@@ -5,7 +5,7 @@ class puppet_metrics_collector::system::cpu (
   Integer $retention_days            = $puppet_metrics_collector::system::retention_days,
   Integer $polling_frequency_seconds = $puppet_metrics_collector::system::polling_frequency_seconds,
   ) {
-  puppet_metrics_collector::sar_metric { 'puppet_system_cpu' :
+  puppet_metrics_collector::sar_metric { 'system_cpu' :
     metric_ensure             => $metrics_ensure,
     cron_minute               => "0/${collection_frequency}",
     retention_days            => $retention_days,

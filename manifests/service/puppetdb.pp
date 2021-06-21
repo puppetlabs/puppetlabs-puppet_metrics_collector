@@ -454,7 +454,7 @@ class puppet_metrics_collector::service::puppetdb (
     $_port = $port
   }
 
-  puppet_metrics_collector::pe_metric { 'puppet_puppetdb' :
+  puppet_metrics_collector::pe_metric { 'puppetdb' :
     metric_ensure            => $metrics_ensure,
     cron_minute              => "0/${collection_frequency}",
     retention_days           => $retention_days,

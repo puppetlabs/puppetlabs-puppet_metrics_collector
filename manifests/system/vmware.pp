@@ -38,7 +38,7 @@ class puppet_metrics_collector::system::vmware (
     }
   }
 
-  puppet_metrics_collector::collect {'puppet_vmware':
+  puppet_metrics_collector::collect {'vmware':
     metrics_command => $metrics_command,
     tidy_command    => $tidy_command,
     metric_ensure   => $metrics_ensure,

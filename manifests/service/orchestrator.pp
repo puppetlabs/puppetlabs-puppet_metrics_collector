@@ -13,7 +13,7 @@ class puppet_metrics_collector::service::orchestrator (
   Optional[Integer]       $metrics_server_port      = $puppet_metrics_collector::metrics_server_port,
   Optional[String]        $metrics_server_db_name   = $puppet_metrics_collector::metrics_server_db_name,
   ) {
-  puppet_metrics_collector::pe_metric { 'puppet_orchestrator' :
+  puppet_metrics_collector::pe_metric { 'orchestrator' :
     metric_ensure            => $metrics_ensure,
     cron_minute              => "0/${collection_frequency}",
     retention_days           => $retention_days,
