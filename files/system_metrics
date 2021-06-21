@@ -399,9 +399,7 @@ module SystemMetrics
 
       metrics_json = metrics_to_json(metrics_data)
 
-      if @print_output != false then
-        STDOUT.puts(metrics_json)
-      end
+      STDOUT.puts(metrics_json) if @print_output
       write_metrics_to_file(metrics_json)
     end
   end
@@ -437,7 +435,7 @@ if $PROGRAM_NAME == __FILE__
   options = {}
 
   OptionParser.new { |opts|
-    opts.banner = "Usage: system_metrics [options]"
+    opts.banner = 'Usage: system_metrics [options]'
 
     opts.on('-h', '--help', 'Display the help text') do
       puts DESCRIPTION
@@ -466,7 +464,7 @@ if $PROGRAM_NAME == __FILE__
             'The puppet_metrics_collector output directory') do |metrics_dir|
       options[:metrics_dir] = metrics_dir
     end
-    opts.on("-v", "--verbose", String, "Enable Verbose output") { options[:verbose] = true }
+    opts.on('-v', '--verbose', String, 'Enable Verbose output') { options[:verbose] = true }
     opts.on('--[no-]print', 'Print to STDOUT') { |p| options[:print] = p }
   }.parse!
 

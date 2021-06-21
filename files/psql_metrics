@@ -514,7 +514,7 @@ EOS
                    ['--output_dir DIR',
                     'Write metrics to a timestamped file under DIR instead of',
                     'printing to STDOUT'],
-                  ['-p', '--[no-]print', 'Always print to STDOUT']].freeze
+                   ['-p', '--[no-]print', 'Always print to STDOUT']].freeze
 
       def initialize(argv = [])
         @action = :collect_data
