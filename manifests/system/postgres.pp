@@ -30,7 +30,7 @@ class puppet_metrics_collector::system::postgres (
 
   $tidy_command = "${puppet_metrics_collector::system::scripts_dir}/metrics_tidy -d ${metrics_output_dir} -r ${retention_days}"
 
-  puppet_metrics_collector::collect {'puppet_postgres':
+  puppet_metrics_collector::collect {'postgres':
     metrics_command => $metrics_command,
     tidy_command    => $tidy_command,
     metric_ensure   => $metrics_ensure,

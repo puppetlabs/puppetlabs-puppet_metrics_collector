@@ -20,13 +20,13 @@ describe 'puppet_metrics_collector::pe_metric' do
   context 'when not capturing metrics' do
     let(:params) { super().merge({ metric_ensure: 'absent' }) }
 
-    it { is_expected.to contain_service('test-service-metrics.timer').with_ensure('stopped') }
+    it { is_expected.to contain_service('puppet_test-service-metrics.timer').with_ensure('stopped') }
   end
 
   context 'when customizing collection frequency' do
     let(:params) { super().merge({ cron_minute: '0/12' }) }
 
-    it { is_expected.to contain_file('/etc/systemd/system/test-service-metrics.timer').with_content(%r{OnCalendar=.*0\/12}) }
+    it { is_expected.to contain_file('/etc/systemd/system/puppet_test-service-metrics.timer').with_content(%r{OnCalendar=.*0\/12}) }
   end
 
   describe 'remote metric collection' do
