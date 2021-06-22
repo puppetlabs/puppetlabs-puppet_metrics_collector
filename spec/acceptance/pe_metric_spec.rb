@@ -22,4 +22,7 @@ describe 'test default and system includes' do
     files = run_shell('ls /etc/systemd/system/*-tidy.timer').stdout
     expect(files.split("\n").count).to eq(9)
   end
+  it 'checks if sysstat package is installed' do
+    expect(package('sysstat')).to be_installed
+  end
 end
