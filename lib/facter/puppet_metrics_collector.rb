@@ -17,6 +17,14 @@ Facter.add(:puppet_metrics_collector, type: :aggregate) do
     end
   end
 
+  chunk(:have_sysstat) do
+    if Facter::Core::Execution.which('sar')
+      { have_sysstat: true }
+    else
+      { have_sysstat: false }
+    end
+  end
+
   chunk(:pe_psql) do
     if File.executable?('/opt/puppetlabs/server/bin/psql')
       { have_pe_psql: true }

@@ -1,6 +1,41 @@
 require 'spec_helper'
 
 describe 'puppet_metrics_collector::system' do
+  context 'with default parameters' do
+    it { is_expected.not_to contain_package('sysstat') }
+    it { is_expected.not_to contain_package('open-vm-tools') }
+  end
+
+  context 'with sysstat' do
+    context 'already installed' do
+      let(:pre_condition) { 'package{"sysstat": }' }
+      let(:facts) { { puppet_metrics_collector: { have_sysstat: true, have_systemd: true } } }
+
+      it { is_expected.not_to contain_notify('sysstat_missing_warning') }
+      it { is_expected.to contain_class('puppet_metrics_collector::system::cpu') }
+      it { is_expected.to contain_class('puppet_metrics_collector::system::memory') }
+      it { is_expected.to contain_class('puppet_metrics_collector::system::processes') }
+    end
+
+    context 'not installed and managed' do
+      let(:params) { { manage_sysstat: true } }
+      let(:facts) { { puppet_metrics_collector: { have_sysstat: false, have_systemd: true } } }
+
+      it { is_expected.not_to contain_notify('sysstat_missing_warning') }
+      it { is_expected.to contain_package('sysstat') }
+      it { is_expected.to contain_class('puppet_metrics_collector::system::cpu') }
+      it { is_expected.to contain_class('puppet_metrics_collector::system::memory') }
+      it { is_expected.to contain_class('puppet_metrics_collector::system::processes') }
+    end
+
+    context 'not installed and not managed' do
+      it { is_expected.to contain_notify('sysstat_missing_warning') }
+      it { is_expected.not_to contain_package('sysstat') }
+      it { is_expected.not_to contain_class('puppet_metrics_collector::system::cpu') }
+      it { is_expected.not_to contain_class('puppet_metrics_collector::system::memory') }
+      it { is_expected.not_to contain_class('puppet_metrics_collector::system::processes') }
+    end
+  end
   context 'when the virtual fact does not report vmware' do
     let(:facts) { { virtual: 'physical' } }
 
