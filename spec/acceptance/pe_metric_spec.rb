@@ -8,18 +8,18 @@ describe 'test default and system includes' do
         MANIFEST
     idempotent_apply(pp)
   end
-  it 'checks for pe_metric services' do
-    run_shell('systemctl list-units --type=service | grep "metric"') do |r|
+  it 'sets all puppet_* metric services to be active' do
+    run_shell('systemctl list-units --type=service | grep "puppet_.*metrics"') do |r|
       puts r.stdout
       expect(r.stdout).to match(%r{activ})
     end
   end
   it 'check for the tidy services files' do
-    files = run_shell('ls /etc/systemd/system/*-tidy.service').stdout
+    files = run_shell('ls /etc/systemd/system/puppet_*-tidy.service').stdout
     expect(files.split("\n").count).to eq(9)
   end
   it 'check for the timer files' do
-    files = run_shell('ls /etc/systemd/system/*-tidy.timer').stdout
+    files = run_shell('ls /etc/systemd/system/puppet_*-tidy.timer').stdout
     expect(files.split("\n").count).to eq(9)
   end
   it 'checks if sysstat package is installed' do
