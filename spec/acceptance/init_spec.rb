@@ -17,7 +17,7 @@ describe 'puppet_metrics_collector class' do
     end
     describe 'check puppet-metrics-collector directory' do
       it 'scripts folder exists' do
-        file('/opt/puppetlabs/puppet-metrics-collector/scripts').should be_directory
+        expect(file('/opt/puppetlabs/puppet-metrics-collector/scripts')).to be_directory
       end
     end
   end
