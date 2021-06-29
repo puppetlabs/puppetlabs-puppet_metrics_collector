@@ -5,7 +5,7 @@ class puppet_metrics_collector::system (
   Integer $collection_frequency      = 5, # minutes
   Integer $retention_days            = 90,
   Integer $polling_frequency_seconds = 1,
-  Boolean $manage_sysstat            = true,
+  Boolean $manage_sysstat            = false,
   Boolean $manage_vmware_tools       = false,
   String  $vmware_tools_pkg          = 'open-vm-tools',
 ) {
@@ -32,27 +32,34 @@ class puppet_metrics_collector::system (
     }
   }
 
-  file { "${scripts_dir}/system_metrics":
-    ensure => file,
-    mode   => '0755',
-    source => 'puppet:///modules/puppet_metrics_collector/system_metrics'
-  }
-
-  if $manage_sysstat {
-    package { 'sysstat':
-      ensure => installed,
-    }
-  }
-
   exec { 'puppet_metrics_collector_system_daemon_reload':
     command     => 'systemctl daemon-reload',
     path        => ['/bin', '/usr/bin'],
     refreshonly => true,
   }
 
-  include puppet_metrics_collector::system::cpu
-  include puppet_metrics_collector::system::memory
-  include puppet_metrics_collector::system::processes
+  if $manage_sysstat {
+    package { 'sysstat':
+      ensure => $system_metrics_ensure,
+    }
+  }
+
+  if $manage_sysstat or $facts.dig('puppet_metrics_collector', 'have_sysstat') {
+    file { "${scripts_dir}/system_metrics":
+      ensure => file,
+      mode   => '0755',
+      source => 'puppet:///modules/puppet_metrics_collector/system_metrics'
+    }
+
+    contain puppet_metrics_collector::system::cpu
+    contain puppet_metrics_collector::system::memory
+    contain puppet_metrics_collector::system::processes
+  } else {
+    notify { 'sysstat_missing_warning':
+      message  => 'System collection disabled. Set `puppet_metrics_collector::system::manage_sysstat: true` to enable system metrics',
+      loglevel => warning,
+    }
+  }
 
   if $facts['virtual'] == 'vmware' {
     if $manage_vmware_tools and ($system_metrics_ensure == 'present') {
