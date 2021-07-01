@@ -78,4 +78,44 @@ describe 'puppet_metrics_collector::system' do
 
     it { is_expected.not_to contain_service('puppet_postgres-metrics.timer') }
   end
+
+  context 'when metrics shipping is enabled' do
+    let(:params) do
+      {
+        metrics_server_type: 'influxdb',
+        metrics_server_db_name: 'puppet_metrics',
+        metrics_server_hostname: 'influxdb.example'
+      }
+    end
+    let(:facts) { { puppet_metrics_collector: { have_sysstat: true, have_systemd: true } } }
+
+    it { is_expected.to contain_puppet_metrics_collector__collect('system_cpu').with_metrics_command(%r{--influx-db\s+puppet_metrics}) }
+  end
+
+  context 'when metrics shipping is enabled in puppet_metrics_collector' do
+    let(:pre_condition) do
+      <<-PRE_COND
+      class {'puppet_metrics_collector':
+        metrics_server_type => "influxdb",
+        metrics_server_db_name => "puppet_metrics",
+        metrics_server_hostname => "influxdb.example",
+      }
+      PRE_COND
+    end
+    let(:facts) { { puppet_metrics_collector: { have_sysstat: true, have_systemd: true } } }
+
+    it { is_expected.to contain_puppet_metrics_collector__collect('system_cpu').with_metrics_command(%r{--influx-db\s+puppet_metrics}) }
+  end
+
+  context 'when metrics shipping is not enabled' do
+    let(:params) do
+      {
+        metrics_server_db_name: 'puppet_metrics',
+        metrics_server_hostname: 'influxdb.example'
+      }
+    end
+    let(:facts) { { puppet_metrics_collector: { have_sysstat: true, have_systemd: true } } }
+
+    it { is_expected.not_to contain_puppet_metrics_collector__collect('system_cpu').with_metrics_command(%r{--influx-db\s+puppet_metrics}) }
+  end
 end

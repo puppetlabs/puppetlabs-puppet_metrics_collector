@@ -11,6 +11,7 @@ class puppet_metrics_collector::system::postgres (
   String  $metrics_ensure            = $puppet_metrics_collector::system::system_metrics_ensure,
   Integer $collection_frequency      = $puppet_metrics_collector::system::collection_frequency,
   Integer $retention_days            = $puppet_metrics_collector::system::retention_days,
+  String  $metrics_shipping_command  = $puppet_metrics_collector::system::metrics_shipping_command,
 ) {
   $metrics_output_dir = "${puppet_metrics_collector::system::output_dir}/postgres"
   $metrics_output_dir_ensure = $metrics_ensure ? {
@@ -26,6 +27,7 @@ class puppet_metrics_collector::system::postgres (
 
   $metrics_command = ["${puppet_metrics_collector::system::scripts_dir}/psql_metrics",
                       '--output_dir', $metrics_output_dir,
+                      $metrics_shipping_command,
                       '> /dev/null'].join(' ')
 
   $tidy_command = "${puppet_metrics_collector::system::scripts_dir}/metrics_tidy -d ${metrics_output_dir} -r ${retention_days}"

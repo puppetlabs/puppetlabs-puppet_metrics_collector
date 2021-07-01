@@ -159,7 +159,8 @@ module PuppetMetricsCollector
                     'Defaults to 10.'],
                    ['--output_dir DIR',
                     'Write metrics to a timestamed file under DIR instead of',
-                    'printing to STDOUT']].freeze
+                    'printing to STDOUT'],
+                   ['-p', '--[no-]print', 'Always print to STDOUT']].freeze
 
       def initialize(argv = [])
         @action = :collect_data
@@ -172,7 +173,7 @@ module PuppetMetricsCollector
             @action = :show_help
           end
 
-          parser.on_tail('--debug', 'Enable backtraces from errors.') do
+          parser.on_tail('-d', '--debug', 'Enable backtraces from errors.') do
             @options[:debug] = true
           end
         end
@@ -208,7 +209,9 @@ module PuppetMetricsCollector
           FileUtils.mkdir_p(host_dir) unless File.directory?(host_dir)
           output_file = File.join(host_dir, Time.now.utc.strftime('%Y%m%dT%H%M%SZ') + '.json')
 
-          File.write(output_file, JSON.generate(data))
+          output = JSON.generate(data)
+          File.write(output_file, output)
+          $stdout.puts(output) if @options[:print]
         else
           $stdout.puts(JSON.generate(data))
         end

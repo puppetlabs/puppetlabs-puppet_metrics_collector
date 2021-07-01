@@ -8,6 +8,10 @@ class puppet_metrics_collector::system (
   Boolean $manage_sysstat            = false,
   Boolean $manage_vmware_tools       = false,
   String  $vmware_tools_pkg          = 'open-vm-tools',
+  Optional[Enum['influxdb', 'graphite', 'splunk_hec']] $metrics_server_type = getvar('puppet_metrics_collector::metrics_server_type'),
+  Optional[String] $metrics_server_hostname   = getvar('puppet_metrics_collector::metrics_server_hostname'),
+  Optional[Integer] $metrics_server_port      = getvar('puppet_metrics_collector::metrics_server_port'),
+  Optional[String] $metrics_server_db_name    = getvar('puppet_metrics_collector::metrics_server_db_name'),
 ) {
   $scripts_dir = "${output_dir}/scripts"
 
@@ -37,6 +41,14 @@ class puppet_metrics_collector::system (
     path        => ['/bin', '/usr/bin'],
     refreshonly => true,
   }
+
+  $metrics_shipping_command = puppet_metrics_collector::generate_metrics_server_command(
+                                $scripts_dir,
+                                $metrics_server_type,
+                                $metrics_server_hostname,
+                                $metrics_server_db_name,
+                                $metrics_server_port
+                              )
 
   if $manage_sysstat {
     package { 'sysstat':

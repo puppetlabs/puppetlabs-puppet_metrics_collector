@@ -62,44 +62,25 @@ define puppet_metrics_collector::pe_metric (
   }
 
   $metric_script_file_path = "${puppet_metrics_collector::scripts_dir}/${metric_script_file}"
-  $conversion_script_file_path = "${puppet_metrics_collector::scripts_dir}/json2timeseriesdb"
 
-  # lint:ignore:140chars
   if empty($override_metrics_command) {
     $base_metrics_command = "${metric_script_file_path} --metrics_type ${metrics_type} --output_dir ${metrics_output_dir}"
+    $metrics_shipping_command = puppet_metrics_collector::generate_metrics_server_command(
+                                $puppet_metrics_collector::scripts_dir,
+                                $metrics_server_type,
+                                $metrics_server_hostname,
+                                $metrics_server_db_name,
+                                $metrics_server_port
+                              )
 
     if !empty($metrics_server_type) {
-      $server_hostname = $metrics_server_hostname
-      $server_port     = $metrics_server_port
-      $server_type     = $metrics_server_type
-      $server_db       = $metrics_server_db_name
-
-      if empty($server_db) and $server_type == 'influxdb'  {
-        fail('When specifying an InfluxDB metrics server, you must specify a metrics server db_name')
-      }
-
-      $conv_metrics_command = "${base_metrics_command} | ${conversion_script_file_path} --netcat ${server_hostname} --convert-to ${server_type} -"
-
-      $full_metrics_command = empty($server_port) ? {
-        false => "${conv_metrics_command} --port ${server_port}",
-        true  => $conv_metrics_command,
-      }
-
-      # We use only the base metrics command for the 'splunk_hec' metrics server type.
-
-      $metrics_command = $server_type ? {
-        'influxdb'   => "${full_metrics_command} --influx-db ${server_db} > /dev/null",
-        'graphite'   => "${full_metrics_command} > /dev/null",
-        'splunk_hec' => "${base_metrics_command} | /opt/puppetlabs/bin/puppet splunk_hec --sourcetype puppet:metrics --pe_metrics > /dev/null",
-        default      => "${full_metrics_command} > /dev/null",
-      }
+      $metrics_command = "${base_metrics_command} ${metrics_shipping_command} > /dev/null"
     } else {
       $metrics_command = "${base_metrics_command} --no-print"
     }
   } else {
     $metrics_command = $override_metrics_command
   }
-  # lint:endignore
 
   $tidy_command = "${puppet_metrics_collector::scripts_dir}/metrics_tidy -d ${metrics_output_dir} -r ${retention_days}"
 
