@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v7.0.0](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/tree/v7.0.0) (2021-07-02)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v6.6.0...v7.0.0)
+
+### Changed
+
+- \(SUP-2493\) Remove support for SysVinit operating systems [\#121](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/121) ([jarretlavallee](https://github.com/jarretlavallee))
+- \(SUP-2493\) Remove Puppet 5.x support [\#120](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/120) ([jarretlavallee](https://github.com/jarretlavallee))
+- \(GH-108\) Disable sysstat management by default [\#116](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/116) ([jarretlavallee](https://github.com/jarretlavallee))
+- Remove collection of AMQ metrics [\#111](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/111) ([m0dular](https://github.com/m0dular))
+- SUP-2192 Migration from Cron, to SystemD timers for Database Maintenance  [\#99](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/99) ([m0dular](https://github.com/m0dular))
+
+### Added
+
+- Add PuppetDB message queue metrics [\#112](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/112) ([jarretlavallee](https://github.com/jarretlavallee))
+- \(SUP-1969\) Enable metrics shipping for all system types [\#94](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/94) ([jarretlavallee](https://github.com/jarretlavallee))
+
+### Fixed
+
+- Rework namevar of defined types [\#114](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/114) ([m0dular](https://github.com/m0dular))
+- \(GH-95\) Use -I with pidstat with system\_processes [\#96](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/96) ([jarretlavallee](https://github.com/jarretlavallee))
+
 ## [v6.6.0](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/tree/v6.6.0) (2021-06-02)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v6.5.0...v6.6.0)
@@ -34,7 +56,6 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 
-- 6.4.0 release prep [\#87](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/87) ([MartyEwings](https://github.com/MartyEwings))
 - \(PE-31705\) Re-enable remote metric collection [\#85](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/85) ([Sharpie](https://github.com/Sharpie))
 - \(GH-81\) Enable client ssl cert for metrics [\#82](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/82) ([jarretlavallee](https://github.com/jarretlavallee))
 
