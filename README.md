@@ -10,7 +10,7 @@ Table of Contents
   * [Sharing Metrics Data](#sharing-metrics-data)
 * [Reference](#reference)
   * [Directory Layout](#directory-layout)
-  * [Cron Jobs](#cron-jobs)
+  * [Systemd Timers](#systemd-timers)
 * [Alternate Setup](#alternate-setup)
   * [Temporary Installation](#temporary-installation)
   * [Manual Configuration of Hosts](#manual-configuration-of-hosts)
@@ -33,11 +33,11 @@ The metrics can be used to identify performance issues that may be addressed by 
 
 Install this module with `puppet module install puppetlabs-puppet_metrics_collector` or add it to your Puppetfile.
 
-To activate this module, classify your Primary Master (aka Master of Masters or MoM) with the `puppet_metrics_collector` class using your preferred classification method.
+To activate this module, classify your Primary Server with the `puppet_metrics_collector` class using your preferred classification method.
 Below is an example using `site.pp`.
 
 ```puppet
-node 'master.example.com' {
+node 'primary.example.com' {
   include puppet_metrics_collector
 }
 ```
@@ -47,7 +47,7 @@ Unlike service metrics, system metrics have to be enabled locally on each PE Inf
 This functionality depends on `sysstat`.
 
 ```puppet
-node 'master.example.com' {
+node 'primary.example.com' {
   include puppet_metrics_collector
   include puppet_metrics_collector::system
 }
@@ -57,7 +57,7 @@ node 'compilerA.example.com', 'compilerB.example.com,' {
 }
 ```
 
-> Note: Do not `include` the top-level `puppet_metrics_collector` class on any PE Infrastructure Host other than the Primary Master, otherwise it will collect the same data as the Primary Master.
+> Note: Do not `include` the top-level `puppet_metrics_collector` class on any PE Infrastructure Host other than the Primary Server, otherwise it will collect the same data as the Primary Server.
 
 ### Configuration
 
@@ -140,14 +140,14 @@ In order to convert the metric files into a multi-line format, they can be proce
 
 ```bash
 cd /opt/puppetlabs/puppet-metrics-collector
-for i in <service_name>/master.example.com/*.json; do echo "$(python -m json.tool < $i)" > $i; done
+for i in <service_name>/primary.example.com/*.json; do echo "$(python -m json.tool < $i)" > $i; done
 ```
 
 You can search for useful information by performing a `grep`, run from inside the directory containing the metrics.
 
 ```bash
 cd /opt/puppetlabs/puppet-metrics-collector
-grep <metric_name> <service_name>/master.example.com/*.json
+grep <metric_name> <service_name>/primary.example.com/*.json
 ```
 
 Since the metrics are archived once per day, you can only search metrics for the current day.
@@ -158,11 +158,11 @@ To search older metrics, decompress the archived files into a subdirectory of `/
 Example:
 
 ```bash
-grep average-free-jrubies puppetserver/master.example.com/*.json
+grep average-free-jrubies puppetserver/primary.example.com/*.json
 
-puppetserver/master.example.com/20190404T170501Z.json: "average-free-jrubies": 0.9950009285369501,
-puppetserver/master.example.com/20190404T171001Z.json: "average-free-jrubies": 0.9999444653324225,
-puppetserver/master.example.com/20190404T171502Z.json: "average-free-jrubies": 0.9999993830655706,
+puppetserver/primary.example.com/20190404T170501Z.json: "average-free-jrubies": 0.9950009285369501,
+puppetserver/primary.example.com/20190404T171001Z.json: "average-free-jrubies": 0.9999444653324225,
+puppetserver/primary.example.com/20190404T171502Z.json: "average-free-jrubies": 0.9999993830655706,
 ```
 
 #### Grepping PuppetDB Metrics
@@ -170,11 +170,11 @@ puppetserver/master.example.com/20190404T171502Z.json: "average-free-jrubies": 0
 Example:
 
 ```bash
-grep queue_depth puppetdb/master.example.com/*.json
+grep queue_depth puppetdb/primary.example.com/*.json
 
-puppetdb/master.example.com/20190404T170501Z.json: "queue_depth": 0,
-puppetdb/master.example.com/20190404T171001Z.json: "queue_depth": 0,
-puppetdb/master.example.com/20190404T171502Z.json: "queue_depth": 0,
+puppetdb/primary.example.com/20190404T170501Z.json: "queue_depth": 0,
+puppetdb/primary.example.com/20190404T171001Z.json: "queue_depth": 0,
+puppetdb/primary.example.com/20190404T171502Z.json: "queue_depth": 0,
 ```
 
 ### Sharing Metrics Data
@@ -212,14 +212,14 @@ Example:
 
 ```bash
 /opt/puppetlabs/puppet-metrics-collector/puppetserver
-├── master.example.com
+├── primary.example.com
 │   ├── 20190404T020001Z.json
 │   ├── ...
 │   ├── 20190404T170501Z.json
 │   └── 20190404T171001Z.json
 └── puppetserver-2019.04.04.02.00.01.tar.gz
 /opt/puppetlabs/puppet-metrics-collector/puppetdb
-└── master.example.com
+└── primary.example.com
 │   ├── 20190404T020001Z.json
 │   ├── ...
 │   ├── 20190404T170501Z.json
@@ -227,26 +227,14 @@ Example:
 └── puppetdb-2019.04.04.02.00.01.tar.gz
 ```
 
-### Cron Jobs
+### Systemd Timers
 
-This module creates two cron jobs for each Puppet Enterprise service:
+This module creates two systemd timers for each Puppet Enterprise service:
 
-- A cron job to collect the metrics
+- One to collect the metrics
   - Runs as per `collection_frequency`
-- A cron job to archive collected metrics and delete metrics older than the retention period, as per `retention_days`
+- One to archive collected metrics and delete metrics older than the retention period, as per `retention_days`
   - Runs at randomly selected time between 12:00 AM and 3:00 AM
-
-Example:
-
-```bash
-crontab -l
-...
-# Puppet Name: puppetserver_metrics_collection
-*/5 * * * * /opt/puppetlabs/puppet-metrics-collector/scripts/tk_metrics --metrics_type puppetserver --output_dir /opt/puppetlabs/puppet-metrics-collector/puppetserver
-# Puppet Name: puppetserver_metrics_tidy
-0 2 * * * /opt/puppetlabs/puppet-metrics-collector/scripts/metrics_tidy /opt/puppetlabs/puppet-metrics-collector puppetserver 90
-```
-
 
 ## Alternate Setup
 
@@ -268,17 +256,17 @@ The preferred method is via Hiera data.
 The following examples show you how to specify those parameters for different infrastructures, and assumes you declare this module on the Primary Master.
 
 
-#### Monolithic Infrastructure with Compile Masters
+#### Monolithic Infrastructure with Compilers
 
 ##### Hiera Data Example
 
 ```yaml
 puppet_metrics_collector::puppetserver_hosts:
- - 'master.example.com'
- - 'compile-master-1.example.com'
- - 'compile-master-2.example.com'
+ - 'primary.example.com'
+ - 'compiler-1.example.com'
+ - 'compiler-2.example.com'
 puppet_metrics_collector::puppetdb_hosts:
- - 'master.example.com'
+ - 'primary.example.com'
 ```
 
 ##### Class Declaration Example
@@ -286,66 +274,18 @@ puppet_metrics_collector::puppetdb_hosts:
 ```puppet
 class { 'puppet_metrics_collector':
   puppetserver_hosts => [
-    'master.example.com',
-    'compile-master-1.example.com',
-    'compile-master-2.example.com'
+    'primary.example.com',
+    'compiler-1.example.com',
+    'compiler-2.example.com'
   ],
-  puppetdb_hosts     => ['master.example.com'],
-}
-```
-
-
-#### Split Infrastructures without Compile Masters
-
-##### Hiera Data Example
-
-```yaml
-puppet_metrics_collector::puppetserver_hosts:
- - 'split-master.example.com'
-puppet_metrics_collector::puppetdb_hosts:
- - 'split-puppetdb.example.com'
-```
-
-##### Class Declaration Example
-
-```puppet
-class { 'puppet_metrics_collector':
-  puppetserver_hosts => ['split-master.example.com'],
-  puppetdb_hosts     => ['split-puppetdb.example.com'],
-}
-```
-
-
-#### Split Infrastructure with Compile Masters
-
-##### Hiera Data Example
-
-```yaml
-puppet_metrics_collector::puppetserver_hosts:
- - 'split-master.example.com'
- - 'compile-master-1.example.com'
- - 'compile-master-2.example.com'
- puppet_metrics_collector::puppetdb_hosts:
-  - 'split-puppetdb.example.com'
-```
-
-##### Class Definition Example
-
-```puppet
-class { 'puppet_metrics_collector':
-  puppetserver_hosts => [
-    'split-master.example.com',
-    'compile-master-1.example.com',
-    'compile-master-2.example.com'
-  ],
-  puppetdb_hosts => ['split-puppetdb.example.com'],
+  puppetdb_hosts     => ['primary.example.com'],
 }
 ```
 
 
 ### Configuration for Distributed Metrics Collection
 
-This option collect metrics on each PE Infrastructure Host instead of collecting metrics centrally on the Primary Master.
+This option collect metrics on each PE Infrastructure Host instead of collecting metrics centrally on the Primary Server.
 This option is discouraged, but allows for the collection of metrics when the Primary Master cannot access the API endpoints of the other PE Infrastructure Hosts.
 Classify each PE Infrastructure Host with this module, specifying the following parameters.
 
@@ -378,4 +318,3 @@ class { 'puppet_metrics_collector':
 
 If you are a PE user and need support using this module or are encountering issues, our Support team would be happy to help you resolve your issue and help reproduce any bugs. Just raise a ticket on the [support portal](https://support.puppet.com/hc/en-us/requests/new).
  If you have a reproducible bug or are a community user you can raise it directly on the Github issues page of the module [here](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/issues). We also welcome PR contributions to improve the module. Please see further details about contributing [here](https://puppet.com/docs/puppet/7.5/contributing.html#contributing_changes_to_module_repositories).
-
