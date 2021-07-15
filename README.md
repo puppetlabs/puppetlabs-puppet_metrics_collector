@@ -194,7 +194,7 @@ It takes an optional `-m` or `--metrics-directory` parameter (default `/opt/pupp
 It takes an optional `-r` or `--retention-days` parameter (default: `30`) to limit the number of days to include in the archive.
 
 ```bash
-[root@master ~]# /opt/puppetlabs/puppet-metrics-collector/scripts/create-metrics-archive
+[root@primary ~]# /opt/puppetlabs/puppet-metrics-collector/scripts/create-metrics-archive
 Created metrics archive: /root/puppet-metrics-collector-20200203T123456Z.tar.gz
 ```
 
@@ -253,7 +253,7 @@ puppet apply -e "class { 'puppet_metrics_collector': }" --modulepath /tmp;
 
 If necessary, you can manually configure this module by specifying parameters via the class declaration or via Hiera data.
 The preferred method is via Hiera data.
-The following examples show you how to specify those parameters for different infrastructures, and assumes you declare this module on the Primary Master.
+The following examples show you how to specify those parameters for different infrastructures, and assumes you declare this module on the Primary Server.
 
 
 #### Monolithic Infrastructure with Compilers
@@ -286,10 +286,10 @@ class { 'puppet_metrics_collector':
 ### Configuration for Distributed Metrics Collection
 
 This option collect metrics on each PE Infrastructure Host instead of collecting metrics centrally on the Primary Server.
-This option is discouraged, but allows for the collection of metrics when the Primary Master cannot access the API endpoints of the other PE Infrastructure Hosts.
+This option is discouraged, but allows for the collection of metrics when the Primary Server cannot access the API endpoints of the other PE Infrastructure Hosts.
 Classify each PE Infrastructure Host with this module, specifying the following parameters.
 
-When classifying a Compile Master, specify these additional parameters:
+When classifying a Compiler, specify these additional parameters:
 
 ```puppet
 class { 'puppet_metrics_collector':
