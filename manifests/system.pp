@@ -66,11 +66,9 @@ class puppet_metrics_collector::system (
     contain puppet_metrics_collector::system::cpu
     contain puppet_metrics_collector::system::memory
     contain puppet_metrics_collector::system::processes
-  } else {
-    notify { 'sysstat_missing_warning':
-      message  => 'System collection disabled. Set `puppet_metrics_collector::system::manage_sysstat: true` to enable system metrics',
-      loglevel => warning,
-    }
+  }
+  else {
+    warning('System collection disabled. Set `puppet_metrics_collector::system::manage_sysstat: true` to enable system metrics')
   }
 
   if $facts['virtual'] == 'vmware' {
