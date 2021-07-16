@@ -11,7 +11,6 @@ describe 'puppet_metrics_collector::system' do
       let(:pre_condition) { 'package{"sysstat": }' }
       let(:facts) { { puppet_metrics_collector: { have_sysstat: true, have_systemd: true } } }
 
-      it { is_expected.not_to contain_notify('sysstat_missing_warning') }
       it { is_expected.to contain_class('puppet_metrics_collector::system::cpu') }
       it { is_expected.to contain_class('puppet_metrics_collector::system::memory') }
       it { is_expected.to contain_class('puppet_metrics_collector::system::processes') }
@@ -21,7 +20,6 @@ describe 'puppet_metrics_collector::system' do
       let(:params) { { manage_sysstat: true } }
       let(:facts) { { puppet_metrics_collector: { have_sysstat: false, have_systemd: true } } }
 
-      it { is_expected.not_to contain_notify('sysstat_missing_warning') }
       it { is_expected.to contain_package('sysstat') }
       it { is_expected.to contain_class('puppet_metrics_collector::system::cpu') }
       it { is_expected.to contain_class('puppet_metrics_collector::system::memory') }
@@ -29,7 +27,6 @@ describe 'puppet_metrics_collector::system' do
     end
 
     context 'not installed and not managed' do
-      it { is_expected.to contain_notify('sysstat_missing_warning') }
       it { is_expected.not_to contain_package('sysstat') }
       it { is_expected.not_to contain_class('puppet_metrics_collector::system::cpu') }
       it { is_expected.not_to contain_class('puppet_metrics_collector::system::memory') }
