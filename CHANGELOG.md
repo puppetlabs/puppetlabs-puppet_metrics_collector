@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v7.0.1](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/tree/v7.0.1) (2021-07-16)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v7.0.0...v7.0.1)
+
+### Fixed
+
+- Change system notify to warning function [\#131](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/131) ([m0dular](https://github.com/m0dular))
+
 ## [v7.0.0](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/tree/v7.0.0) (2021-07-02)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v6.6.0...v7.0.0)
