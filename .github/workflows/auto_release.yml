@@ -11,9 +11,33 @@ env:
   CHANGELOG_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
+  release_check:
+    name: "Determine if a release is necessary"
+    runs-on: ubuntu-20.04
+    outputs:
+      release: ${{ steps.check.outputs.release }}
+
+    steps:
+    - name: "Checkout Source"
+      if: ${{ github.repository_owner == 'puppetlabs' }}
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+    
+    - name: "Checking commits since last tag"
+      id: check
+      if: ${{ github.repository_owner == 'puppetlabs' }}
+      run: |
+        latest_tag=$(git describe --tags --abbrev=0)
+        commits=$(git log $latest_tag..HEAD)
+        [ -z "$commits" ] && echo "::set-output name=release::false" || echo "::set-output name=release::true"
+
   auto_release:
     name: "Automatic release prep"
     runs-on: ubuntu-20.04
+    needs: release_check
+    if: needs.release_check.outputs.release == 'true'
 
     steps:
     - name: "Honeycomb: Start recording"
@@ -27,13 +51,6 @@ jobs:
       run: |
         echo STEP_ID="auto-release" >> $GITHUB_ENV
         echo STEP_START=$(date +%s) >> $GITHUB_ENV
-
-    - name: "Checkout Source"
-      if: ${{ github.repository_owner == 'puppetlabs' }}
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-        persist-credentials: false
 
     - name: "PDK Release prep"
       uses: docker://puppet/iac_release:ci
