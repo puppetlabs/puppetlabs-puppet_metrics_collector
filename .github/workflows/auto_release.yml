@@ -35,6 +35,12 @@ jobs:
         fetch-depth: 0
         persist-credentials: false
 
+    - name: "Get Current Version"
+      if: ${{ github.repository_owner == 'puppetlabs' }}
+      id: current_gv
+      run: |
+        echo "::set-output name=ver::$(jq --raw-output .version metadata.json)"
+
     - name: "PDK Release prep"
       uses: docker://puppet/iac_release:ci
       with:
@@ -49,7 +55,7 @@ jobs:
         echo "::set-output name=ver::$(jq --raw-output .version metadata.json)"
 
     - name: "Commit changes"
-      if: ${{ github.repository_owner == 'puppetlabs' }}
+      if: ${{ github.repository_owner == 'puppetlabs' && steps.gv.outputs.ver != steps.current_gv.outputs.ver }}
       run: |
         git config --local user.email "${{ github.repository_owner }}@users.noreply.github.com"
         git config --local user.name "GitHub Action"
@@ -59,7 +65,7 @@ jobs:
     - name: Create Pull Request
       id: cpr
       uses: puppetlabs/peter-evans-create-pull-request@v3
-      if: ${{ github.repository_owner == 'puppetlabs' }}
+      if: ${{ github.repository_owner == 'puppetlabs' && steps.gv.outputs.ver != steps.current_gv.outputs.ver }}
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         commit-message: "Release prep v${{ steps.gv.outputs.ver }}"
@@ -75,7 +81,7 @@ jobs:
         labels: "maintenance"
 
     - name: PR outputs
-      if: ${{ github.repository_owner == 'puppetlabs' }}
+      if: ${{ github.repository_owner == 'puppetlabs' && steps.gv.outputs.ver != steps.current_gv.outputs.ver }}
       run: |
         echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
         echo "Pull Request URL - ${{ steps.cpr.outputs.pull-request-url }}"
