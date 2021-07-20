@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v7.0.3](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/tree/v7.0.3) (2021-07-20)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v7.0.2...v7.0.3)
+
+### Fixed
+
+- \(maint\) Change default for hosts\_with\_pe\_profile when storeconfigs is false [\#141](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/141) ([nmburgan](https://github.com/nmburgan))
+
 ## [v7.0.2](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/tree/v7.0.2) (2021-07-19)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v7.0.1...v7.0.2)
