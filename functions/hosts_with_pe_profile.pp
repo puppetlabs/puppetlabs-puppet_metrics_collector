@@ -30,7 +30,11 @@ function puppet_metrics_collector::hosts_with_pe_profile($profile) {
   }
 
   if empty($hosts) {
-    ['127.0.0.1']
+    $default = $facts['clientcert'] ? {
+      undef => '127.0.0.1',
+      default => $facts['clientcert']
+    }
+    [$default]
   }
   else {
     sort($hosts)

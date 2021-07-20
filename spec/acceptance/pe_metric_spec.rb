@@ -1,5 +1,6 @@
 require 'spec_helper_acceptance'
 
+certname = host_inventory['fqdn']
 describe 'default includes' do
   before(:all) do
     pp = <<-MANIFEST
@@ -31,52 +32,52 @@ describe 'default includes' do
     expect(files.split("\n").count).to eq(5)
   end
 
-  describe file('/opt/puppetlabs/puppet-metrics-collector/puppetserver/127.0.0.1') do
+  describe file("/opt/puppetlabs/puppet-metrics-collector/puppetserver/#{certname}") do
     before(:each) { run_shell('systemctl start puppet_puppetserver-metrics.service') }
 
     it { is_expected.to be_directory }
     it 'contains metric files' do
-      files = run_shell('ls /opt/puppetlabs/puppet-metrics-collector/puppetserver/127.0.0.1/*').stdout
+      files = run_shell("ls /opt/puppetlabs/puppet-metrics-collector/puppetserver/#{certname}/*").stdout
       expect(files.split('\n')).not_to be_empty
     end
   end
 
-  describe file('/opt/puppetlabs/puppet-metrics-collector/puppetdb/127.0.0.1') do
+  describe file("/opt/puppetlabs/puppet-metrics-collector/puppetdb/#{certname}") do
     before(:each) { run_shell('systemctl start puppet_puppetdb-metrics.service') }
 
     it { is_expected.to be_directory }
     it 'contains metric files' do
-      files = run_shell('ls /opt/puppetlabs/puppet-metrics-collector/puppetdb/127.0.0.1/*').stdout
+      files = run_shell("ls /opt/puppetlabs/puppet-metrics-collector/puppetdb/#{certname}/*").stdout
       expect(files.split('\n')).not_to be_empty
     end
   end
 
-  describe file('/opt/puppetlabs/puppet-metrics-collector/orchestrator/127.0.0.1') do
+  describe file("/opt/puppetlabs/puppet-metrics-collector/orchestrator/#{certname}") do
     before(:each) { run_shell('systemctl start puppet_orchestrator-metrics.service') }
 
     it { is_expected.to be_directory }
     it 'contains metric files' do
-      files = run_shell('ls /opt/puppetlabs/puppet-metrics-collector/orchestrator/127.0.0.1/*').stdout
+      files = run_shell("ls /opt/puppetlabs/puppet-metrics-collector/orchestrator/#{certname}/*").stdout
       expect(files.split('\n')).not_to be_empty
     end
   end
 
-  describe file('/opt/puppetlabs/puppet-metrics-collector/ace/127.0.0.1') do
+  describe file("/opt/puppetlabs/puppet-metrics-collector/ace/#{certname}") do
     before(:each) { run_shell('systemctl start puppet_ace-metrics.service') }
 
     it { is_expected.to be_directory }
     it 'contains metric files' do
-      files = run_shell('ls /opt/puppetlabs/puppet-metrics-collector/ace/127.0.0.1/*').stdout
+      files = run_shell("ls /opt/puppetlabs/puppet-metrics-collector/ace/#{certname}/*").stdout
       expect(files.split('\n')).not_to be_empty
     end
   end
 
-  describe file('/opt/puppetlabs/puppet-metrics-collector/bolt/127.0.0.1') do
+  describe file("/opt/puppetlabs/puppet-metrics-collector/bolt/#{certname}") do
     before(:each) { run_shell('systemctl start puppet_bolt-metrics.service') }
 
     it { is_expected.to be_directory }
     it 'contains metric files' do
-      files = run_shell('ls /opt/puppetlabs/puppet-metrics-collector/bolt/127.0.0.1/*').stdout
+      files = run_shell("ls /opt/puppetlabs/puppet-metrics-collector/bolt/#{certname}/*").stdout
       expect(files.split('\n')).not_to be_empty
     end
   end
