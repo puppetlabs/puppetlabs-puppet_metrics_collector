@@ -1,7 +1,6 @@
 <%- | String $service, String $minute | -%>
 [Unit]
 Description=Timer to collect Puppet metrics
-Requires=<%= $service %>-metrics.service
 
 [Timer]
 OnCalendar=*-*-* *:<%= $minute %>
