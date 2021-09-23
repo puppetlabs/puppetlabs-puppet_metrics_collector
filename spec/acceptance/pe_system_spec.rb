@@ -46,12 +46,6 @@ describe 'system class' do
       expect(apply_manifest(pp).exit_code).not_to eq(1)
     end
 
-    it 'system puppet_* metric services should be active or inactive' do
-      run_shell('systemctl list-units --type=service | grep "puppet_system.*metrics"') do |r|
-        expect(r.stdout).to match(%r{activ})
-      end
-    end
-
     context 'system timers are running' do
       it { expect(service('puppet_system_cpu-metrics.timer')).to be_running }
       it { expect(service('puppet_system_cpu-tidy.timer')).to be_running }
@@ -80,12 +74,6 @@ describe 'system class' do
 
     it 'sysstat package is installed' do
       expect(package('sysstat')).to be_installed
-    end
-
-    it 'system puppet_* metric services should be active or inactive' do
-      run_shell('systemctl list-units --type=service | grep "puppet_system.*metrics"') do |r|
-        expect(r.stdout).to match(%r{activ})
-      end
     end
 
     context 'system timers are running' do
