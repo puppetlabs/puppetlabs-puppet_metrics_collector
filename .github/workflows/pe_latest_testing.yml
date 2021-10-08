@@ -53,7 +53,8 @@ jobs:
     - name: Setup Acceptance Test Matrix
       id: get-matrix
       run: |
-          echo  "::set-output name=matrix::$(cat spec/fixtures/matrix/latest.json)"
+          echo  "::set-output name=matrix::$(cat spec/fixtures/matrix/latest.json)\"collection\":[\"$(./spec/fixtures/matrix/latest.sh)\"]}"
+
     - name: "Honeycomb: Record Setup Test Matrix time"
       if: ${{ always() }}
       run: |
