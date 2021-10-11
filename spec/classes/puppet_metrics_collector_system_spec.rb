@@ -115,4 +115,16 @@ describe 'puppet_metrics_collector::system' do
 
     it { is_expected.not_to contain_puppet_metrics_collector__collect('system_cpu').with_metrics_command(%r{--influx-db\s+puppet_metrics}) }
   end
+
+  context 'when customizing the collection frequency' do
+    let(:facts) do
+      { puppet_metrics_collector: { have_vmware_tools: true, have_systemd: true, have_sysstat: true, have_pe_psql: true },
+        virtual: 'vmware' }
+    end
+    let(:params) { { collection_frequency: 10 } }
+
+    ['system_cpu', 'system_memory', 'system_processes', 'postgres', 'vmware'].each do |service|
+      it { is_expected.to contain_file("/etc/systemd/system/puppet_#{service}-metrics.timer").with_content(%r{OnCalendar=.*0\/10}) }
+    end
+  end
 end
