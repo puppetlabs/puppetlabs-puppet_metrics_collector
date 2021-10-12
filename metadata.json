@@ -1,6 +1,6 @@
 {
   "name": "puppetlabs-puppet_metrics_collector",
-  "version": "7.0.4",
+  "version": "7.0.5",
   "author": "puppetlabs",
   "summary": "A Puppet module for gathering metrics from PE components",
   "license": "Apache-2.0",
