@@ -26,4 +26,12 @@ describe 'puppet_metrics_collector' do
 
     it { is_expected.to compile }
   end
+
+  context 'when customizing the collection frequency' do
+    let(:params) { { collection_frequency: 10 } }
+
+    ['ace', 'bolt', 'orchestrator', 'puppetdb', 'puppetserver'].each do |service|
+      it { is_expected.to contain_file("/etc/systemd/system/puppet_#{service}-metrics.timer").with_content(%r{OnCalendar=.*0\/10}) }
+    end
+  end
 end

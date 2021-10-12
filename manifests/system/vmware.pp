@@ -44,7 +44,7 @@ class puppet_metrics_collector::system::vmware (
     metrics_command => $metrics_command,
     tidy_command    => $tidy_command,
     metric_ensure   => $metrics_ensure,
-    minute          => String($collection_frequency),
+    minute          => "0/${collection_frequency}",
     notify          => Exec['puppet_metrics_collector_system_daemon_reload'],
   }
 
