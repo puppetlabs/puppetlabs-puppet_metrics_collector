@@ -18,7 +18,7 @@ retention_days="${retention_days:-30}"
 timestamp="$(date +%Y.%m.%d.%H.%M.%S)"
 output_file="puppet-metrics-${timestamp}.tar.gz"
 
-find "$metrics_directory" -type f -ctime -"$retention_days" -and \( -name "*json" -or -name "*gz" \) | \
+find "$metrics_directory" -type f -mtime -"$retention_days" -and \( -name "*json" -or -name "*gz" \) | \
   tar --create --gzip --file "$output_file" --files-from - --transform "s,^${metrics_directory#/},puppet-metrics-${timestamp}," || {
     echo "Error: could not create metrics archive: $output_file from $metrics_directory"
     exit 1

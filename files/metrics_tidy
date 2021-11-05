@@ -60,7 +60,7 @@ paths_regex="$(IFS='|'; echo "${valid_paths[*]}")"
 }
 
 # Delete files in a Puppet service metrics directory older than the retention period, in days.
-find "$metrics_directory" -type f -ctime +"$retention_days" -delete
+find "$metrics_directory" -type f -mtime +"$retention_days" -delete
 
 # Compress the remaining files in a Puppet service metrics directory.
 # Store the list of files in a temp file so that `tar` and `rm` will operate on the same files
