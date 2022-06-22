@@ -74,8 +74,6 @@ Style/SymbolArray:
   EnforcedStyle: brackets
 RSpec/NamedSubject:
   Enabled: false
-Style/CollectionMethods:
-  Enabled: false
 Style/LineEndConcatenation:
   Enabled: false
 Lint/AssignmentInCondition:
@@ -93,6 +91,8 @@ Style/GlobalVars:
 Style/GuardClause:
   Enabled: false
 RSpec/EmptyExampleGroup:
+  Enabled: false
+Style/CollectionMethods:
   Enabled: false
 RSpec/MessageSpies:
   EnforcedStyle: receive
