@@ -12,7 +12,30 @@ class puppet_metrics_collector::service::puppetserver (
   Optional[String]        $metrics_server_hostname  = $puppet_metrics_collector::metrics_server_hostname,
   Optional[Integer]       $metrics_server_port      = $puppet_metrics_collector::metrics_server_port,
   Optional[String]        $metrics_server_db_name   = $puppet_metrics_collector::metrics_server_db_name,
-  ) {
+) {
+  $filesync_storage_metrics = [
+    {
+      'type'  => 'read',
+      'name'  => 'file-sync-storage-commit-timer',
+      'mbean' => 'puppetserver:name=puppetlabs.puppet.file-sync-storage.commit-timer'
+    },
+    {
+      'type'  => 'read',
+      'name'  => 'file-sync-storage-pre-commit-hook-timer',
+      'mbean' => 'puppetserver:name=puppetlabs.puppet.file-sync-storage.pre-commit-hook-timer'
+    },
+    {
+      'type' => 'read',
+      'name' => 'file-sync-storage-commit-add-rm-timer',
+      'mbean' => 'puppetserver:name=puppetlabs.puppet.file-sync-storage.commit-add-rm-timer'
+    },
+  ]
+
+  $additional_metrics = $facts.dig('puppet_metrics_collector', 'file_sync_storage_enabled') ? {
+    true    => $filesync_storage_metrics + $extra_metrics,
+    default => $extra_metrics,
+  }
+
   puppet_metrics_collector::pe_metric { 'puppetserver' :
     metric_ensure            => $metrics_ensure,
     cron_minute              => "0/${collection_frequency}",
@@ -21,7 +44,7 @@ class puppet_metrics_collector::service::puppetserver (
     metrics_port             => $port,
     override_metrics_command => $override_metrics_command,
     excludes                 => $excludes,
-    additional_metrics       => $extra_metrics,
+    additional_metrics       => $additional_metrics,
     metrics_server_type      => $metrics_server_type,
     metrics_server_hostname  => $metrics_server_hostname,
     metrics_server_port      => $metrics_server_port,

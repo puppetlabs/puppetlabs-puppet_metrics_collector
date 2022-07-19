@@ -32,4 +32,9 @@ Facter.add(:puppet_metrics_collector, type: :aggregate) do
       { have_pe_psql: false }
     end
   end
+
+  chunk(:file_sync_storage_enabled) do
+    { file_sync_storage_enabled: (Puppet::FileSystem.exist?('/etc/puppetlabs/puppetserver/bootstrap.cfg') &&
+      Puppet::FileSystem.read('/etc/puppetlabs/puppetserver/bootstrap.cfg').include?('file-sync-storage-service')) }
+  end
 end
