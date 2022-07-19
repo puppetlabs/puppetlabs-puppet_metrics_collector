@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v7.1.0](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/tree/v7.1.0) (2022-07-19)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v7.0.5...v7.1.0)
+
+### Added
+
+- \(SUP-3472\) Add file sync storage metric collection [\#160](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/160) ([jarretlavallee](https://github.com/jarretlavallee))
+
+### Fixed
+
+- \(GH-154\) Switch from change time to modify time [\#155](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/155) ([MirandaStreeter](https://github.com/MirandaStreeter))
+
 ## [v7.0.5](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/tree/v7.0.5) (2021-10-12)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v7.0.4...v7.0.5)
