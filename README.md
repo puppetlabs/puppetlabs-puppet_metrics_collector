@@ -143,11 +143,11 @@ cd /opt/puppetlabs/puppet-metrics-collector
 for i in <service_name>/primary.example.com/*.json; do echo "$(python -m json.tool < $i)" > $i; done
 ```
 
-You can search for useful information by performing a `grep`, run from inside the directory containing the metrics.
+You can search for useful information by using `jq`, from inside the directory containing the metrics.
 
 ```bash
 cd /opt/puppetlabs/puppet-metrics-collector
-grep <metric_name> <service_name>/primary.example.com/*.json
+jq '.. |."<metric_name>"? | select(. != null)| input_filename , .' -- <service_name>/primary.example.com/*.json
 ```
 
 Since the metrics are archived once per day, you can only search metrics for the current day.
@@ -158,11 +158,14 @@ To search older metrics, decompress the archived files into a subdirectory of `/
 Example:
 
 ```bash
-grep average-free-jrubies puppetserver/primary.example.com/*.json
+jq '.. |."average-free-jrubies"? | select(. != null)| input_filename , .' -- puppetserver/primary.example.com/*.json
 
-puppetserver/primary.example.com/20190404T170501Z.json: "average-free-jrubies": 0.9950009285369501,
-puppetserver/primary.example.com/20190404T171001Z.json: "average-free-jrubies": 0.9999444653324225,
-puppetserver/primary.example.com/20190404T171502Z.json: "average-free-jrubies": 0.9999993830655706,
+"puppetserver/primary.example.com/20190404T170501Z.json"
+0.9950009285369501
+"puppetserver/primary.example.com/20190404T171001Z.json"
+0.9999444653324225,
+"puppetserver/primary.example.com/20190404T171502Z.json"
+0.9999993830655706,
 ```
 
 #### Grepping PuppetDB Metrics
@@ -170,11 +173,14 @@ puppetserver/primary.example.com/20190404T171502Z.json: "average-free-jrubies": 
 Example:
 
 ```bash
-grep queue_depth puppetdb/primary.example.com/*.json
+jq '.. |."queue_depth "? | select(. != null)| input_filename , .' -- puppetdb/primary.example.com/*.json
 
-puppetdb/primary.example.com/20190404T170501Z.json: "queue_depth": 0,
-puppetdb/primary.example.com/20190404T171001Z.json: "queue_depth": 0,
-puppetdb/primary.example.com/20190404T171502Z.json: "queue_depth": 0,
+"puppetdb/primary.example.com/20190404T170501Z.json"
+0
+"puppetdb/primary.example.com/20190404T171001Z.json"
+0
+"puppetdb/primary.example.com/20190404T171502Z.json" 
+0
 ```
 
 ### Sharing Metrics Data
