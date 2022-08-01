@@ -115,7 +115,7 @@ end
 
 def retrieve_additional_metrics(host, port, use_ssl, metrics_type, metrics)
   if metrics_type == 'puppetdb'
-    host = '127.0.0.1' if host == CERTNAME
+    host = '127.0.0.1' if host == CERTNAME && !REMOTE_METRICS_ENABLED
     unless REMOTE_METRICS_ENABLED || ['127.0.0.1', 'localhost'].include?(host)
       # Puppet services released between May, 2020 and Feb 2021 had
       # the /metrics API disabled due to:
