@@ -135,7 +135,7 @@ def retrieve_additional_metrics(host, port, use_ssl, metrics_type, metrics)
     metric_name = metrics[index]['name']
     metric_data = metrics_output[index]
 
-    metric_status = metrics_output.dig('status')
+    metric_status = metric_data ? metric_data.dig('status') : nil
     next unless metric_status
 
     if metric_status == 200
