@@ -1,4 +1,7 @@
-# Create systemd units for collecting a given metric
+# 
+# @summary
+#   Creates systemd units for collecting a given metric
+# 
 define puppet_metrics_collector::collect (
   String $metrics_type    = $title,
   String $metrics_command = undef,
@@ -6,7 +9,6 @@ define puppet_metrics_collector::collect (
   String $metric_ensure   = 'present',
   String $minute          = '5',
 ) {
-
   $service_ensure = $metric_ensure ? {
     'present' => running,
     'absent'  => stopped,
@@ -17,26 +19,26 @@ define puppet_metrics_collector::collect (
     'absent'  => false,
   }
 
-  file {"/etc/systemd/system/puppet_${metrics_type}-metrics.service":
+  file { "/etc/systemd/system/puppet_${metrics_type}-metrics.service":
     ensure  => $metric_ensure,
     content => epp('puppet_metrics_collector/service.epp',
       { 'service' => "puppet_${metrics_type}", 'metrics_command' => $metrics_command }
     ),
   }
-  file {"/etc/systemd/system/puppet_${metrics_type}-metrics.timer":
+  file { "/etc/systemd/system/puppet_${metrics_type}-metrics.timer":
     ensure  => $metric_ensure,
     content => epp('puppet_metrics_collector/timer.epp',
       { 'service' => "puppet_${metrics_type}", 'minute' => $minute },
     ),
   }
 
-  file {"/etc/systemd/system/puppet_${metrics_type}-tidy.service":
+  file { "/etc/systemd/system/puppet_${metrics_type}-tidy.service":
     ensure  => $metric_ensure,
     content => epp('puppet_metrics_collector/tidy.epp',
       { 'service' => "puppet_${metrics_type}", 'tidy_command' => $tidy_command }
     ),
   }
-  file {"/etc/systemd/system/puppet_${metrics_type}-tidy.timer":
+  file { "/etc/systemd/system/puppet_${metrics_type}-tidy.timer":
     ensure  => $metric_ensure,
     content => epp('puppet_metrics_collector/tidy_timer.epp',
       { 'service' => "puppet_${metrics_type}" }

@@ -1,4 +1,7 @@
-# Collect Service Metrics
+# @summary Collect puppetserver metrics
+#
+# @api private
+#
 class puppet_metrics_collector::service::puppetserver (
   String                  $metrics_ensure           = $puppet_metrics_collector::puppetserver_metrics_ensure,
   Integer                 $collection_frequency     = $puppet_metrics_collector::collection_frequency,

@@ -1,4 +1,34 @@
-# Collect System Metrics
+# @summary
+#   This class manages collect postgres and system metrics
+# 
+# @param system_metrics_ensure 
+#   Whether to enable or disable the collection of System metrics. Valid values are 'present', and 'absent'. Default : 'present'
+# 
+# @param output_dir
+#   The directory to write the metrics to. Default: '/opt/puppetlabs/puppet-metrics-collector'
+# 
+# @param collection_frequency
+#   The frequency to collect metrics in minutes. Default: '5'
+# 
+# @param retention_days
+#   The number of days to retain metrics. Default: '90'
+# 
+# @param polling_frequency_seconds
+# 
+# @param manage_sysstat
+# 
+# @param manage_vmware_tools 
+# 
+# @param vmware_tools_pkg 
+# 
+# @param metrics_server_type
+# 
+# @param metrics_server_hostname
+# 
+# @param metrics_server_port 
+# 
+# @param metrics_server_db_name 
+# 
 class puppet_metrics_collector::system (
   String  $system_metrics_ensure     = 'present',
   String  $output_dir                = '/opt/puppetlabs/puppet-metrics-collector',
@@ -26,13 +56,13 @@ class puppet_metrics_collector::system (
     file { "${scripts_dir}/create-metrics-archive":
       ensure => file,
       mode   => '0755',
-      source => 'puppet:///modules/puppet_metrics_collector/create-metrics-archive'
+      source => 'puppet:///modules/puppet_metrics_collector/create-metrics-archive',
     }
 
     file { "${scripts_dir}/metrics_tidy":
       ensure => file,
       mode   => '0744',
-      source => 'puppet:///modules/puppet_metrics_collector/metrics_tidy'
+      source => 'puppet:///modules/puppet_metrics_collector/metrics_tidy',
     }
   }
 
@@ -43,12 +73,12 @@ class puppet_metrics_collector::system (
   }
 
   $metrics_shipping_command = puppet_metrics_collector::generate_metrics_server_command(
-                                $scripts_dir,
-                                $metrics_server_type,
-                                $metrics_server_hostname,
-                                $metrics_server_db_name,
-                                $metrics_server_port
-                              )
+    $scripts_dir,
+    $metrics_server_type,
+    $metrics_server_hostname,
+    $metrics_server_db_name,
+    $metrics_server_port
+  )
 
   if $manage_sysstat {
     package { 'sysstat':
@@ -60,7 +90,7 @@ class puppet_metrics_collector::system (
     file { "${scripts_dir}/system_metrics":
       ensure => file,
       mode   => '0755',
-      source => 'puppet:///modules/puppet_metrics_collector/system_metrics'
+      source => 'puppet:///modules/puppet_metrics_collector/system_metrics',
     }
 
     contain puppet_metrics_collector::system::cpu
@@ -70,7 +100,7 @@ class puppet_metrics_collector::system (
 
   if $facts['virtual'] == 'vmware' {
     if $manage_vmware_tools and ($system_metrics_ensure == 'present') {
-      package {$vmware_tools_pkg:
+      package { $vmware_tools_pkg:
         ensure => present,
       }
     }
@@ -78,7 +108,7 @@ class puppet_metrics_collector::system (
     file { "${scripts_dir}/vmware_metrics":
       ensure => file,
       mode   => '0755',
-      source => 'puppet:///modules/puppet_metrics_collector/vmware_metrics'
+      source => 'puppet:///modules/puppet_metrics_collector/vmware_metrics',
     }
 
     contain puppet_metrics_collector::system::vmware
@@ -88,7 +118,7 @@ class puppet_metrics_collector::system (
     file { "${scripts_dir}/psql_metrics":
       ensure => file,
       mode   => '0755',
-      source => 'puppet:///modules/puppet_metrics_collector/psql_metrics'
+      source => 'puppet:///modules/puppet_metrics_collector/psql_metrics',
     }
 
     contain puppet_metrics_collector::system::postgres

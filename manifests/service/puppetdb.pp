@@ -1,4 +1,7 @@
-# Collect Service Metrics
+# @summary Collects puppetdb metrics
+#
+# @api private
+#
 class puppet_metrics_collector::service::puppetdb (
   String                  $metrics_ensure           = $puppet_metrics_collector::puppetdb_metrics_ensure,
   Integer                 $collection_frequency     = $puppet_metrics_collector::collection_frequency,
@@ -12,7 +15,7 @@ class puppet_metrics_collector::service::puppetdb (
   Optional[String]        $metrics_server_hostname  = $puppet_metrics_collector::metrics_server_hostname,
   Optional[Integer]       $metrics_server_port      = $puppet_metrics_collector::metrics_server_port,
   Optional[String]        $metrics_server_db_name   = $puppet_metrics_collector::metrics_server_db_name,
-  ) {
+) {
   $base_metrics = [
     {
       'type'  => 'read',
@@ -103,7 +106,7 @@ class puppet_metrics_collector::service::puppetdb (
       'type'  => 'read',
       'name'  => 'jetty-queuedthreadpool',
       'mbean' => 'org.eclipse.jetty.util.thread:id=*,type=queuedthreadpool'
-    }
+    },
   ]
 
   $storage_metrics = [
@@ -191,7 +194,7 @@ class puppet_metrics_collector::service::puppetdb (
       'type'  => 'read',
       'name'  => 'storage_store-report-time',
       'mbean' => 'puppetlabs.puppetdb.storage:name=store-report-time'
-    }
+    },
   ]
 
   # TODO: Track these on a less frequent cadence because they are slow to run
@@ -211,10 +214,10 @@ class puppet_metrics_collector::service::puppetdb (
       'type'  => 'read',
       'name'  => 'storage_duplicate-pct',
       'mbean' => 'puppetlabs.puppetdb.storage:name=duplicate-pct'
-    }
+    },
   ]
 
-  $version = {'catalogs' => 9, 'facts' => 5, 'reports' => 8, 'deactivate' => 3, 'inputs' => 1}
+  $version = { 'catalogs' => 9, 'facts' => 5, 'reports' => 8, 'deactivate' => 3, 'inputs' => 1 }
 
   $version_specific_metrics = [
     {
@@ -389,7 +392,7 @@ class puppet_metrics_collector::service::puppetdb (
       'type'  => 'read',
       'name'  => 'PDBWritePool_pool_Wait',
       'mbean' => 'puppetlabs.puppetdb.database:name=PDBWritePool.pool.Wait'
-    }
+    },
   ]
 
   $ha_sync_metrics = [
@@ -441,7 +444,7 @@ class puppet_metrics_collector::service::puppetdb (
   ]
 
   $additional_metrics = $base_metrics + $storage_metrics + $connection_pool_metrics +
-                        $version_specific_metrics + $ha_sync_metrics + $extra_metrics
+  $version_specific_metrics + $ha_sync_metrics + $extra_metrics
 
   $ssl = $hosts ? {
     ['127.0.0.1'] => false,

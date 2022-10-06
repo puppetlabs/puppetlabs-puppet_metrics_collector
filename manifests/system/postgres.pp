@@ -1,4 +1,4 @@
-# Collect PostgreSQL metrics
+# @summary Collects postgres Metrics
 #
 # This class manages a cron job that uses `/opt/puppetlabs/server/bin/psql`
 # to collect metrics from a locally-running `pe-postgresql` service.
@@ -6,7 +6,8 @@
 # This class should not be included directly.
 # Include {puppet_metrics_collector::system} instead.
 #
-# @private
+# @api private
+# 
 class puppet_metrics_collector::system::postgres (
   String  $metrics_ensure            = $puppet_metrics_collector::system::system_metrics_ensure,
   Integer $collection_frequency      = $puppet_metrics_collector::system::collection_frequency,
@@ -26,13 +27,13 @@ class puppet_metrics_collector::system::postgres (
   }
 
   $metrics_command = ["${puppet_metrics_collector::system::scripts_dir}/psql_metrics",
-                      '--output_dir', $metrics_output_dir,
-                      $metrics_shipping_command,
-                      '> /dev/null'].join(' ')
+    '--output_dir', $metrics_output_dir,
+    $metrics_shipping_command,
+  '> /dev/null'].join(' ')
 
   $tidy_command = "${puppet_metrics_collector::system::scripts_dir}/metrics_tidy -d ${metrics_output_dir} -r ${retention_days}"
 
-  puppet_metrics_collector::collect {'postgres':
+  puppet_metrics_collector::collect { 'postgres':
     metrics_command => $metrics_command,
     tidy_command    => $tidy_command,
     metric_ensure   => $metrics_ensure,
@@ -42,6 +43,6 @@ class puppet_metrics_collector::system::postgres (
 
   # Legacy cleanup
   cron { ['postgres_metrics_tidy', 'postgres_metrics_collection']:
-    ensure => absent
+    ensure => absent,
   }
 }
