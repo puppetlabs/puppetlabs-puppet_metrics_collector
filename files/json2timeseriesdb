@@ -399,20 +399,18 @@ end
 # Process collected JSON files (including '-' to process data from STDIN).
 
 data_files.each do |filename|
-  begin
-    converted_data = if filename == '-'
-                       STDIN.each_line.map { |l| parse_input(JSON.parse(l)) }.flatten.join("\n")
-                     else
-                       parse_file(filename)
-                     end
-    if $options[:host]
-      $net_output.write(converted_data)
-    else
-      STDOUT.puts(converted_data)
-    end
-  rescue => e
-    STDERR.puts "ERROR: #{filename}: #{e.message}"
+  converted_data = if filename == '-'
+                     STDIN.each_line.map { |l| parse_input(JSON.parse(l)) }.flatten.join("\n")
+                   else
+                     parse_file(filename)
+                   end
+  if $options[:host]
+    $net_output.write(converted_data)
+  else
+    STDOUT.puts(converted_data)
   end
+rescue => e
+  STDERR.puts "ERROR: #{filename}: #{e.message}"
 end
 
 $net_output.close if $options[:host]

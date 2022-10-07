@@ -18,7 +18,7 @@ function puppet_metrics_collector::hosts_with_pe_profile($profile) {
   # See: https://github.com/puppetlabs/puppet-enterprise-modules/blob/main/docs/pe-modules-next-discussion-outline.txt
   if $settings::storeconfigs {
     $_profile = capitalize($profile)
-    $hosts = puppetdb_query("resources[certname] {
+  $hosts = puppetdb_query("resources[certname] {
                type = 'Class' and
                title = 'Puppet_enterprise::Profile::${_profile}' and
                nodes { deactivated is null and expired is null }

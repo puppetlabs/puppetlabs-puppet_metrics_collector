@@ -11,9 +11,9 @@ function puppet_metrics_collector::generate_metrics_server_command (
   Optional[String]                                   $metrics_server_hostname = undef,
   Optional[String]                                   $metrics_server_db_name = undef,
   Optional[Integer]                                  $metrics_server_port = undef,
-  )  >> String  {
+)  >> String {
   if !empty($metrics_server_type) {
-    if empty($metrics_server_db_name) and $metrics_server_type == 'influxdb'  {
+    if empty($metrics_server_db_name) and $metrics_server_type == 'influxdb' {
       fail('When specifying an InfluxDB metrics server, you must specify a metrics server db_name')
     }
 
@@ -26,25 +26,25 @@ function puppet_metrics_collector::generate_metrics_server_command (
 
     $metrics_shipping_command = $metrics_server_type ? {
       'influxdb'   => ['--print |',
-                      "${scripts_dir}/json2timeseriesdb",
-                      "--netcat ${metrics_server_hostname}",
-                      "--convert-to ${metrics_server_type}",
-                      "--influx-db ${metrics_server_db_name}",
-                      $port_command,
-                      '-',
-                      ].filter |$v| { $v != undef }.join(' '), # Filter out undef without stdlib
+        "${scripts_dir}/json2timeseriesdb",
+        "--netcat ${metrics_server_hostname}",
+        "--convert-to ${metrics_server_type}",
+        "--influx-db ${metrics_server_db_name}",
+        $port_command,
+        '-',
+      ].filter |$v| { $v != undef }.join(' '), # Filter out undef without stdlib
       'graphite'   => join(['--print |',
-                      "${scripts_dir}/json2timeseriesdb",
-                      "--netcat ${metrics_server_hostname}",
-                      "--convert-to ${metrics_server_type}",
-                      '-',
-                      ], ' '),
+          "${scripts_dir}/json2timeseriesdb",
+          "--netcat ${metrics_server_hostname}",
+          "--convert-to ${metrics_server_type}",
+          '-',
+      ], ' '),
       'splunk_hec' => join(['--print |',
-                      '/opt/puppetlabs/bin/puppet',
-                      'splunk_hec',
-                      '--sourcetype puppet:metrics',
-                      '--pe_metrics',
-                      ], ' '),
+          '/opt/puppetlabs/bin/puppet',
+          'splunk_hec',
+          '--sourcetype puppet:metrics',
+          '--pe_metrics',
+      ], ' '),
       default      => '',
     }
   } else {
