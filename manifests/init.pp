@@ -1,4 +1,76 @@
-# Collect Metrics
+# @summary
+#   This module manages the collection of Puppet and system Metrics
+# 
+# @param puppetserver_metrics_ensure 
+#   Whether to enable or disable the collection of Puppetserver metrics. Valid values are 'present', and 'absent'. Default : 'present'
+# 
+# @param output_dir
+#   The directory to write the metrics to. Default: '/opt/puppetlabs/puppet-metrics-collector'
+# 
+# @param collection_frequency
+#   The frequency to collect metrics in minutes. Default: '5'
+# 
+# @param retention_days
+#   The number of days to retain metrics. Default: '90'
+# 
+# @param puppetserver_hosts  
+#   The list of puppetserver hosts to collect metrics from. Uses the hosts_with_pe_profile function to determine the list of hosts with the puppetserver profile.
+# 
+# @param puppetserver_port
+#  Port to connect to puppetserver on. Default: '8140'
+# 
+# @param puppetdb_metrics_ensure 
+#   Whether to enable or disable the collection of PuppetDB metrics. Valid values are 'present', and 'absent'. Default : 'present'
+# 
+# @param puppetdb_hosts 
+#   The list of puppetdb hosts to collect metrics from. Uses the hosts_with_pe_profile function to determine the list of hosts with the puppetdb profile.
+# 
+# @param puppetdb_port 
+#   Port to connect to puppetdb on. Default: '8081'
+# 
+# @param orchestrator_metrics_ensure
+#   Whether to enable or disable the collection of Orchestrator metrics. Valid values are 'present', and 'absent'. Default : 'present'
+# 
+# @param orchestrator_hosts 
+#   The list of orchestrator hosts to collect metrics from. Uses the hosts_with_pe_profile function to determine the list of hosts with the orchestrator profile.
+# 
+# @param orchestrator_port
+#   Port to connect to orchestrator on. Default: '8143' 
+# 
+# @param ace_metrics_ensure 
+#   Whether to enable or disable the collection of Ace metrics. Valid values are 'present', and 'absent'. Default : 'present'
+# 
+# @param ace_hosts 
+#   The list of ace hosts to collect metrics from. Uses the hosts_with_pe_profile function to determine the list of hosts with the ace profile.
+# 
+# @param ace_port
+#   Port to connect to ace on. Default: '44633'
+# 
+# @param bolt_metrics_ensure
+#   Whether to enable or disable the collection of Bolt metrics. Valid values are 'present', and 'absent'. Default : 'present'
+# 
+# @param bolt_hosts 
+#   The list of bolt hosts to collect metrics from. Uses the hosts_with_pe_profile function to determine the list of hosts with the bolt profile.
+# 
+# @param bolt_port 
+#   Port to connect to bolt on. Default: '62658'
+# 
+# @param metrics_server_type
+# Optional Enum['influxdb','graphite','splunk_hec']: The metrics server type to send data to. Default: undef
+# 
+# @ param metrics_server_hostname
+# Optional String: The hostname of the metrics server to send data to. Default: undef
+# 
+# @ param metrics_server_port
+# Optional Integer: The port number of the metrics server to send data to. Default: undef
+# 
+# @param metrics_server_db_name
+# Optional String: The database name on the metrics server to send data to.
+# Required for metrics_server_type of influxdb. Default: undef
+# 
+# @param override_metrics_command
+# Optional String: Allows you to define the command that is executed to gather metrics. Default: undef
+# 
 class puppet_metrics_collector (
   String                  $puppetserver_metrics_ensure = 'present',
   String                  $output_dir                  = '/opt/puppetlabs/puppet-metrics-collector',
@@ -48,13 +120,13 @@ class puppet_metrics_collector (
       file { "${scripts_dir}/create-metrics-archive":
         ensure => file,
         mode   => '0755',
-        source => 'puppet:///modules/puppet_metrics_collector/create-metrics-archive'
+        source => 'puppet:///modules/puppet_metrics_collector/create-metrics-archive',
       }
 
       file { "${scripts_dir}/metrics_tidy":
         ensure => file,
         mode   => '0744',
-        source => 'puppet:///modules/puppet_metrics_collector/metrics_tidy'
+        source => 'puppet:///modules/puppet_metrics_collector/metrics_tidy',
       }
     }
 
@@ -65,25 +137,25 @@ class puppet_metrics_collector (
     file { "${scripts_dir}/json2timeseriesdb" :
       ensure => file,
       mode   => '0755',
-      source => 'puppet:///modules/puppet_metrics_collector/json2timeseriesdb'
+      source => 'puppet:///modules/puppet_metrics_collector/json2timeseriesdb',
     }
 
     file { "${scripts_dir}/pe_metrics.rb" :
       ensure => file,
       mode   => '0755',
-      source => 'puppet:///modules/puppet_metrics_collector/pe_metrics.rb'
+      source => 'puppet:///modules/puppet_metrics_collector/pe_metrics.rb',
     }
 
     file { "${scripts_dir}/puma_metrics" :
       ensure => file,
       mode   => '0755',
-      source => 'puppet:///modules/puppet_metrics_collector/puma_metrics'
+      source => 'puppet:///modules/puppet_metrics_collector/puma_metrics',
     }
 
     file { "${scripts_dir}/tk_metrics" :
       ensure => file,
       mode   => '0755',
-      source => 'puppet:///modules/puppet_metrics_collector/tk_metrics'
+      source => 'puppet:///modules/puppet_metrics_collector/tk_metrics',
     }
 
     exec { 'puppet_metrics_collector_daemon_reload':

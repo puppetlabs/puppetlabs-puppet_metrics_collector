@@ -1,4 +1,19 @@
-# Collect System Metrics
+# 
+# @summary
+#   This class manages the collections of SAR metrics
+#   
+# @param collection_frequency
+#   The frequency to collect metrics in minutes. Default: '5'
+# 
+# @param retention_days
+#   The number of days to retain metrics. Default: '90'
+# 
+# @param polling_frequency_seconds
+# How often the target is requested to provide data, in seconds. Default: 1
+# 
+# @param cron_minute
+#   The minute to run the cron job. Default: '0/5'
+#
 define puppet_metrics_collector::sar_metric (
   String                    $metrics_type              = $title,
   Enum['absent', 'present'] $metric_ensure             = 'present',
@@ -9,7 +24,6 @@ define puppet_metrics_collector::sar_metric (
   String                    $metric_script_file        = 'system_metrics',
   String                    $metrics_shipping_command  = $puppet_metrics_collector::system::metrics_shipping_command,
 ) {
-
   $metrics_output_dir = "${puppet_metrics_collector::system::output_dir}/${metrics_type}"
 
   $metrics_output_dir_ensure = $metric_ensure ? {
@@ -27,11 +41,11 @@ define puppet_metrics_collector::sar_metric (
   $file_interval_seconds = $collection_frequency * 60
 
   $base_metrics_command = join([$metric_script_file_path,
-                          "--metric_type ${metrics_type}",
-                          "--file_interval ${file_interval_seconds}",
-                          "--polling_interval ${polling_frequency_seconds}",
-                          "--metrics_dir ${puppet_metrics_collector::system::output_dir}",
-                          ], ' ')
+      "--metric_type ${metrics_type}",
+      "--file_interval ${file_interval_seconds}",
+      "--polling_interval ${polling_frequency_seconds}",
+      "--metrics_dir ${puppet_metrics_collector::system::output_dir}",
+  ], ' ')
 
   $metrics_command = "${base_metrics_command} ${metrics_shipping_command} > /dev/null"
 
@@ -41,7 +55,7 @@ define puppet_metrics_collector::sar_metric (
 
   $tidy_command = "${puppet_metrics_collector::system::scripts_dir}/metrics_tidy -d ${metrics_output_dir} -r ${retention_days}"
 
-  puppet_metrics_collector::collect {$metrics_type:
+  puppet_metrics_collector::collect { $metrics_type:
     metrics_command => $metrics_command,
     tidy_command    => $tidy_command,
     metric_ensure   => $metric_ensure,

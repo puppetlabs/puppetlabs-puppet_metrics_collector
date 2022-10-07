@@ -1,4 +1,7 @@
-# Collect Service Metrics
+# @summary Collects bolt metrics
+#
+# @api private
+#
 class puppet_metrics_collector::service::bolt (
   String                  $metrics_ensure           = $puppet_metrics_collector::bolt_metrics_ensure,
   Integer                 $collection_frequency     = $puppet_metrics_collector::collection_frequency,
@@ -12,7 +15,7 @@ class puppet_metrics_collector::service::bolt (
   Optional[String]        $metrics_server_hostname  = $puppet_metrics_collector::metrics_server_hostname,
   Optional[Integer]       $metrics_server_port      = $puppet_metrics_collector::metrics_server_port,
   Optional[String]        $metrics_server_db_name   = $puppet_metrics_collector::metrics_server_db_name,
-  ) {
+) {
   puppet_metrics_collector::pe_metric { 'bolt' :
     metric_ensure            => $metrics_ensure,
     cron_minute              => "0/${collection_frequency}",

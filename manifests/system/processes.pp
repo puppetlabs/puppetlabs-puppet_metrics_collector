@@ -1,4 +1,7 @@
-# Collect System Processes Metrics
+# @summary Collects System Processes Metrics
+#
+# @api private
+#
 class puppet_metrics_collector::system::processes (
   String  $metrics_ensure            = $puppet_metrics_collector::system::system_metrics_ensure,
   Integer $collection_frequency      = $puppet_metrics_collector::system::collection_frequency,

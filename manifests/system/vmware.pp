@@ -1,4 +1,4 @@
-# Collect VMware metrics
+# @summary Collects System vmware Metrics
 #
 # This class manages a cron job that collects metrics from:
 #
@@ -7,7 +7,8 @@
 # This class should not be included directly.
 # Include {puppet_metrics_collector::system} instead.
 #
-# @private
+# @api private
+#
 class puppet_metrics_collector::system::vmware (
   String  $metrics_ensure            = $puppet_metrics_collector::system::system_metrics_ensure,
   Integer $collection_frequency      = $puppet_metrics_collector::system::collection_frequency,
@@ -27,9 +28,9 @@ class puppet_metrics_collector::system::vmware (
   }
 
   $metrics_command = ["${puppet_metrics_collector::system::scripts_dir}/vmware_metrics",
-                      '--output_dir', $metrics_output_dir,
-                      $metrics_shipping_command,
-                      '> /dev/null'].join(' ')
+    '--output_dir', $metrics_output_dir,
+    $metrics_shipping_command,
+  '> /dev/null'].join(' ')
 
   $tidy_command = "${puppet_metrics_collector::system::scripts_dir}/metrics_tidy -d ${metrics_output_dir} -r ${retention_days}"
 
@@ -40,7 +41,7 @@ class puppet_metrics_collector::system::vmware (
     }
   }
 
-  puppet_metrics_collector::collect {'vmware':
+  puppet_metrics_collector::collect { 'vmware':
     metrics_command => $metrics_command,
     tidy_command    => $tidy_command,
     metric_ensure   => $metrics_ensure,
@@ -50,6 +51,6 @@ class puppet_metrics_collector::system::vmware (
 
   # Legacy cleanup
   cron { ['vmware_metrics_tidy', 'vmware_metrics_collection']:
-    ensure => absent
+    ensure => absent,
   }
 }
