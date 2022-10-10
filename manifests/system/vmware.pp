@@ -9,18 +9,6 @@
 #
 # @api private
 #
-# @param metrics_ensure 
-#   Whether to enable or disable the metrics collection.
-#   Valid values are 'present' and 'absent'.
-# @param collection_frequency
-#   How often to collect metrics.
-# 
-# @param retention_days
-#   How long to keep metrics before purging them.
-#
-# @param metrics_shipping_command
-#   The command to use to ship metrics to a remote location.
-#   This is passed to the cron job
 class puppet_metrics_collector::system::vmware (
   String  $metrics_ensure            = $puppet_metrics_collector::system::system_metrics_ensure,
   Integer $collection_frequency      = $puppet_metrics_collector::system::collection_frequency,

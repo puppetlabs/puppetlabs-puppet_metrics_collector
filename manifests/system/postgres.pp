@@ -8,17 +8,6 @@
 #
 # @api private
 # 
-# @param metrics_ensure
-#   Whether to enable or disable metrics collection for this service.
-#   Valid values are 'present' and 'absent'.
-# @param collection_frequency
-#   How often to collect metrics.
-#   Valid values are any valid integers representing minutes.
-# @param retention_days
-#   How long to keep metrics before purging them.
-#   Valid values are any valid integers representing days.
-# @param metrics_shipping_command
-#   The command to use to ship metrics to the metrics server.
 # 
 class puppet_metrics_collector::system::postgres (
   String  $metrics_ensure            = $puppet_metrics_collector::system::system_metrics_ensure,
