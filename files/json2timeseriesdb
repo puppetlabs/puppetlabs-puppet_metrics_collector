@@ -155,7 +155,7 @@ def return_tag(a, n)
 end
 
 def metrics(data, timestamp, parent_key = nil)
-  data.collect { |key, value|
+  data.map { |key, value|
     current_key = [parent_key, safe_name(key)].compact.join('.')
     case value
     when Hash
@@ -294,7 +294,7 @@ def influx_tag_parser(tag)
 end
 
 def influx_metrics(data, timestamp, parent_key = nil)
-  data.collect { |key, value|
+  data.map { |key, value|
     current_key = [parent_key, safe_name(key)].compact.join('.')
     case value
     when Hash
