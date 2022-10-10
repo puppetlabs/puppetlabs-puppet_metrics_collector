@@ -10,14 +10,13 @@ define puppet_metrics_collector::pe_metric (
   Boolean                   $ssl                      = true,
   Array[String]             $excludes                 = puppet_metrics_collector::version_based_excludes($title),
   Array[Hash]               $additional_metrics       = [],
-  Optional[Boolean]         $remote_metrics_enabled   = lookup('puppet_metrics_collector::pe_metric::remote_metrics_enabled', {'default_value' => undef}), # lint:ignore:140chars
+  Optional[Boolean]         $remote_metrics_enabled   = lookup('puppet_metrics_collector::pe_metric::remote_metrics_enabled', { 'default_value' => undef }), # lint:ignore:140chars
   Optional[String]          $override_metrics_command = undef,
   Optional[Enum['influxdb','graphite','splunk_hec']] $metrics_server_type = undef,
   Optional[String]          $metrics_server_hostname  = undef,
   Optional[Integer]         $metrics_server_port      = undef,
   Optional[String]          $metrics_server_db_name   = undef,
 ) {
-
   $metrics_output_dir = "${puppet_metrics_collector::output_dir}/${metrics_type}"
 
   $metrics_output_dir_ensure = $metric_ensure ? {
@@ -66,12 +65,12 @@ define puppet_metrics_collector::pe_metric (
   if empty($override_metrics_command) {
     $base_metrics_command = "${metric_script_file_path} --metrics_type ${metrics_type} --output_dir ${metrics_output_dir}"
     $metrics_shipping_command = puppet_metrics_collector::generate_metrics_server_command(
-                                $puppet_metrics_collector::scripts_dir,
-                                $metrics_server_type,
-                                $metrics_server_hostname,
-                                $metrics_server_db_name,
-                                $metrics_server_port
-                              )
+      $puppet_metrics_collector::scripts_dir,
+      $metrics_server_type,
+      $metrics_server_hostname,
+      $metrics_server_db_name,
+      $metrics_server_port
+    )
 
     if !empty($metrics_server_type) {
       $metrics_command = "${base_metrics_command} ${metrics_shipping_command} > /dev/null"
@@ -84,7 +83,7 @@ define puppet_metrics_collector::pe_metric (
 
   $tidy_command = "${puppet_metrics_collector::scripts_dir}/metrics_tidy -d ${metrics_output_dir} -r ${retention_days}"
 
-  puppet_metrics_collector::collect {$metrics_type:
+  puppet_metrics_collector::collect { $metrics_type:
     metrics_command => $metrics_command,
     tidy_command    => $tidy_command,
     metric_ensure   => $metric_ensure,

@@ -155,7 +155,7 @@ def return_tag(a, n)
 end
 
 def metrics(data, timestamp, parent_key = nil)
-  data.collect { |key, value|
+  data.map { |key, value|
     current_key = [parent_key, safe_name(key)].compact.join('.')
     case value
     when Hash
@@ -294,7 +294,7 @@ def influx_tag_parser(tag)
 end
 
 def influx_metrics(data, timestamp, parent_key = nil)
-  data.collect { |key, value|
+  data.map { |key, value|
     current_key = [parent_key, safe_name(key)].compact.join('.')
     case value
     when Hash
@@ -399,20 +399,18 @@ end
 # Process collected JSON files (including '-' to process data from STDIN).
 
 data_files.each do |filename|
-  begin
-    converted_data = if filename == '-'
-                       STDIN.each_line.map { |l| parse_input(JSON.parse(l)) }.flatten.join("\n")
-                     else
-                       parse_file(filename)
-                     end
-    if $options[:host]
-      $net_output.write(converted_data)
-    else
-      STDOUT.puts(converted_data)
-    end
-  rescue => e
-    STDERR.puts "ERROR: #{filename}: #{e.message}"
+  converted_data = if filename == '-'
+                     STDIN.each_line.map { |l| parse_input(JSON.parse(l)) }.flatten.join("\n")
+                   else
+                     parse_file(filename)
+                   end
+  if $options[:host]
+    $net_output.write(converted_data)
+  else
+    STDOUT.puts(converted_data)
   end
+rescue => e
+  STDERR.puts "ERROR: #{filename}: #{e.message}"
 end
 
 $net_output.close if $options[:host]
