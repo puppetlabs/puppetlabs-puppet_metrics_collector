@@ -1,4 +1,4 @@
-# Collect Puma or TrapperKeeper Metrics
+# @summary A defined type to manage the configuration of tbe different metrics collection targets
 define puppet_metrics_collector::pe_metric (
   String                    $metrics_type             = $title,
   Enum['absent', 'present'] $metric_ensure            = 'present',

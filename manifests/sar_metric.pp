@@ -1,4 +1,3 @@
-# 
 # @summary
 #   This class manages the collections of SAR metrics
 #   
@@ -13,7 +12,18 @@
 # 
 # @param cron_minute
 #   The minute to run the cron job. Default: '0/5'
+# @param metrics_type 
+#   The string aide to identify the metrics type,
+#   this is used to create the metrics file name.
 #
+# @param metric_ensure
+#   The ensure value for the metrics file. Default: 'present'
+#
+# @param metric_script_file 
+#   The script file to run to collect the metrics. Default: 'system_metrics'
+#
+# @param metrics_shipping_command
+#   The parameter that defines the command for the remote shipping of metrics. Default: '$puppet_metrics_collector::system::metrics_shipping_command'
 define puppet_metrics_collector::sar_metric (
   String                    $metrics_type              = $title,
   Enum['absent', 'present'] $metric_ensure             = 'present',

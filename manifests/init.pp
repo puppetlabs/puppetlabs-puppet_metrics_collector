@@ -71,6 +71,33 @@
 # @param override_metrics_command
 # Optional String: Allows you to define the command that is executed to gather metrics. Default: undef
 # 
+# @param activemq_metrics_ensure
+# Optional String: Collection of ActiveMQ metrics has been removed, but the parameters are left to avoid breaking upgrades
+# @param activemq_hosts
+# Optional String: Collection of ActiveMQ metrics has been removed, but the parameters are left to avoid breaking upgrades
+# @param activemq_port
+# Optional Integer: Collection of ActiveMQ metrics has been removed, but the parameters are left to avoid breaking upgrades
+# @param puppetserver_excludes
+#   An Array of metrics to exclude from the puppetserver metrics collection.
+# @param puppetdb_excludes
+#   An Array of metrics to exclude from the puppetdb metrics collection.
+# @param orchestrator_excludes
+#   An Array of metrics to exclude from the orchestrator_excludes metrics collection.
+# @param ace_excludes
+#   An Array of metrics to exclude from the ace_excludes metrics collection.
+# @param bolt_excludes
+#   An Array of metrics to exclude from the bolt_excludes metrics collection.
+# @param activemq_excludes
+#   Collection of ActiveMQ metrics has been removed, but the parameters are left to avoid breaking upgrades
+# @param metrics_server_hostname
+#   The hostname of the metrics server to send data to. Default: undef
+# @param metrics_server_port
+#   The port number of the metrics server to send data to. Default: undef
+# @param metrics_server_db_name
+#   The database name on the metrics server to send data to.
+#   Required for metrics_server_type of influxdb. Default: undef
+# @param override_metrics_command
+#   Allows you to define the command that is executed to gather metrics. Default: undef
 class puppet_metrics_collector (
   String                  $puppetserver_metrics_ensure = 'present',
   String                  $output_dir                  = '/opt/puppetlabs/puppet-metrics-collector',
