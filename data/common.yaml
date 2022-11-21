@@ -1,0 +1,2 @@
+---
+puppet_metrics_collector::system::runuser_path: '/usr/sbin/runuser'

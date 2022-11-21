@@ -3,6 +3,9 @@
 # 
 # @param system_metrics_ensure 
 #   Whether to enable or disable the collection of System metrics. Valid values are 'present', and 'absent'. Default : 'present'
+
+# @param runuser_path
+#   Path to the runuser executable.  Provided by module data
 # 
 # @param output_dir
 #   The directory to write the metrics to. Default: '/opt/puppetlabs/puppet-metrics-collector'
@@ -30,6 +33,7 @@
 # @param metrics_server_db_name 
 # 
 class puppet_metrics_collector::system (
+  String  $runuser_path, # provided by module data
   String  $system_metrics_ensure     = 'present',
   String  $output_dir                = '/opt/puppetlabs/puppet-metrics-collector',
   Integer $collection_frequency      = 5, # minutes
@@ -116,9 +120,12 @@ class puppet_metrics_collector::system (
 
   if $facts.dig('puppet_metrics_collector', 'have_pe_psql') {
     file { "${scripts_dir}/psql_metrics":
-      ensure => file,
-      mode   => '0755',
-      source => 'puppet:///modules/puppet_metrics_collector/psql_metrics',
+      ensure         => file,
+      mode           => '0755',
+      content        => epp(
+        'puppet_metrics_collector/psql_metrics.epp',
+        runuser_path => $runuser_path,
+      ),
     }
 
     contain puppet_metrics_collector::system::postgres

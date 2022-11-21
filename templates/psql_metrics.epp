@@ -1,3 +1,4 @@
+<%- | String $runuser_path | -%>
 #!/opt/puppetlabs/puppet/bin/ruby
 # frozen_string_literal: true
 
@@ -149,7 +150,7 @@ module PuppetMetricsCollector
                       '--single-transaction', '--tuples-only', '--quiet']
       psql_command += ["--dbname=#{database}"] unless database.nil?
 
-      command_line = ['/usr/sbin/runuser', '-u', 'pe-postgres',
+      command_line = ['<%= $runuser_path %>', '-u', 'pe-postgres',
                       '--', *psql_command]
 
       env = { 'PGOPTIONS' => "-c statement_timeout=#{timeout}s",

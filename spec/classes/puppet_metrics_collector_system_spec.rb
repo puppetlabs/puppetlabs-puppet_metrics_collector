@@ -1,6 +1,26 @@
 require 'spec_helper'
 
 describe 'puppet_metrics_collector::system' do
+  on_supported_os.each do |os, os_facts|
+    context "on #{os}" do
+      let(:facts) { os_facts }
+
+      it {
+        is_expected.to compile
+
+        case facts[:os]['family']
+        when 'Debian'
+          is_expected.to contain_class('puppet_metrics_collector::system').with(
+            runuser_path: '/sbin/runuser',
+          )
+        else
+          is_expected.to contain_class('puppet_metrics_collector::system').with(
+            runuser_path: '/usr/sbin/runuser',
+          )
+        end
+      }
+    end
+  end
   context 'with default parameters' do
     it { is_expected.not_to contain_package('sysstat') }
     it { is_expected.not_to contain_package('open-vm-tools') }
