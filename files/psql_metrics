@@ -143,19 +143,30 @@ module PuppetMetricsCollector
     #
     # @return [Exec::Result] The result of the SQL statement.
     def exec_psql(query, database: nil, timeout: @timeout)
+      runuser_path = if File.executable?('/usr/sbin/runuser')
+                       '/usr/sbin/runuser'
+                     elsif File.executable?('/sbin/runuser')
+                       '/sbin/runuser'
+                     else
+                       nil
+                     end
       psql_command = [@psql, '--file=-',
                       '--no-align', '--no-psqlrc',
                       '--pset=pager=off', '--set=ON_ERROR_STOP=on',
                       '--single-transaction', '--tuples-only', '--quiet']
       psql_command += ["--dbname=#{database}"] unless database.nil?
 
-      command_line = ['/usr/sbin/runuser', '-u', 'pe-postgres',
+      command_line = [runuser_path, '-u', 'pe-postgres',
                       '--', *psql_command]
 
       env = { 'PGOPTIONS' => "-c statement_timeout=#{timeout}s",
              'PGTZ' => 'GMT' }
 
-      Exec.exec_cmd(*command_line, stdin_data: query, env: env, timeout: timeout + 1)
+      if runuser_path
+        Exec.exec_cmd(*command_line, stdin_data: query, env: env, timeout: timeout + 1)
+      else
+        $stderr.puts('WARN: no runuser executable found')
+      end
     end
 
     # Add an error message to a result hash
