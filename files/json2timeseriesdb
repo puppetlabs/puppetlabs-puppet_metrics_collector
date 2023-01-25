@@ -210,6 +210,11 @@ def influx_tag_parser(tag)
     tag.delete('orchestrator')
   end
 
+  if tag.include? 'console'
+    tag_set = "#{tag_set}service=console,"
+    tag.delete('console')
+  end
+
   if tag.include? 'puppetserver'
     tag_set = "#{tag_set}service=puppetserver,"
     tag.delete('puppetserver')
