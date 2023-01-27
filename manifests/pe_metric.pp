@@ -88,6 +88,7 @@ define puppet_metrics_collector::pe_metric (
     tidy_command    => $tidy_command,
     metric_ensure   => $metric_ensure,
     minute          => $cron_minute,
+    env_vars        => undef,
     notify          => Exec['puppet_metrics_collector_daemon_reload'],
   }
 
