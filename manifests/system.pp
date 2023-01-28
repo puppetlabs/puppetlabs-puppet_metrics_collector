@@ -133,10 +133,13 @@ class puppet_metrics_collector::system (
     ensure => absent,
   }
 
-  $legacy_sar = ['system_memory']
-  puppet_metrics_collector::collect { $legacy_sar:
-    ensure => absent,
-    metrics_command => 'foo',
-    tidy_command => 'bar',
+  # Legacy sar cleanup
+  puppet_metrics_collector::sar_metric { 'system_memory' :
+    metric_ensure             => 'absent',
+    cron_minute               => '0',
+    retention_days            => 0,
+    collection_frequency      => 0,
+    polling_frequency_seconds => 0,
+    metrics_shipping_command  => 'foo',
   }
 }

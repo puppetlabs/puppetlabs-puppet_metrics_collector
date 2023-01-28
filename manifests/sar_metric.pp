@@ -67,6 +67,7 @@ define puppet_metrics_collector::sar_metric (
   $tidy_command = "${puppet_metrics_collector::system::scripts_dir}/metrics_tidy -d ${metrics_output_dir} -r ${retention_days}"
 
   puppet_metrics_collector::collect { $metrics_type:
+    ensure          => $metric_ensure,
     metrics_command => $metrics_command,
     tidy_command    => $tidy_command,
     metric_ensure   => $metric_ensure,

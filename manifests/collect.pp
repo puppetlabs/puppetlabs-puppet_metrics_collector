@@ -16,7 +16,7 @@ define puppet_metrics_collector::collect (
       "puppet_${metrics_type}-metrics.service",
       "puppet_${metrics_type}-metrics.timer",
       "puppet_${metrics_type}-tidy.service",
-      "puppet_${metrics_type}-tidy.timer"
+      "puppet_${metrics_type}-tidy.timer",
     ]
     service { $services:
       ensure => stopped,
@@ -27,7 +27,7 @@ define puppet_metrics_collector::collect (
       "/etc/systemd/system/puppet_${metrics_type}-metrics.service",
       "/etc/systemd/system/puppet_${metrics_type}-metrics.timer",
       "/etc/systemd/system/puppet_${metrics_type}-tidy.service",
-      "/etc/systemd/system/puppet_${metrics_type}-tidy.timer"
+      "/etc/systemd/system/puppet_${metrics_type}-tidy.timer",
     ]
 
     file { $files:

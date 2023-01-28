@@ -16,6 +16,7 @@ define puppet_metrics_collector::pe_metric (
   Optional[String]          $metrics_server_hostname  = undef,
   Optional[Integer]         $metrics_server_port      = undef,
   Optional[String]          $metrics_server_db_name   = undef,
+  Optional[Hash]            $env_vars                 = undef,
 ) {
   $metrics_output_dir = "${puppet_metrics_collector::output_dir}/${metrics_type}"
 
@@ -84,11 +85,12 @@ define puppet_metrics_collector::pe_metric (
   $tidy_command = "${puppet_metrics_collector::scripts_dir}/metrics_tidy -d ${metrics_output_dir} -r ${retention_days}"
 
   puppet_metrics_collector::collect { $metrics_type:
+    ensure          => $metric_ensure,
     metrics_command => $metrics_command,
     tidy_command    => $tidy_command,
     metric_ensure   => $metric_ensure,
     minute          => $cron_minute,
-    env_vars        => undef,
+    env_vars        => $env_vars,
     notify          => Exec['puppet_metrics_collector_daemon_reload'],
   }
 

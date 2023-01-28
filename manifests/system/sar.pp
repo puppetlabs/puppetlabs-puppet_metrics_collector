@@ -17,6 +17,7 @@ class puppet_metrics_collector::system::sar (
     collection_frequency      => $collection_frequency,
     polling_frequency_seconds => $polling_frequency_seconds,
     metrics_shipping_command  => $metrics_shipping_command,
+    # This ensures that sar reports the time field as one 24 hour field, instead of a 12 hour format with spaces
     env_vars                  => { 'LC_TIME' => 'POSIX' },
   }
 }
