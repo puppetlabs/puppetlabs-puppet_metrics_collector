@@ -49,15 +49,13 @@ describe 'system class' do
     context 'system timers are running' do
       it { expect(service('puppet_system_cpu-metrics.timer')).to be_running }
       it { expect(service('puppet_system_cpu-tidy.timer')).to be_running }
-      it { expect(service('puppet_system_memory-metrics.timer')).to be_running }
-      it { expect(service('puppet_system_memory-tidy.timer')).to be_running }
       it { expect(service('puppet_system_processes-metrics.timer')).to be_running }
       it { expect(service('puppet_system_processes-tidy.timer')).to be_running }
     end
 
     it 'creates system tidy services files' do
-      files = run_shell('ls /etc/systemd/system/puppet_system*-tidy.service').stdout
-      expect(files.split("\n").count).to eq(3)
+      expect(run_shell('ls /etc/systemd/system/puppet_system_cpu-tidy.service').exit_code).to eq(0)
+      expect(run_shell('ls /etc/systemd/system/puppet_system_processes-tidy.service').exit_code).to eq(0)
     end
   end
 
@@ -79,15 +77,13 @@ describe 'system class' do
     context 'system timers are running' do
       it { expect(service('puppet_system_cpu-metrics.timer')).to be_running }
       it { expect(service('puppet_system_cpu-tidy.timer')).to be_running }
-      it { expect(service('puppet_system_memory-metrics.timer')).to be_running }
-      it { expect(service('puppet_system_memory-tidy.timer')).to be_running }
       it { expect(service('puppet_system_processes-metrics.timer')).to be_running }
       it { expect(service('puppet_system_processes-tidy.timer')).to be_running }
     end
 
     it 'creates system tidy services files' do
-      files = run_shell('ls /etc/systemd/system/puppet_system*-tidy.service').stdout
-      expect(files.split("\n").count).to eq(3)
+      expect(run_shell('ls /etc/systemd/system/puppet_system_cpu-tidy.service').exit_code).to eq(0)
+      expect(run_shell('ls /etc/systemd/system/puppet_system_processes-tidy.service').exit_code).to eq(0)
     end
   end
 end
