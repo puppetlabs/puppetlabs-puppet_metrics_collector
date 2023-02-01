@@ -32,7 +32,7 @@ module SystemMetrics
   #
   # @attr [integer] polling_interval Time in seconds between calls to poll the system for data.
   # @attr [integer] file_interval Time in seconds between the creation of each output file.
-  # @attr [string] metric_type system_cpu|system_memory|system_processes
+  # @attr [string] metric_type system_cpu|system_processes
   # @attr [string] metrics_dir The puppet_metrics_collector output directory.
   # @attr [string] process_expression Expression to pass to egrep that matches processes to track
   # @attr [boolean] verbose Verbose output
@@ -47,7 +47,7 @@ module SystemMetrics
     #
     # @param [integer] polling_interval Time in seconds between calls to poll the system for data.
     # @param [integer] file_interval Time in seconds between the creation of each output file.
-    # @param [string] metric_type system_cpu|system_memory|system_processes
+    # @param [string] metric_type system_cpu|system_processes
     # @param [string] process_expression Expression to pass to egrep that matches processes to track
     # @param [string] metrics_dir The puppet_metrics_collector output directory.
     # @param [boolean] verbose Verbose output
@@ -78,7 +78,7 @@ module SystemMetrics
     def run_sar
       times_to_poll = (@file_interval / @polling_interval).round
       # sar inputs are polling interval and how many times to poll
-      comm_flags = ' -r' if %r{system_memory}.match?(@metric_type)
+      comm_flags = ' -u -r -w -W -B'
       comm = "sar #{comm_flags} #{@polling_interval} #{times_to_poll}"
       puts "sar command is: #{comm}" if @verbose
       begin
@@ -97,41 +97,25 @@ module SystemMetrics
     #
     # @return [hash] The metrics data
     def parse_sar_output(sar_output)
-      sar_output_arr = sar_output.split(%r{\n+|\r+}).reject(&:empty?).map { |line| line.split }
+      results = []
+      # Split the output on newlines and select the "Average" metrics that sar calculates over the interval
+      sar_averages = sar_output.split(%r{\n+|\r+}).select { |line| line.include? 'Average' }
 
-      unique_header_str = if @metric_type == 'system_memory'
-                            '%memused'
-                          else
-                            '%user'
-                          end
-      headers_line = sar_output_arr.find { |e| e.include? unique_header_str }
-      sar_error_missing_headers = <<-EOF
-        sar output invalid or missing headers. Failed to find line with #{unique_header_str}.
-        Full output:
-        #{sar_output}
-      EOF
-      send_error_to_output_file_and_exit(sar_error_missing_headers) if headers_line.nil?
-
-      averages_line = sar_output_arr.find { |e| e.include? 'Average:' }
-      sar_error_missing_averages = <<-EOF
-        sar output missing "Average:"
-        Full output:
-        #{sar_output}"
-      EOF
-      send_error_to_output_file_and_exit(sar_error_missing_averages) if averages_line.nil?
-
-      Hash[headers_line.reverse.zip(averages_line.reverse).reverse]
-
-      puts "sar headers and averages:\n#{headers_line.join(',')}\n#{averages_line.join(',')}" if @verbose
-
-      # example of array data
-      # 04:59:13,PM,CPU,%user,%nice,%system,%iowait,%steal,%idle
-      # Average:,all,0.58,0.00,0.08,0.00,0.00,99.33
-      # combine the arrays into a hash starting from the deal with the unmatched columns in the front
-      data_hash = Hash[headers_line.reverse.zip(averages_line.reverse).reverse]
-      # remove anything that doesn't have a number for an average like "Average:" or "all"
-      data_hash.select! { |_k, v| v =~ %r{\A[-+]?[0-9]*\.?[0-9]+\Z} }
-      data_hash.transform_values!(&:to_f)
+      # Each average will consist of a header line and a values line, e.g.
+      # Average:        CPU     %user     %nice   %system   %iowait    %steal     %idle
+      # Average:        all      0.18      0.00      0.10      0.00      0.03     99.70
+      # So, step over the array in increments of two to process each average
+      0.step(sar_averages.size - 1, 2) do |i|
+        # Split each line on spaces and join them together, e.g.
+        #   [["Average:", "Average:"], ["CPU", "all"], ["%user", "0.38"], ["%nice", "0.00"], ["%system", "0.08"], ["%iowait", "0.00"], ["%steal", "0.03"], ["%idle", "99.52"]]
+        merged_sar = sar_averages[i].split.zip(sar_averages[i + 1].split)
+        # Filter non-numeric values, then turn them into key/value pairs, e.g.
+        #   {"name": "%user", "value": 0.45}
+        merged_sar.select! { |_k, v| v =~ %r{\A[-+]?[0-9]*\.?[0-9]+\Z} }.each do |header, val|
+          results.append({ name: header, value: val.to_f })
+        end
+      end
+      results
     end
 
     # Run pidstat to collect process specific data
@@ -407,7 +391,7 @@ end
 
 if $PROGRAM_NAME == __FILE__
 
-  VALID_METRIC_TYPES = ['system_cpu', 'system_memory', 'system_processes'].freeze
+  VALID_METRIC_TYPES = ['system_cpu', 'system_processes'].freeze
   FILE_INTERVAL_DEFAULT = 60 * 5
   POLLING_INTERVAL_DEFAULT = 1
   METRIC_TYPE_DEFAULT = 'system_cpu'

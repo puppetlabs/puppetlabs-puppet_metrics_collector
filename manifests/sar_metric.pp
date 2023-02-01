@@ -33,6 +33,7 @@ define puppet_metrics_collector::sar_metric (
   Integer                   $polling_frequency_seconds = 1,
   String                    $metric_script_file        = 'system_metrics',
   String                    $metrics_shipping_command  = $puppet_metrics_collector::system::metrics_shipping_command,
+  Optional[Hash]     $env_vars                  = undef,
 ) {
   $metrics_output_dir = "${puppet_metrics_collector::system::output_dir}/${metrics_type}"
 
@@ -66,10 +67,12 @@ define puppet_metrics_collector::sar_metric (
   $tidy_command = "${puppet_metrics_collector::system::scripts_dir}/metrics_tidy -d ${metrics_output_dir} -r ${retention_days}"
 
   puppet_metrics_collector::collect { $metrics_type:
+    ensure          => $metric_ensure,
     metrics_command => $metrics_command,
     tidy_command    => $tidy_command,
     metric_ensure   => $metric_ensure,
     minute          => $cron_minute,
+    env_vars        => $env_vars,
     notify          => Exec['puppet_metrics_collector_system_daemon_reload'],
   }
 
