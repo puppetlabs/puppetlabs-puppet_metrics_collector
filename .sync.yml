@@ -64,3 +64,5 @@ Gemfile:
     ":development":
     - gem: github_changelog_generator
       version: '= 1.16.0'
+    - gem: nio4r
+      version: '=2.5.8'
