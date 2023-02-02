@@ -16,6 +16,11 @@ class puppet_metrics_collector::service::puppetserver (
   Optional[Integer]       $metrics_server_port      = $puppet_metrics_collector::metrics_server_port,
   Optional[String]        $metrics_server_db_name   = $puppet_metrics_collector::metrics_server_db_name,
 ) {
+  puppet_metrics_collector::deprecated_parameter { 'puppet_metrics_collector::service::puppetserver::metrics_server_type': }
+  puppet_metrics_collector::deprecated_parameter { 'puppet_metrics_collector::service::puppetserver::metrics_server_hostname': }
+  puppet_metrics_collector::deprecated_parameter { 'puppet_metrics_collector::service::puppetserver::metrics_server_port': }
+  puppet_metrics_collector::deprecated_parameter { 'puppet_metrics_collector::service::puppetserver::metrics_server_db_name': }
+
   $filesync_storage_metrics = [
     {
       'type'  => 'read',
@@ -48,9 +53,9 @@ class puppet_metrics_collector::service::puppetserver (
     override_metrics_command => $override_metrics_command,
     excludes                 => $excludes,
     additional_metrics       => $additional_metrics,
-    metrics_server_type      => $metrics_server_type,
-    metrics_server_hostname  => $metrics_server_hostname,
-    metrics_server_port      => $metrics_server_port,
-    metrics_server_db_name   => $metrics_server_db_name,
+    metrics_server_type      => $metrics_server_type ? {
+      'splunk_hec' => 'splunk_hec',
+      default      => undef,
+    },
   }
 }

@@ -42,7 +42,6 @@ PORT               = coalesce(options[:metrics_port], config['metrics_port'])
 USE_SSL            = coalesce(options[:ssl], config['ssl'], true)
 EXCLUDES           = config['excludes']
 ADDITIONAL_METRICS = config['additional_metrics']
-REMOTE_METRICS_ENABLED = config['remote_metrics_enabled']
 
 # Metrics endpoints for our Puma services require a client certificate with SSL.
 # Metrics endpoints for our Trapper Keeper services do not require a client certificate.

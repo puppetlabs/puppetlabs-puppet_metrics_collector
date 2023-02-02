@@ -29,6 +29,7 @@ describe 'puppet_metrics_collector::pe_metric' do
         '/opt/puppetlabs/puppet-metrics-collector/scripts/test-service_metrics',
         '/opt/puppetlabs/puppet-metrics-collector/scripts/test-service_metrics_tidy',
         '/opt/puppetlabs/puppet-metrics-collector/test-service',
+        '/opt/puppetlabs/puppet-metrics-collector/config/test-service.yaml',
         '/etc/systemd/system/puppet_test-service-metrics.service',
         '/etc/systemd/system/puppet_test-service-tidy.service',
         '/etc/systemd/system/puppet_test-service-tidy.timer',
@@ -51,33 +52,5 @@ describe 'puppet_metrics_collector::pe_metric' do
     let(:params) { super().merge({ cron_minute: '0/12' }) }
 
     it { is_expected.to contain_file('/etc/systemd/system/puppet_test-service-metrics.timer').with_content(%r{OnCalendar=.*0\/12}) }
-  end
-
-  describe 'remote metric collection' do
-    let(:facts) { { pe_server_version: '2019.8.3' } }
-
-    it 'is disabled by default due to CVE-2020-7943' do
-      expect(subject).to contain_file('/opt/puppetlabs/puppet-metrics-collector/config/test-service.yaml').with_content(%r{remote_metrics_enabled: false})
-    end
-
-    context 'when the PE version is 2019.8.5 or newer' do
-      let(:facts) do
-        { pe_server_version: '2019.8.5' }
-      end
-
-      it 'is enabled by default' do
-        expect(subject).to contain_file('/opt/puppetlabs/puppet-metrics-collector/config/test-service.yaml').with_content(%r{remote_metrics_enabled: true})
-      end
-    end
-
-    context 'when the PE version is 2019.8.4 or older' do
-      let(:facts) do
-        { pe_server_version: '2019.8.4' }
-      end
-
-      it 'is disabled by default' do
-        expect(subject).to contain_file('/opt/puppetlabs/puppet-metrics-collector/config/test-service.yaml').with_content(%r{remote_metrics_enabled: false})
-      end
-    end
   end
 end

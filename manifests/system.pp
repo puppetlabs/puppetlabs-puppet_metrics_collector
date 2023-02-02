@@ -43,6 +43,8 @@ class puppet_metrics_collector::system (
   Optional[Integer] $metrics_server_port      = getvar('puppet_metrics_collector::metrics_server_port'),
   Optional[String] $metrics_server_db_name    = getvar('puppet_metrics_collector::metrics_server_db_name'),
 ) {
+  puppet_metrics_collector::deprecated_parameter { 'puppet_metrics_collector::system::metrics_server_type': }
+
   $scripts_dir = "${output_dir}/scripts"
 
   # If File[$output_dir] is defined, assume that the puppet_metrics_collector
@@ -72,13 +74,17 @@ class puppet_metrics_collector::system (
     refreshonly => true,
   }
 
-  $metrics_shipping_command = puppet_metrics_collector::generate_metrics_server_command(
-    $scripts_dir,
-    $metrics_server_type,
-    $metrics_server_hostname,
-    $metrics_server_db_name,
-    $metrics_server_port
-  )
+  $metrics_shipping_command = if $metrics_server_type == 'splunk_hec' {
+    join(['--print |',
+        '/opt/puppetlabs/bin/puppet',
+        'splunk_hec',
+        '--sourcetype puppet:metrics',
+        '--pe_metrics',
+    ], ' ')
+  }
+  else {
+    ''
+  }
 
   if $manage_sysstat {
     package { 'sysstat':
