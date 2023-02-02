@@ -1,56 +1,76 @@
 #!/opt/puppetlabs/puppet/bin/ruby
 
-USE_CLIENTCERT = true
-
 require_relative 'pe_metrics'
 
-def get_status_endpoint(host, port, use_ssl)
-  host_url = generate_host_url(host, port, use_ssl)
+include PuppetX::Puppetlabs::PuppetMetricsCollector
 
-  status_endpoint = "#{host_url}/status/v1/services?level=debug"
-  status_output   = get_endpoint(status_endpoint, use_ssl)
-end
+# Wrap code in a main method so we can rescue errors
+def main
+  Puppet.initialize_settings
+  metrics_collector_setup
 
-output_file = Time.now.utc.strftime('%Y%m%dT%H%M%SZ') + '.json'
+  output_file = Time.now.utc.strftime('%Y%m%dT%H%M%SZ') + '.json'
 
-HOSTS.each do |host|
-  timestamp = Time.now
-  dataset = { 'timestamp' => timestamp.utc.iso8601, 'servers' => {} }
-  hostkey = host.tr('.', '-')
-  dataset['servers'][hostkey] = { METRICS_TYPE => {} }
+  @hosts.each do |host|
+    timestamp = Time.now
+    dataset = { 'timestamp' => timestamp.utc.iso8601, 'servers' => {} }
+    hostkey = host.tr('.', '-')
+    dataset['servers'][hostkey] = { @metrics_type => {} }
+    url = "https://#{host}:#{@port}"
 
-  status_output = get_status_endpoint(host, PORT, USE_SSL)
+    # Puma based services use a different status endpoint and have an additional GC endpoint
+    if ['ace', 'bolt'].include?(@metrics_type)
+      status_url = URI("#{url}/admin/status")
 
-  dataset['servers'][hostkey][METRICS_TYPE] = status_output
-
-  unless ADDITIONAL_METRICS.empty?
-    metrics_array = retrieve_additional_metrics(host, PORT, USE_SSL, METRICS_TYPE, ADDITIONAL_METRICS)
-    metrics_array.each do |metric_hash|
-      metric_name = metric_hash['name']
-      metric_data = metric_hash['data']
-      dataset['servers'][hostkey][METRICS_TYPE][metric_name] = metric_data
+      gc_url = URI("#{url}/admin/gc_stat")
+      gc_status_output = get_endpoint(gc_url)
+    else
+      status_url = URI("#{url}/status/v1/services?level=debug")
     end
-  end
 
-  dataset['servers'][hostkey][METRICS_TYPE]['error'] = $error_array
-  dataset['servers'][hostkey][METRICS_TYPE]['error_count'] = $error_array.count
-  dataset['servers'][hostkey][METRICS_TYPE]['api-query-start'] = timestamp.utc.iso8601
-  dataset['servers'][hostkey][METRICS_TYPE]['api-query-duration'] = Time.now - timestamp
+    status_output = get_endpoint(status_url)
+    dataset['servers'][hostkey][@metrics_type] = status_output
+    dataset['servers'][hostkey][@metrics_type]['gc_stats'] = gc_status_output if gc_status_output
 
-  filtered_dataset = filter_metrics(dataset, EXCLUDES)
-  json_dataset = JSON.generate(filtered_dataset)
+    unless @additional_metrics.empty?
+      metrics_array = retrieve_additional_metrics(URI("#{url}/metrics/v2/read"), @metrics_type, @additional_metrics)
 
-  unless OUTPUT_DIR.nil?
-    Dir.chdir(OUTPUT_DIR) do
-      Dir.mkdir(host) unless File.exist?(host)
-      File.open(File.join(host, output_file), 'w') do |file|
-        file.write(json_dataset)
+      metrics_array.each do |metric_hash|
+        metric_name = metric_hash['name']
+        metric_data = metric_hash['data']
+        dataset['servers'][hostkey][@metrics_type][metric_name] = metric_data
       end
     end
+
+    dataset['servers'][hostkey][@metrics_type]['error'] = @errors
+    dataset['servers'][hostkey][@metrics_type]['error_count'] = @errors.count
+    dataset['servers'][hostkey][@metrics_type]['api-query-start'] = timestamp.utc.iso8601
+    dataset['servers'][hostkey][@metrics_type]['api-query-duration'] = Time.now - timestamp
+
+    filtered_dataset = filter_metrics(dataset, @excludes)
+    json_dataset = JSON.generate(filtered_dataset)
+
+    unless @output_dir.nil?
+      Dir.chdir(@output_dir) do
+        Dir.mkdir(host) unless File.exist?(host)
+        File.open(File.join(host, output_file), 'w') do |file|
+          file.write(json_dataset)
+        end
+      end
+    end
+
+    next unless @print
+    # Use puts so that data gatherd from each host is written to stdout
+    # with a newline separator. This enables parsing of multiple datasets
+    # as the output stream is in line-delimited JSON form.
+    STDOUT.puts(json_dataset)
   end
-  next unless OPTIONS[:print] != false
-  # Use puts so that data gatherd from each host is written to stdout
-  # with a newline separator. This enables parsing of multiple datasets
-  # as the output stream is in line-delimited JSON form.
-  STDOUT.puts(json_dataset)
+rescue StandardError => e
+  STDERR.puts "Failed to collect #{@metrics_type} metrics: #{e.message}"
+  STDERR.puts e.backtrace
+  nil
+end
+
+if __FILE__ == $PROGRAM_NAME
+  main
 end

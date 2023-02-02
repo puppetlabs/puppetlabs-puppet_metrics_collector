@@ -16,6 +16,11 @@ class puppet_metrics_collector::service::orchestrator (
   Optional[Integer]       $metrics_server_port      = $puppet_metrics_collector::metrics_server_port,
   Optional[String]        $metrics_server_db_name   = $puppet_metrics_collector::metrics_server_db_name,
 ) {
+  puppet_metrics_collector::deprecated_parameter { 'puppet_metrics_collector::service::orchestrator::metrics_server_type': }
+  puppet_metrics_collector::deprecated_parameter { 'puppet_metrics_collector::service::orchestrator::metrics_server_hostname': }
+  puppet_metrics_collector::deprecated_parameter { 'puppet_metrics_collector::service::orchestrator::metrics_server_port': }
+  puppet_metrics_collector::deprecated_parameter { 'puppet_metrics_collector::service::orchestrator::metrics_server_db_name': }
+
   puppet_metrics_collector::pe_metric { 'orchestrator' :
     metric_ensure            => $metrics_ensure,
     cron_minute              => "0/${collection_frequency}",
@@ -25,9 +30,9 @@ class puppet_metrics_collector::service::orchestrator (
     additional_metrics       => $extra_metrics,
     override_metrics_command => $override_metrics_command,
     excludes                 => $excludes,
-    metrics_server_type      => $metrics_server_type,
-    metrics_server_hostname  => $metrics_server_hostname,
-    metrics_server_port      => $metrics_server_port,
-    metrics_server_db_name   => $metrics_server_db_name,
+    metrics_server_type      => $metrics_server_type ? {
+      'splunk_hec' => 'splunk_hec',
+      default      => undef,
+    },
   }
 }

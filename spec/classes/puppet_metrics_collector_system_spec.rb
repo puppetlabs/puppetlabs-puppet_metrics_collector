@@ -185,41 +185,49 @@ describe 'puppet_metrics_collector::system' do
   context 'when metrics shipping is enabled' do
     let(:params) do
       {
-        metrics_server_type: 'influxdb',
-        metrics_server_db_name: 'puppet_metrics',
-        metrics_server_hostname: 'influxdb.example'
+        metrics_server_type: 'splunk_hec',
       }
     end
     let(:facts) { { puppet_metrics_collector: { have_sysstat: true, have_systemd: true } } }
 
-    it { is_expected.to contain_puppet_metrics_collector__collect('system_cpu').with_metrics_command(%r{--influx-db\s+puppet_metrics}) }
+    it { is_expected.to contain_puppet_metrics_collector__collect('system_cpu').with_metrics_command(%r{/opt/puppetlabs/bin/puppet splunk_hec --sourcetype puppet:metrics --pe_metrics}) }
   end
 
   context 'when metrics shipping is enabled in puppet_metrics_collector' do
     let(:pre_condition) do
       <<-PRE_COND
       class {'puppet_metrics_collector':
-        metrics_server_type => "influxdb",
-        metrics_server_db_name => "puppet_metrics",
-        metrics_server_hostname => "influxdb.example",
+        metrics_server_type => "splunk_hec",
       }
       PRE_COND
     end
     let(:facts) { { puppet_metrics_collector: { have_sysstat: true, have_systemd: true } } }
 
-    it { is_expected.to contain_puppet_metrics_collector__collect('system_cpu').with_metrics_command(%r{--influx-db\s+puppet_metrics}) }
+    it {
+      is_expected.to contain_puppet_metrics_collector__collect('system_cpu').with_metrics_command(
+        %r{/opt/puppetlabs/bin/puppet splunk_hec --sourcetype puppet:metrics --pe_metrics},
+      )
+    }
   end
 
   context 'when metrics shipping is not enabled' do
-    let(:params) do
-      {
-        metrics_server_db_name: 'puppet_metrics',
-        metrics_server_hostname: 'influxdb.example'
-      }
-    end
     let(:facts) { { puppet_metrics_collector: { have_sysstat: true, have_systemd: true } } }
 
-    it { is_expected.not_to contain_puppet_metrics_collector__collect('sar').with_metrics_command(%r{--influx-db\s+puppet_metrics}) }
+    it {
+      is_expected.not_to contain_puppet_metrics_collector__collect('system_cpu').with_metrics_command(
+        %r{/opt/puppetlabs/bin/puppet splunk_hec --sourcetype puppet:metrics --pe_metrics},
+      )
+    }
+  end
+
+  context 'when setting deprecated parameters' do
+    let(:facts) { { puppet_metrics_collector: { have_sysstat: true, have_systemd: true } } }
+    let(:params) { { metrics_server_type: 'influxdb' } }
+
+    it {
+      is_expected.to contain_puppet_metrics_collector__deprecated_parameter('puppet_metrics_collector::system::metrics_server_type')
+      is_expected.to contain_notify('Invalid value for puppet_metrics_collector::system::metrics_server_type')
+    }
   end
 
   context 'when customizing the collection frequency' do
