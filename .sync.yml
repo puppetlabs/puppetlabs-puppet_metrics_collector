@@ -27,7 +27,7 @@ spec/spec_helper.rb:
   coverage_report: true
 Rakefile:
   changelog_user: "puppetlabs"
-  changelog_since_tag: 'v7.1.1'
+  changelog_since_tag: 'v7.1.0'
 spec/default_facts.yml:
   extra_facts:
     pe_server_version: '2019.8.6'
@@ -63,4 +63,4 @@ Gemfile:
   optional:
     ":development":
     - gem: github_changelog_generator
-      version: '= 1.15.2'
+      version: '= 1.16.0'
