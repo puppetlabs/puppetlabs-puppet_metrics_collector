@@ -21,6 +21,10 @@ jobs:
         dataset: ${{ env.HONEYCOMB_DATASET }}
         job-status: ${{ job.status }}
 
+    - name: "install gem dependancy"
+      run: |
+          apt-get install libgmp-dev -y
+
     - name: "Honeycomb: start first step"
       run: |
         echo STEP_ID="auto-release" >> $GITHUB_ENV
