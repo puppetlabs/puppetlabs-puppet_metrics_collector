@@ -37,6 +37,16 @@
 # @param orchestrator_port
 #   Port to connect to orchestrator on. Default: '8143' 
 # 
+#
+# @param console_metrics_ensure
+#   Whether to enable or disable the collection of PE Console metrics. Valid values are 'present', and 'absent'. Default : 'present'
+#
+# @param console_hosts
+#   The list of console hosts to collect metrics from. Uses the hosts_with_pe_profile function to determine the list of hosts with the console profile.
+#
+# @param console_port
+#   Port to connect to console on. Default: '4433'
+#
 # @param ace_metrics_ensure 
 #   Whether to enable or disable the collection of Ace metrics. Valid values are 'present', and 'absent'. Default : 'present'
 # 
@@ -83,6 +93,8 @@
 #   An Array of metrics to exclude from the puppetdb metrics collection.
 # @param orchestrator_excludes
 #   An Array of metrics to exclude from the orchestrator_excludes metrics collection.
+# @param console_excludes
+#   An Array of metrics to exclude from the console_excludes metrics collection.
 # @param ace_excludes
 #   An Array of metrics to exclude from the ace_excludes metrics collection.
 # @param bolt_excludes
@@ -111,6 +123,9 @@ class puppet_metrics_collector (
   String                  $orchestrator_metrics_ensure = 'present',
   Array[String]           $orchestrator_hosts          = puppet_metrics_collector::hosts_with_pe_profile('orchestrator'),
   Integer                 $orchestrator_port           = 8143,
+  String                  $console_metrics_ensure      = 'present',
+  Array[String]           $console_hosts               = puppet_metrics_collector::hosts_with_pe_profile('console'),
+  Integer                 $console_port                = 4433,
   String                  $ace_metrics_ensure          = 'present',
   Array[String]           $ace_hosts                   = puppet_metrics_collector::hosts_with_pe_profile('ace_server'),
   Integer                 $ace_port                    = 44633,
@@ -125,6 +140,7 @@ class puppet_metrics_collector (
   Optional[Array[String]] $puppetserver_excludes       = undef,
   Optional[Array[String]] $puppetdb_excludes           = undef,
   Optional[Array[String]] $orchestrator_excludes       = undef,
+  Optional[Array[String]] $console_excludes            = undef,
   Optional[Array[String]] $ace_excludes                = undef,
   Optional[Array[String]] $bolt_excludes               = undef,
   Optional[Array[String]] $activemq_excludes           = undef,
@@ -194,6 +210,7 @@ class puppet_metrics_collector (
     include puppet_metrics_collector::service::puppetserver
     include puppet_metrics_collector::service::puppetdb
     include puppet_metrics_collector::service::orchestrator
+    include puppet_metrics_collector::service::console
     include puppet_metrics_collector::service::ace
     include puppet_metrics_collector::service::bolt
 

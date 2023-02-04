@@ -13,8 +13,32 @@ describe 'puppet_metrics_collector::pe_metric' do
     expect(subject).to compile
   end
 
-  context 'when capturing Puppet server metrics' do
-    it { is_expected.to contain_service('puppet_puppetserver-metrics.timer').with_ensure('running') }
+  context 'with default parameters' do
+    it {
+      is_expected.to contain_service('puppet_test-service-metrics.timer').with_ensure('running')
+      is_expected.to contain_service('puppet_test-service-metrics.service')
+
+      is_expected.to contain_service('puppet_test-service-tidy.timer').with_ensure('running')
+      is_expected.to contain_service('puppet_test-service-tidy.service')
+
+      is_expected.to contain_puppet_metrics_collector__collect('test-service')
+
+      files = [
+        '/opt/puppetlabs/puppet-metrics-collector/scripts/test-service_config.yaml',
+        '/opt/puppetlabs/puppet-metrics-collector/scripts/test-service_metrics.sh',
+        '/opt/puppetlabs/puppet-metrics-collector/scripts/test-service_metrics',
+        '/opt/puppetlabs/puppet-metrics-collector/scripts/test-service_metrics_tidy',
+        '/opt/puppetlabs/puppet-metrics-collector/test-service',
+        '/etc/systemd/system/puppet_test-service-metrics.service',
+        '/etc/systemd/system/puppet_test-service-tidy.service',
+        '/etc/systemd/system/puppet_test-service-tidy.timer',
+
+      ]
+      files.each { |file| is_expected.to contain_file(file) }
+
+      is_expected.to contain_cron('test-service_metrics_collection').with_ensure('absent')
+      is_expected.to contain_cron('test-service_metrics_tidy').with_ensure('absent')
+    }
   end
 
   context 'when not capturing metrics' do

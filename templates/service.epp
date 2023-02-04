@@ -1,9 +1,14 @@
-<%- | String $metrics_command, String $service | -%>
+<%- | String $metrics_command, String $service, Optional[Hash] $env_vars = undef | -%>
 [Unit]
 Description=Oneshot service to capture Puppet metrics
 Wants=<%= $service%>-metrics.timer
 
 [Service]
+<% if $env_vars { -%>
+<% $env_vars.each |$k,$v| { -%>
+Environment="<%= $k %>=<%= $v %>"
+<% } -%>
+<% } -%>
 Type=oneshot
 ExecStart=/bin/sh -c '<%= $metrics_command %>'
 

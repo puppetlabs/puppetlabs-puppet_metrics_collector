@@ -93,8 +93,7 @@ class puppet_metrics_collector::system (
       source => 'puppet:///modules/puppet_metrics_collector/system_metrics',
     }
 
-    contain puppet_metrics_collector::system::cpu
-    contain puppet_metrics_collector::system::memory
+    contain puppet_metrics_collector::system::sar
     contain puppet_metrics_collector::system::processes
   }
 
@@ -132,5 +131,15 @@ class puppet_metrics_collector::system (
 
   file { $metric_legacy_files :
     ensure => absent,
+  }
+
+  # Legacy sar cleanup
+  puppet_metrics_collector::sar_metric { 'system_memory' :
+    metric_ensure             => 'absent',
+    cron_minute               => '0',
+    retention_days            => 0,
+    collection_frequency      => 0,
+    polling_frequency_seconds => 0,
+    metrics_shipping_command  => 'foo',
   }
 }
