@@ -9,33 +9,33 @@
 #### Public Classes
 
 * [`puppet_metrics_collector`](#puppet_metrics_collector): This module manages the collection of Puppet and system Metrics
-* [`puppet_metrics_collector::system`](#puppet_metrics_collectorsystem): This class manages collect postgres and system metrics
+* [`puppet_metrics_collector::system`](#puppet_metrics_collector--system): This class manages collect postgres and system metrics
 
 #### Private Classes
 
 * `puppet_metrics_collector::service::ace`: Collects ace metrics
 * `puppet_metrics_collector::service::bolt`: Collects bolt metrics
+* `puppet_metrics_collector::service::console`: Collects console metrics
 * `puppet_metrics_collector::service::orchestrator`: Collects orchestrator metrics
 * `puppet_metrics_collector::service::puppetdb`: Collects puppetdb metrics
 * `puppet_metrics_collector::service::puppetserver`: Collect puppetserver metrics
-* `puppet_metrics_collector::system::cpu`: Collects System CPU Metrics
-* `puppet_metrics_collector::system::memory`: Collects System Memory Metrics
 * `puppet_metrics_collector::system::postgres`: Collects postgres Metrics
 * `puppet_metrics_collector::system::processes`: Collects System Processes Metrics
+* `puppet_metrics_collector::system::sar`: Collects System CPU Metrics
 * `puppet_metrics_collector::system::vmware`: Collects System vmware Metrics
 
 ### Defined types
 
-* [`puppet_metrics_collector::collect`](#puppet_metrics_collectorcollect): Creates systemd units for collecting a given metric
-* [`puppet_metrics_collector::pe_metric`](#puppet_metrics_collectorpe_metric): A defined type to manage the configuration of tbe different metrics collection targets
-* [`puppet_metrics_collector::sar_metric`](#puppet_metrics_collectorsar_metric): This class manages the collections of SAR metrics
+* [`puppet_metrics_collector::collect`](#puppet_metrics_collector--collect): Creates systemd units for collecting a given metric
+* [`puppet_metrics_collector::pe_metric`](#puppet_metrics_collector--pe_metric): A defined type to manage the configuration of tbe different metrics collection targets
+* [`puppet_metrics_collector::sar_metric`](#puppet_metrics_collector--sar_metric): This class manages the collections of SAR metrics
 
 ### Functions
 
-* [`puppet_metrics_collector::generate_metrics_server_command`](#puppet_metrics_collectorgenerate_metrics_server_command): Generate the metrics shipping command for the cron job including remote metrics
-* [`puppet_metrics_collector::hosts_with_pe_profile`](#puppet_metrics_collectorhosts_with_pe_profile): Function: hosts_with_pe_profile  Queries PuppetDB for hosts with the specified Puppet Enterprise profile. Used by this module to query Puppet
-* [`puppet_metrics_collector::to_yaml`](#puppet_metrics_collectorto_yaml): Description: Converts the content of the passed array or hash to YAML
-* [`puppet_metrics_collector::version_based_excludes`](#puppet_metrics_collectorversion_based_excludes): Function: version_based_excludes  Description: Generates a list of services to exlude based on version of PE
+* [`puppet_metrics_collector::generate_metrics_server_command`](#puppet_metrics_collector--generate_metrics_server_command): Generate the metrics shipping command for the cron job including remote metrics
+* [`puppet_metrics_collector::hosts_with_pe_profile`](#puppet_metrics_collector--hosts_with_pe_profile): Function: hosts_with_pe_profile  Queries PuppetDB for hosts with the specified Puppet Enterprise profile. Used by this module to query Puppet
+* [`puppet_metrics_collector::to_yaml`](#puppet_metrics_collector--to_yaml): Description: Converts the content of the passed array or hash to YAML
+* [`puppet_metrics_collector::version_based_excludes`](#puppet_metrics_collector--version_based_excludes): Function: version_based_excludes  Description: Generates a list of services to exlude based on version of PE
 
 ## Classes
 
@@ -62,42 +62,46 @@ Optional Integer: Collection of ActiveMQ metrics has been removed, but the param
 
 The following parameters are available in the `puppet_metrics_collector` class:
 
-* [`puppetserver_metrics_ensure`](#puppetserver_metrics_ensure)
-* [`output_dir`](#output_dir)
-* [`collection_frequency`](#collection_frequency)
-* [`retention_days`](#retention_days)
-* [`puppetserver_hosts`](#puppetserver_hosts)
-* [`puppetserver_port`](#puppetserver_port)
-* [`puppetdb_metrics_ensure`](#puppetdb_metrics_ensure)
-* [`puppetdb_hosts`](#puppetdb_hosts)
-* [`puppetdb_port`](#puppetdb_port)
-* [`orchestrator_metrics_ensure`](#orchestrator_metrics_ensure)
-* [`orchestrator_hosts`](#orchestrator_hosts)
-* [`orchestrator_port`](#orchestrator_port)
-* [`ace_metrics_ensure`](#ace_metrics_ensure)
-* [`ace_hosts`](#ace_hosts)
-* [`ace_port`](#ace_port)
-* [`bolt_metrics_ensure`](#bolt_metrics_ensure)
-* [`bolt_hosts`](#bolt_hosts)
-* [`bolt_port`](#bolt_port)
-* [`metrics_server_type`](#metrics_server_type)
-* [`metrics_server_db_name`](#metrics_server_db_name)
-* [`override_metrics_command`](#override_metrics_command)
-* [`activemq_metrics_ensure`](#activemq_metrics_ensure)
-* [`activemq_hosts`](#activemq_hosts)
-* [`activemq_port`](#activemq_port)
-* [`puppetserver_excludes`](#puppetserver_excludes)
-* [`puppetdb_excludes`](#puppetdb_excludes)
-* [`orchestrator_excludes`](#orchestrator_excludes)
-* [`ace_excludes`](#ace_excludes)
-* [`bolt_excludes`](#bolt_excludes)
-* [`activemq_excludes`](#activemq_excludes)
-* [`metrics_server_hostname`](#metrics_server_hostname)
-* [`metrics_server_port`](#metrics_server_port)
-* [`metrics_server_db_name`](#metrics_server_db_name)
-* [`override_metrics_command`](#override_metrics_command)
+* [`puppetserver_metrics_ensure`](#-puppet_metrics_collector--puppetserver_metrics_ensure)
+* [`output_dir`](#-puppet_metrics_collector--output_dir)
+* [`collection_frequency`](#-puppet_metrics_collector--collection_frequency)
+* [`retention_days`](#-puppet_metrics_collector--retention_days)
+* [`puppetserver_hosts`](#-puppet_metrics_collector--puppetserver_hosts)
+* [`puppetserver_port`](#-puppet_metrics_collector--puppetserver_port)
+* [`puppetdb_metrics_ensure`](#-puppet_metrics_collector--puppetdb_metrics_ensure)
+* [`puppetdb_hosts`](#-puppet_metrics_collector--puppetdb_hosts)
+* [`puppetdb_port`](#-puppet_metrics_collector--puppetdb_port)
+* [`orchestrator_metrics_ensure`](#-puppet_metrics_collector--orchestrator_metrics_ensure)
+* [`orchestrator_hosts`](#-puppet_metrics_collector--orchestrator_hosts)
+* [`orchestrator_port`](#-puppet_metrics_collector--orchestrator_port)
+* [`console_metrics_ensure`](#-puppet_metrics_collector--console_metrics_ensure)
+* [`console_hosts`](#-puppet_metrics_collector--console_hosts)
+* [`console_port`](#-puppet_metrics_collector--console_port)
+* [`ace_metrics_ensure`](#-puppet_metrics_collector--ace_metrics_ensure)
+* [`ace_hosts`](#-puppet_metrics_collector--ace_hosts)
+* [`ace_port`](#-puppet_metrics_collector--ace_port)
+* [`bolt_metrics_ensure`](#-puppet_metrics_collector--bolt_metrics_ensure)
+* [`bolt_hosts`](#-puppet_metrics_collector--bolt_hosts)
+* [`bolt_port`](#-puppet_metrics_collector--bolt_port)
+* [`metrics_server_type`](#-puppet_metrics_collector--metrics_server_type)
+* [`metrics_server_db_name`](#-puppet_metrics_collector--metrics_server_db_name)
+* [`override_metrics_command`](#-puppet_metrics_collector--override_metrics_command)
+* [`activemq_metrics_ensure`](#-puppet_metrics_collector--activemq_metrics_ensure)
+* [`activemq_hosts`](#-puppet_metrics_collector--activemq_hosts)
+* [`activemq_port`](#-puppet_metrics_collector--activemq_port)
+* [`puppetserver_excludes`](#-puppet_metrics_collector--puppetserver_excludes)
+* [`puppetdb_excludes`](#-puppet_metrics_collector--puppetdb_excludes)
+* [`orchestrator_excludes`](#-puppet_metrics_collector--orchestrator_excludes)
+* [`console_excludes`](#-puppet_metrics_collector--console_excludes)
+* [`ace_excludes`](#-puppet_metrics_collector--ace_excludes)
+* [`bolt_excludes`](#-puppet_metrics_collector--bolt_excludes)
+* [`activemq_excludes`](#-puppet_metrics_collector--activemq_excludes)
+* [`metrics_server_hostname`](#-puppet_metrics_collector--metrics_server_hostname)
+* [`metrics_server_port`](#-puppet_metrics_collector--metrics_server_port)
+* [`metrics_server_db_name`](#-puppet_metrics_collector--metrics_server_db_name)
+* [`override_metrics_command`](#-puppet_metrics_collector--override_metrics_command)
 
-##### <a name="puppetserver_metrics_ensure"></a>`puppetserver_metrics_ensure`
+##### <a name="-puppet_metrics_collector--puppetserver_metrics_ensure"></a>`puppetserver_metrics_ensure`
 
 Data type: `String`
 
@@ -105,7 +109,7 @@ Whether to enable or disable the collection of Puppetserver metrics. Valid value
 
 Default value: `'present'`
 
-##### <a name="output_dir"></a>`output_dir`
+##### <a name="-puppet_metrics_collector--output_dir"></a>`output_dir`
 
 Data type: `String`
 
@@ -113,7 +117,7 @@ The directory to write the metrics to. Default: '/opt/puppetlabs/puppet-metrics-
 
 Default value: `'/opt/puppetlabs/puppet-metrics-collector'`
 
-##### <a name="collection_frequency"></a>`collection_frequency`
+##### <a name="-puppet_metrics_collector--collection_frequency"></a>`collection_frequency`
 
 Data type: `Integer`
 
@@ -121,7 +125,7 @@ The frequency to collect metrics in minutes. Default: '5'
 
 Default value: `5`
 
-##### <a name="retention_days"></a>`retention_days`
+##### <a name="-puppet_metrics_collector--retention_days"></a>`retention_days`
 
 Data type: `Integer`
 
@@ -129,7 +133,7 @@ The number of days to retain metrics. Default: '90'
 
 Default value: `90`
 
-##### <a name="puppetserver_hosts"></a>`puppetserver_hosts`
+##### <a name="-puppet_metrics_collector--puppetserver_hosts"></a>`puppetserver_hosts`
 
 Data type: `Array[String]`
 
@@ -137,7 +141,7 @@ The list of puppetserver hosts to collect metrics from. Uses the hosts_with_pe_p
 
 Default value: `puppet_metrics_collector::hosts_with_pe_profile('master')`
 
-##### <a name="puppetserver_port"></a>`puppetserver_port`
+##### <a name="-puppet_metrics_collector--puppetserver_port"></a>`puppetserver_port`
 
 Data type: `Integer`
 
@@ -145,7 +149,7 @@ Port to connect to puppetserver on. Default: '8140'
 
 Default value: `8140`
 
-##### <a name="puppetdb_metrics_ensure"></a>`puppetdb_metrics_ensure`
+##### <a name="-puppet_metrics_collector--puppetdb_metrics_ensure"></a>`puppetdb_metrics_ensure`
 
 Data type: `String`
 
@@ -153,7 +157,7 @@ Whether to enable or disable the collection of PuppetDB metrics. Valid values ar
 
 Default value: `'present'`
 
-##### <a name="puppetdb_hosts"></a>`puppetdb_hosts`
+##### <a name="-puppet_metrics_collector--puppetdb_hosts"></a>`puppetdb_hosts`
 
 Data type: `Array[String]`
 
@@ -161,7 +165,7 @@ The list of puppetdb hosts to collect metrics from. Uses the hosts_with_pe_profi
 
 Default value: `puppet_metrics_collector::hosts_with_pe_profile('puppetdb')`
 
-##### <a name="puppetdb_port"></a>`puppetdb_port`
+##### <a name="-puppet_metrics_collector--puppetdb_port"></a>`puppetdb_port`
 
 Data type: `Integer`
 
@@ -169,7 +173,7 @@ Port to connect to puppetdb on. Default: '8081'
 
 Default value: `8081`
 
-##### <a name="orchestrator_metrics_ensure"></a>`orchestrator_metrics_ensure`
+##### <a name="-puppet_metrics_collector--orchestrator_metrics_ensure"></a>`orchestrator_metrics_ensure`
 
 Data type: `String`
 
@@ -177,7 +181,7 @@ Whether to enable or disable the collection of Orchestrator metrics. Valid value
 
 Default value: `'present'`
 
-##### <a name="orchestrator_hosts"></a>`orchestrator_hosts`
+##### <a name="-puppet_metrics_collector--orchestrator_hosts"></a>`orchestrator_hosts`
 
 Data type: `Array[String]`
 
@@ -185,7 +189,7 @@ The list of orchestrator hosts to collect metrics from. Uses the hosts_with_pe_p
 
 Default value: `puppet_metrics_collector::hosts_with_pe_profile('orchestrator')`
 
-##### <a name="orchestrator_port"></a>`orchestrator_port`
+##### <a name="-puppet_metrics_collector--orchestrator_port"></a>`orchestrator_port`
 
 Data type: `Integer`
 
@@ -193,7 +197,31 @@ Port to connect to orchestrator on. Default: '8143'
 
 Default value: `8143`
 
-##### <a name="ace_metrics_ensure"></a>`ace_metrics_ensure`
+##### <a name="-puppet_metrics_collector--console_metrics_ensure"></a>`console_metrics_ensure`
+
+Data type: `String`
+
+Whether to enable or disable the collection of PE Console metrics. Valid values are 'present', and 'absent'. Default : 'present'
+
+Default value: `'present'`
+
+##### <a name="-puppet_metrics_collector--console_hosts"></a>`console_hosts`
+
+Data type: `Array[String]`
+
+The list of console hosts to collect metrics from. Uses the hosts_with_pe_profile function to determine the list of hosts with the console profile.
+
+Default value: `puppet_metrics_collector::hosts_with_pe_profile('console')`
+
+##### <a name="-puppet_metrics_collector--console_port"></a>`console_port`
+
+Data type: `Integer`
+
+Port to connect to console on. Default: '4433'
+
+Default value: `4433`
+
+##### <a name="-puppet_metrics_collector--ace_metrics_ensure"></a>`ace_metrics_ensure`
 
 Data type: `String`
 
@@ -201,7 +229,7 @@ Whether to enable or disable the collection of Ace metrics. Valid values are 'pr
 
 Default value: `'present'`
 
-##### <a name="ace_hosts"></a>`ace_hosts`
+##### <a name="-puppet_metrics_collector--ace_hosts"></a>`ace_hosts`
 
 Data type: `Array[String]`
 
@@ -209,7 +237,7 @@ The list of ace hosts to collect metrics from. Uses the hosts_with_pe_profile fu
 
 Default value: `puppet_metrics_collector::hosts_with_pe_profile('ace_server')`
 
-##### <a name="ace_port"></a>`ace_port`
+##### <a name="-puppet_metrics_collector--ace_port"></a>`ace_port`
 
 Data type: `Integer`
 
@@ -217,7 +245,7 @@ Port to connect to ace on. Default: '44633'
 
 Default value: `44633`
 
-##### <a name="bolt_metrics_ensure"></a>`bolt_metrics_ensure`
+##### <a name="-puppet_metrics_collector--bolt_metrics_ensure"></a>`bolt_metrics_ensure`
 
 Data type: `String`
 
@@ -225,7 +253,7 @@ Whether to enable or disable the collection of Bolt metrics. Valid values are 'p
 
 Default value: `'present'`
 
-##### <a name="bolt_hosts"></a>`bolt_hosts`
+##### <a name="-puppet_metrics_collector--bolt_hosts"></a>`bolt_hosts`
 
 Data type: `Array[String]`
 
@@ -233,7 +261,7 @@ The list of bolt hosts to collect metrics from. Uses the hosts_with_pe_profile f
 
 Default value: `puppet_metrics_collector::hosts_with_pe_profile('bolt_server')`
 
-##### <a name="bolt_port"></a>`bolt_port`
+##### <a name="-puppet_metrics_collector--bolt_port"></a>`bolt_port`
 
 Data type: `Integer`
 
@@ -241,31 +269,31 @@ Port to connect to bolt on. Default: '62658'
 
 Default value: `62658`
 
-##### <a name="metrics_server_type"></a>`metrics_server_type`
+##### <a name="-puppet_metrics_collector--metrics_server_type"></a>`metrics_server_type`
 
 Data type: `Optional[Enum['influxdb', 'graphite', 'splunk_hec']]`
 
 
 
-Default value: ``undef``
+Default value: `undef`
 
-##### <a name="metrics_server_db_name"></a>`metrics_server_db_name`
-
-Data type: `Optional[String]`
-
-
-
-Default value: ``undef``
-
-##### <a name="override_metrics_command"></a>`override_metrics_command`
+##### <a name="-puppet_metrics_collector--metrics_server_db_name"></a>`metrics_server_db_name`
 
 Data type: `Optional[String]`
 
 
 
-Default value: ``undef``
+Default value: `undef`
 
-##### <a name="activemq_metrics_ensure"></a>`activemq_metrics_ensure`
+##### <a name="-puppet_metrics_collector--override_metrics_command"></a>`override_metrics_command`
+
+Data type: `Optional[String]`
+
+
+
+Default value: `undef`
+
+##### <a name="-puppet_metrics_collector--activemq_metrics_ensure"></a>`activemq_metrics_ensure`
 
 Data type: `String`
 
@@ -273,7 +301,7 @@ Data type: `String`
 
 Default value: `'absent'`
 
-##### <a name="activemq_hosts"></a>`activemq_hosts`
+##### <a name="-puppet_metrics_collector--activemq_hosts"></a>`activemq_hosts`
 
 Data type: `Array[String]`
 
@@ -281,7 +309,7 @@ Data type: `Array[String]`
 
 Default value: `[]`
 
-##### <a name="activemq_port"></a>`activemq_port`
+##### <a name="-puppet_metrics_collector--activemq_port"></a>`activemq_port`
 
 Data type: `Integer`
 
@@ -289,84 +317,92 @@ Data type: `Integer`
 
 Default value: `8161`
 
-##### <a name="puppetserver_excludes"></a>`puppetserver_excludes`
+##### <a name="-puppet_metrics_collector--puppetserver_excludes"></a>`puppetserver_excludes`
 
 Data type: `Optional[Array[String]]`
 
 An Array of metrics to exclude from the puppetserver metrics collection.
 
-Default value: ``undef``
+Default value: `undef`
 
-##### <a name="puppetdb_excludes"></a>`puppetdb_excludes`
+##### <a name="-puppet_metrics_collector--puppetdb_excludes"></a>`puppetdb_excludes`
 
 Data type: `Optional[Array[String]]`
 
 An Array of metrics to exclude from the puppetdb metrics collection.
 
-Default value: ``undef``
+Default value: `undef`
 
-##### <a name="orchestrator_excludes"></a>`orchestrator_excludes`
+##### <a name="-puppet_metrics_collector--orchestrator_excludes"></a>`orchestrator_excludes`
 
 Data type: `Optional[Array[String]]`
 
 An Array of metrics to exclude from the orchestrator_excludes metrics collection.
 
-Default value: ``undef``
+Default value: `undef`
 
-##### <a name="ace_excludes"></a>`ace_excludes`
+##### <a name="-puppet_metrics_collector--console_excludes"></a>`console_excludes`
+
+Data type: `Optional[Array[String]]`
+
+An Array of metrics to exclude from the console_excludes metrics collection.
+
+Default value: `undef`
+
+##### <a name="-puppet_metrics_collector--ace_excludes"></a>`ace_excludes`
 
 Data type: `Optional[Array[String]]`
 
 An Array of metrics to exclude from the ace_excludes metrics collection.
 
-Default value: ``undef``
+Default value: `undef`
 
-##### <a name="bolt_excludes"></a>`bolt_excludes`
+##### <a name="-puppet_metrics_collector--bolt_excludes"></a>`bolt_excludes`
 
 Data type: `Optional[Array[String]]`
 
 An Array of metrics to exclude from the bolt_excludes metrics collection.
 
-Default value: ``undef``
+Default value: `undef`
 
-##### <a name="activemq_excludes"></a>`activemq_excludes`
+##### <a name="-puppet_metrics_collector--activemq_excludes"></a>`activemq_excludes`
 
 Data type: `Optional[Array[String]]`
 
 Collection of ActiveMQ metrics has been removed, but the parameters are left to avoid breaking upgrades
 
-Default value: ``undef``
+Default value: `undef`
 
-##### <a name="metrics_server_hostname"></a>`metrics_server_hostname`
+##### <a name="-puppet_metrics_collector--metrics_server_hostname"></a>`metrics_server_hostname`
 
 Data type: `Optional[String]`
 
 The hostname of the metrics server to send data to. Default: undef
 
-Default value: ``undef``
+Default value: `undef`
 
-##### <a name="metrics_server_port"></a>`metrics_server_port`
+##### <a name="-puppet_metrics_collector--metrics_server_port"></a>`metrics_server_port`
 
 Data type: `Optional[Integer]`
 
 The port number of the metrics server to send data to. Default: undef
 
-Default value: ``undef``
+Default value: `undef`
 
-##### <a name="metrics_server_db_name"></a>`metrics_server_db_name`
+##### <a name="-puppet_metrics_collector--metrics_server_db_name"></a>`metrics_server_db_name`
 
 The database name on the metrics server to send data to.
 Required for metrics_server_type of influxdb. Default: undef
 
-Default value: ``undef``
+Default value: `undef`
 
-##### <a name="override_metrics_command"></a>`override_metrics_command`
+##### <a name="-puppet_metrics_collector--override_metrics_command"></a>`override_metrics_command`
 
 Allows you to define the command that is executed to gather metrics. Default: undef
 
-Default value: ``undef``
+Default value: `undef`
 
-### <a name="puppet_metrics_collectorsystem"></a>`puppet_metrics_collector::system`
+### <a name="puppet_metrics_collector--system"></a>`puppet_metrics_collector::system`
 
 This class manages collect postgres and system metrics
 
@@ -374,20 +410,20 @@ This class manages collect postgres and system metrics
 
 The following parameters are available in the `puppet_metrics_collector::system` class:
 
-* [`system_metrics_ensure`](#system_metrics_ensure)
-* [`output_dir`](#output_dir)
-* [`collection_frequency`](#collection_frequency)
-* [`retention_days`](#retention_days)
-* [`polling_frequency_seconds`](#polling_frequency_seconds)
-* [`manage_sysstat`](#manage_sysstat)
-* [`manage_vmware_tools`](#manage_vmware_tools)
-* [`vmware_tools_pkg`](#vmware_tools_pkg)
-* [`metrics_server_type`](#metrics_server_type)
-* [`metrics_server_hostname`](#metrics_server_hostname)
-* [`metrics_server_port`](#metrics_server_port)
-* [`metrics_server_db_name`](#metrics_server_db_name)
+* [`system_metrics_ensure`](#-puppet_metrics_collector--system--system_metrics_ensure)
+* [`output_dir`](#-puppet_metrics_collector--system--output_dir)
+* [`collection_frequency`](#-puppet_metrics_collector--system--collection_frequency)
+* [`retention_days`](#-puppet_metrics_collector--system--retention_days)
+* [`polling_frequency_seconds`](#-puppet_metrics_collector--system--polling_frequency_seconds)
+* [`manage_sysstat`](#-puppet_metrics_collector--system--manage_sysstat)
+* [`manage_vmware_tools`](#-puppet_metrics_collector--system--manage_vmware_tools)
+* [`vmware_tools_pkg`](#-puppet_metrics_collector--system--vmware_tools_pkg)
+* [`metrics_server_type`](#-puppet_metrics_collector--system--metrics_server_type)
+* [`metrics_server_hostname`](#-puppet_metrics_collector--system--metrics_server_hostname)
+* [`metrics_server_port`](#-puppet_metrics_collector--system--metrics_server_port)
+* [`metrics_server_db_name`](#-puppet_metrics_collector--system--metrics_server_db_name)
 
-##### <a name="system_metrics_ensure"></a>`system_metrics_ensure`
+##### <a name="-puppet_metrics_collector--system--system_metrics_ensure"></a>`system_metrics_ensure`
 
 Data type: `String`
 
@@ -395,7 +431,7 @@ Whether to enable or disable the collection of System metrics. Valid values are 
 
 Default value: `'present'`
 
-##### <a name="output_dir"></a>`output_dir`
+##### <a name="-puppet_metrics_collector--system--output_dir"></a>`output_dir`
 
 Data type: `String`
 
@@ -403,7 +439,7 @@ The directory to write the metrics to. Default: '/opt/puppetlabs/puppet-metrics-
 
 Default value: `'/opt/puppetlabs/puppet-metrics-collector'`
 
-##### <a name="collection_frequency"></a>`collection_frequency`
+##### <a name="-puppet_metrics_collector--system--collection_frequency"></a>`collection_frequency`
 
 Data type: `Integer`
 
@@ -411,7 +447,7 @@ The frequency to collect metrics in minutes. Default: '5'
 
 Default value: `5`
 
-##### <a name="retention_days"></a>`retention_days`
+##### <a name="-puppet_metrics_collector--system--retention_days"></a>`retention_days`
 
 Data type: `Integer`
 
@@ -419,7 +455,7 @@ The number of days to retain metrics. Default: '90'
 
 Default value: `90`
 
-##### <a name="polling_frequency_seconds"></a>`polling_frequency_seconds`
+##### <a name="-puppet_metrics_collector--system--polling_frequency_seconds"></a>`polling_frequency_seconds`
 
 Data type: `Integer`
 
@@ -427,23 +463,23 @@ Data type: `Integer`
 
 Default value: `1`
 
-##### <a name="manage_sysstat"></a>`manage_sysstat`
+##### <a name="-puppet_metrics_collector--system--manage_sysstat"></a>`manage_sysstat`
 
 Data type: `Boolean`
 
 
 
-Default value: ``false``
+Default value: `false`
 
-##### <a name="manage_vmware_tools"></a>`manage_vmware_tools`
+##### <a name="-puppet_metrics_collector--system--manage_vmware_tools"></a>`manage_vmware_tools`
 
 Data type: `Boolean`
 
 
 
-Default value: ``false``
+Default value: `false`
 
-##### <a name="vmware_tools_pkg"></a>`vmware_tools_pkg`
+##### <a name="-puppet_metrics_collector--system--vmware_tools_pkg"></a>`vmware_tools_pkg`
 
 Data type: `String`
 
@@ -451,7 +487,7 @@ Data type: `String`
 
 Default value: `'open-vm-tools'`
 
-##### <a name="metrics_server_type"></a>`metrics_server_type`
+##### <a name="-puppet_metrics_collector--system--metrics_server_type"></a>`metrics_server_type`
 
 Data type: `Optional[Enum['influxdb', 'graphite', 'splunk_hec']]`
 
@@ -459,7 +495,7 @@ Data type: `Optional[Enum['influxdb', 'graphite', 'splunk_hec']]`
 
 Default value: `getvar('puppet_metrics_collector::metrics_server_type')`
 
-##### <a name="metrics_server_hostname"></a>`metrics_server_hostname`
+##### <a name="-puppet_metrics_collector--system--metrics_server_hostname"></a>`metrics_server_hostname`
 
 Data type: `Optional[String]`
 
@@ -467,7 +503,7 @@ Data type: `Optional[String]`
 
 Default value: `getvar('puppet_metrics_collector::metrics_server_hostname')`
 
-##### <a name="metrics_server_port"></a>`metrics_server_port`
+##### <a name="-puppet_metrics_collector--system--metrics_server_port"></a>`metrics_server_port`
 
 Data type: `Optional[Integer]`
 
@@ -475,7 +511,7 @@ Data type: `Optional[Integer]`
 
 Default value: `getvar('puppet_metrics_collector::metrics_server_port')`
 
-##### <a name="metrics_server_db_name"></a>`metrics_server_db_name`
+##### <a name="-puppet_metrics_collector--system--metrics_server_db_name"></a>`metrics_server_db_name`
 
 Data type: `Optional[String]`
 
@@ -485,7 +521,7 @@ Default value: `getvar('puppet_metrics_collector::metrics_server_db_name')`
 
 ## Defined types
 
-### <a name="puppet_metrics_collectorcollect"></a>`puppet_metrics_collector::collect`
+### <a name="puppet_metrics_collector--collect"></a>`puppet_metrics_collector::collect`
 
 Creates systemd units for collecting a given metric
 
@@ -493,13 +529,23 @@ Creates systemd units for collecting a given metric
 
 The following parameters are available in the `puppet_metrics_collector::collect` defined type:
 
-* [`metrics_type`](#metrics_type)
-* [`metrics_command`](#metrics_command)
-* [`tidy_command`](#tidy_command)
-* [`metric_ensure`](#metric_ensure)
-* [`minute`](#minute)
+* [`ensure`](#-puppet_metrics_collector--collect--ensure)
+* [`metrics_type`](#-puppet_metrics_collector--collect--metrics_type)
+* [`metrics_command`](#-puppet_metrics_collector--collect--metrics_command)
+* [`tidy_command`](#-puppet_metrics_collector--collect--tidy_command)
+* [`env_vars`](#-puppet_metrics_collector--collect--env_vars)
+* [`metric_ensure`](#-puppet_metrics_collector--collect--metric_ensure)
+* [`minute`](#-puppet_metrics_collector--collect--minute)
 
-##### <a name="metrics_type"></a>`metrics_type`
+##### <a name="-puppet_metrics_collector--collect--ensure"></a>`ensure`
+
+Data type: `Enum['present', 'absent']`
+
+
+
+Default value: `'present'`
+
+##### <a name="-puppet_metrics_collector--collect--metrics_type"></a>`metrics_type`
 
 Data type: `String`
 
@@ -507,23 +553,31 @@ Data type: `String`
 
 Default value: `$title`
 
-##### <a name="metrics_command"></a>`metrics_command`
+##### <a name="-puppet_metrics_collector--collect--metrics_command"></a>`metrics_command`
 
 Data type: `String`
 
 
 
-Default value: ``undef``
+Default value: `undef`
 
-##### <a name="tidy_command"></a>`tidy_command`
+##### <a name="-puppet_metrics_collector--collect--tidy_command"></a>`tidy_command`
 
 Data type: `String`
 
 
 
-Default value: ``undef``
+Default value: `undef`
 
-##### <a name="metric_ensure"></a>`metric_ensure`
+##### <a name="-puppet_metrics_collector--collect--env_vars"></a>`env_vars`
+
+Data type: `Optional[Hash]`
+
+
+
+Default value: `undef`
+
+##### <a name="-puppet_metrics_collector--collect--metric_ensure"></a>`metric_ensure`
 
 Data type: `String`
 
@@ -531,7 +585,7 @@ Data type: `String`
 
 Default value: `'present'`
 
-##### <a name="minute"></a>`minute`
+##### <a name="-puppet_metrics_collector--collect--minute"></a>`minute`
 
 Data type: `String`
 
@@ -539,7 +593,7 @@ Data type: `String`
 
 Default value: `'5'`
 
-### <a name="puppet_metrics_collectorpe_metric"></a>`puppet_metrics_collector::pe_metric`
+### <a name="puppet_metrics_collector--pe_metric"></a>`puppet_metrics_collector::pe_metric`
 
 A defined type to manage the configuration of tbe different metrics collection targets
 
@@ -547,24 +601,25 @@ A defined type to manage the configuration of tbe different metrics collection t
 
 The following parameters are available in the `puppet_metrics_collector::pe_metric` defined type:
 
-* [`metrics_type`](#metrics_type)
-* [`metric_ensure`](#metric_ensure)
-* [`cron_minute`](#cron_minute)
-* [`retention_days`](#retention_days)
-* [`hosts`](#hosts)
-* [`metrics_port`](#metrics_port)
-* [`metric_script_file`](#metric_script_file)
-* [`ssl`](#ssl)
-* [`excludes`](#excludes)
-* [`additional_metrics`](#additional_metrics)
-* [`remote_metrics_enabled`](#remote_metrics_enabled)
-* [`override_metrics_command`](#override_metrics_command)
-* [`metrics_server_type`](#metrics_server_type)
-* [`metrics_server_hostname`](#metrics_server_hostname)
-* [`metrics_server_port`](#metrics_server_port)
-* [`metrics_server_db_name`](#metrics_server_db_name)
+* [`metrics_type`](#-puppet_metrics_collector--pe_metric--metrics_type)
+* [`metric_ensure`](#-puppet_metrics_collector--pe_metric--metric_ensure)
+* [`cron_minute`](#-puppet_metrics_collector--pe_metric--cron_minute)
+* [`retention_days`](#-puppet_metrics_collector--pe_metric--retention_days)
+* [`hosts`](#-puppet_metrics_collector--pe_metric--hosts)
+* [`metrics_port`](#-puppet_metrics_collector--pe_metric--metrics_port)
+* [`metric_script_file`](#-puppet_metrics_collector--pe_metric--metric_script_file)
+* [`ssl`](#-puppet_metrics_collector--pe_metric--ssl)
+* [`excludes`](#-puppet_metrics_collector--pe_metric--excludes)
+* [`additional_metrics`](#-puppet_metrics_collector--pe_metric--additional_metrics)
+* [`remote_metrics_enabled`](#-puppet_metrics_collector--pe_metric--remote_metrics_enabled)
+* [`override_metrics_command`](#-puppet_metrics_collector--pe_metric--override_metrics_command)
+* [`metrics_server_type`](#-puppet_metrics_collector--pe_metric--metrics_server_type)
+* [`metrics_server_hostname`](#-puppet_metrics_collector--pe_metric--metrics_server_hostname)
+* [`metrics_server_port`](#-puppet_metrics_collector--pe_metric--metrics_server_port)
+* [`metrics_server_db_name`](#-puppet_metrics_collector--pe_metric--metrics_server_db_name)
+* [`env_vars`](#-puppet_metrics_collector--pe_metric--env_vars)
 
-##### <a name="metrics_type"></a>`metrics_type`
+##### <a name="-puppet_metrics_collector--pe_metric--metrics_type"></a>`metrics_type`
 
 Data type: `String`
 
@@ -572,7 +627,7 @@ Data type: `String`
 
 Default value: `$title`
 
-##### <a name="metric_ensure"></a>`metric_ensure`
+##### <a name="-puppet_metrics_collector--pe_metric--metric_ensure"></a>`metric_ensure`
 
 Data type: `Enum['absent', 'present']`
 
@@ -580,7 +635,7 @@ Data type: `Enum['absent', 'present']`
 
 Default value: `'present'`
 
-##### <a name="cron_minute"></a>`cron_minute`
+##### <a name="-puppet_metrics_collector--pe_metric--cron_minute"></a>`cron_minute`
 
 Data type: `String`
 
@@ -588,7 +643,7 @@ Data type: `String`
 
 Default value: `'0/5'`
 
-##### <a name="retention_days"></a>`retention_days`
+##### <a name="-puppet_metrics_collector--pe_metric--retention_days"></a>`retention_days`
 
 Data type: `Integer`
 
@@ -596,7 +651,7 @@ Data type: `Integer`
 
 Default value: `90`
 
-##### <a name="hosts"></a>`hosts`
+##### <a name="-puppet_metrics_collector--pe_metric--hosts"></a>`hosts`
 
 Data type: `Array[String]`
 
@@ -604,15 +659,15 @@ Data type: `Array[String]`
 
 Default value: `['127.0.0.1']`
 
-##### <a name="metrics_port"></a>`metrics_port`
+##### <a name="-puppet_metrics_collector--pe_metric--metrics_port"></a>`metrics_port`
 
 Data type: `Integer`
 
 
 
-Default value: ``undef``
+Default value: `undef`
 
-##### <a name="metric_script_file"></a>`metric_script_file`
+##### <a name="-puppet_metrics_collector--pe_metric--metric_script_file"></a>`metric_script_file`
 
 Data type: `String`
 
@@ -620,15 +675,15 @@ Data type: `String`
 
 Default value: `'tk_metrics'`
 
-##### <a name="ssl"></a>`ssl`
+##### <a name="-puppet_metrics_collector--pe_metric--ssl"></a>`ssl`
 
 Data type: `Boolean`
 
 
 
-Default value: ``true``
+Default value: `true`
 
-##### <a name="excludes"></a>`excludes`
+##### <a name="-puppet_metrics_collector--pe_metric--excludes"></a>`excludes`
 
 Data type: `Array[String]`
 
@@ -636,7 +691,7 @@ Data type: `Array[String]`
 
 Default value: `puppet_metrics_collector::version_based_excludes($title)`
 
-##### <a name="additional_metrics"></a>`additional_metrics`
+##### <a name="-puppet_metrics_collector--pe_metric--additional_metrics"></a>`additional_metrics`
 
 Data type: `Array[Hash]`
 
@@ -644,7 +699,7 @@ Data type: `Array[Hash]`
 
 Default value: `[]`
 
-##### <a name="remote_metrics_enabled"></a>`remote_metrics_enabled`
+##### <a name="-puppet_metrics_collector--pe_metric--remote_metrics_enabled"></a>`remote_metrics_enabled`
 
 Data type: `Optional[Boolean]`
 
@@ -652,47 +707,55 @@ Data type: `Optional[Boolean]`
 
 Default value: `lookup('puppet_metrics_collector::pe_metric::remote_metrics_enabled', { 'default_value' => undef })`
 
-##### <a name="override_metrics_command"></a>`override_metrics_command`
+##### <a name="-puppet_metrics_collector--pe_metric--override_metrics_command"></a>`override_metrics_command`
 
 Data type: `Optional[String]`
 
 
 
-Default value: ``undef``
+Default value: `undef`
 
-##### <a name="metrics_server_type"></a>`metrics_server_type`
+##### <a name="-puppet_metrics_collector--pe_metric--metrics_server_type"></a>`metrics_server_type`
 
 Data type: `Optional[Enum['influxdb','graphite','splunk_hec']]`
 
 
 
-Default value: ``undef``
+Default value: `undef`
 
-##### <a name="metrics_server_hostname"></a>`metrics_server_hostname`
+##### <a name="-puppet_metrics_collector--pe_metric--metrics_server_hostname"></a>`metrics_server_hostname`
 
 Data type: `Optional[String]`
 
 
 
-Default value: ``undef``
+Default value: `undef`
 
-##### <a name="metrics_server_port"></a>`metrics_server_port`
+##### <a name="-puppet_metrics_collector--pe_metric--metrics_server_port"></a>`metrics_server_port`
 
 Data type: `Optional[Integer]`
 
 
 
-Default value: ``undef``
+Default value: `undef`
 
-##### <a name="metrics_server_db_name"></a>`metrics_server_db_name`
+##### <a name="-puppet_metrics_collector--pe_metric--metrics_server_db_name"></a>`metrics_server_db_name`
 
 Data type: `Optional[String]`
 
 
 
-Default value: ``undef``
+Default value: `undef`
 
-### <a name="puppet_metrics_collectorsar_metric"></a>`puppet_metrics_collector::sar_metric`
+##### <a name="-puppet_metrics_collector--pe_metric--env_vars"></a>`env_vars`
+
+Data type: `Optional[Hash]`
+
+
+
+Default value: `undef`
+
+### <a name="puppet_metrics_collector--sar_metric"></a>`puppet_metrics_collector::sar_metric`
 
 How often the target is requested to provide data, in seconds. Default: 1
 
@@ -700,16 +763,17 @@ How often the target is requested to provide data, in seconds. Default: 1
 
 The following parameters are available in the `puppet_metrics_collector::sar_metric` defined type:
 
-* [`collection_frequency`](#collection_frequency)
-* [`retention_days`](#retention_days)
-* [`polling_frequency_seconds`](#polling_frequency_seconds)
-* [`cron_minute`](#cron_minute)
-* [`metrics_type`](#metrics_type)
-* [`metric_ensure`](#metric_ensure)
-* [`metric_script_file`](#metric_script_file)
-* [`metrics_shipping_command`](#metrics_shipping_command)
+* [`collection_frequency`](#-puppet_metrics_collector--sar_metric--collection_frequency)
+* [`retention_days`](#-puppet_metrics_collector--sar_metric--retention_days)
+* [`polling_frequency_seconds`](#-puppet_metrics_collector--sar_metric--polling_frequency_seconds)
+* [`cron_minute`](#-puppet_metrics_collector--sar_metric--cron_minute)
+* [`metrics_type`](#-puppet_metrics_collector--sar_metric--metrics_type)
+* [`metric_ensure`](#-puppet_metrics_collector--sar_metric--metric_ensure)
+* [`metric_script_file`](#-puppet_metrics_collector--sar_metric--metric_script_file)
+* [`metrics_shipping_command`](#-puppet_metrics_collector--sar_metric--metrics_shipping_command)
+* [`env_vars`](#-puppet_metrics_collector--sar_metric--env_vars)
 
-##### <a name="collection_frequency"></a>`collection_frequency`
+##### <a name="-puppet_metrics_collector--sar_metric--collection_frequency"></a>`collection_frequency`
 
 Data type: `Integer`
 
@@ -717,7 +781,7 @@ The frequency to collect metrics in minutes. Default: '5'
 
 Default value: `5`
 
-##### <a name="retention_days"></a>`retention_days`
+##### <a name="-puppet_metrics_collector--sar_metric--retention_days"></a>`retention_days`
 
 Data type: `Integer`
 
@@ -725,7 +789,7 @@ The number of days to retain metrics. Default: '90'
 
 Default value: `90`
 
-##### <a name="polling_frequency_seconds"></a>`polling_frequency_seconds`
+##### <a name="-puppet_metrics_collector--sar_metric--polling_frequency_seconds"></a>`polling_frequency_seconds`
 
 Data type: `Integer`
 
@@ -733,7 +797,7 @@ Data type: `Integer`
 
 Default value: `1`
 
-##### <a name="cron_minute"></a>`cron_minute`
+##### <a name="-puppet_metrics_collector--sar_metric--cron_minute"></a>`cron_minute`
 
 Data type: `String`
 
@@ -741,7 +805,7 @@ The minute to run the cron job. Default: '0/5'
 
 Default value: `'0/5'`
 
-##### <a name="metrics_type"></a>`metrics_type`
+##### <a name="-puppet_metrics_collector--sar_metric--metrics_type"></a>`metrics_type`
 
 Data type: `String`
 
@@ -750,7 +814,7 @@ this is used to create the metrics file name.
 
 Default value: `$title`
 
-##### <a name="metric_ensure"></a>`metric_ensure`
+##### <a name="-puppet_metrics_collector--sar_metric--metric_ensure"></a>`metric_ensure`
 
 Data type: `Enum['absent', 'present']`
 
@@ -758,7 +822,7 @@ The ensure value for the metrics file. Default: 'present'
 
 Default value: `'present'`
 
-##### <a name="metric_script_file"></a>`metric_script_file`
+##### <a name="-puppet_metrics_collector--sar_metric--metric_script_file"></a>`metric_script_file`
 
 Data type: `String`
 
@@ -766,7 +830,7 @@ The script file to run to collect the metrics. Default: 'system_metrics'
 
 Default value: `'system_metrics'`
 
-##### <a name="metrics_shipping_command"></a>`metrics_shipping_command`
+##### <a name="-puppet_metrics_collector--sar_metric--metrics_shipping_command"></a>`metrics_shipping_command`
 
 Data type: `String`
 
@@ -774,9 +838,17 @@ The parameter that defines the command for the remote shipping of metrics. Defau
 
 Default value: `$puppet_metrics_collector::system::metrics_shipping_command`
 
+##### <a name="-puppet_metrics_collector--sar_metric--env_vars"></a>`env_vars`
+
+Data type: `Optional[Hash]`
+
+
+
+Default value: `undef`
+
 ## Functions
 
-### <a name="puppet_metrics_collectorgenerate_metrics_server_command"></a>`puppet_metrics_collector::generate_metrics_server_command`
+### <a name="puppet_metrics_collector--generate_metrics_server_command"></a>`puppet_metrics_collector::generate_metrics_server_command`
 
 Type: Puppet Language
 
@@ -818,7 +890,7 @@ Data type: `Optional[Integer]`
 
 the port to connect to
 
-### <a name="puppet_metrics_collectorhosts_with_pe_profile"></a>`puppet_metrics_collector::hosts_with_pe_profile`
+### <a name="puppet_metrics_collector--hosts_with_pe_profile"></a>`puppet_metrics_collector::hosts_with_pe_profile`
 
 Type: Puppet Language
 
@@ -848,7 +920,7 @@ Data type: `Any`
 
 the short name of the Puppet Enterprise profile.
 
-### <a name="puppet_metrics_collectorto_yaml"></a>`puppet_metrics_collector::to_yaml`
+### <a name="puppet_metrics_collector--to_yaml"></a>`puppet_metrics_collector::to_yaml`
 
 Type: Ruby 4.x API
 
@@ -878,7 +950,7 @@ Data type: `Array`
 
 
 
-### <a name="puppet_metrics_collectorversion_based_excludes"></a>`puppet_metrics_collector::version_based_excludes`
+### <a name="puppet_metrics_collector--version_based_excludes"></a>`puppet_metrics_collector::version_based_excludes`
 
 Type: Puppet Language
 
