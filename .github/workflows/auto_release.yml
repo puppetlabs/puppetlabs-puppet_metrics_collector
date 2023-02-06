@@ -44,7 +44,7 @@ jobs:
         persist-credentials: false
 
     - name: "PDK Release prep"
-      uses: puppet/puppet-dev-tools
+      uses: docker://puppet/puppet-dev-tools
       with:
         args: 'pdk release prep --force'
       env:
