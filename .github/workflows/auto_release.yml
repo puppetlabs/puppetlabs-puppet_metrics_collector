@@ -11,7 +11,7 @@ env:
 jobs:
   auto_release:
     name: "Automatic release prep"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
 
     steps:
     - name: "Honeycomb: Start recording"
