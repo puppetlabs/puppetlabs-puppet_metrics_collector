@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v7.2.0](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/tree/v7.2.0) (2023-02-06)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v7.1.1...v7.2.0)
+
+### Added
+
+- \(SUP-3535\) Add more sar metrics to collect [\#176](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/176) ([m0dular](https://github.com/m0dular))
+- \(SUP-2115\) Add postgres bloat size and percents [\#175](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/175) ([m0dular](https://github.com/m0dular))
+- \(SUP-3881\) Add collection for PE console services [\#174](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/174) ([m0dular](https://github.com/m0dular))
+- \(SUP-2736\) Documentation [\#170](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/170) ([MartyEwings](https://github.com/MartyEwings))
+- \(SUP-2736\) Add puppet string documentation [\#168](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/168) ([elainemccloskey](https://github.com/elainemccloskey))
+
+### Fixed
+
+- \(SUP-3875\) Consider /sbin for runuser path [\#172](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/172) ([m0dular](https://github.com/m0dular))
+
+### UNCATEGORIZED PRS; LABEL THEM ON GITHUB
+
+- Bump PDK template version [\#188](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/188) ([m0dular](https://github.com/m0dular))
+
 ## [v7.1.1](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/tree/v7.1.1) (2022-09-29)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v7.1.0...v7.1.1)
