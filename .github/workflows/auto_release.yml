@@ -21,11 +21,6 @@ jobs:
         dataset: ${{ env.HONEYCOMB_DATASET }}
         job-status: ${{ job.status }}
 
-    - name: "install gem dependancy"
-      run: |
-          sudo apt-get update
-          sudo apt-get install ubuntu-dev-tools -y
-          sudo apt-get install ruby-dev
 
     - name: "Honeycomb: start first step"
       run: |
