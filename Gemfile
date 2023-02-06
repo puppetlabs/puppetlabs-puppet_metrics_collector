@@ -36,6 +36,7 @@ group :development do
   gem "rb-readline", '= 0.5.5',                        require: false, platforms: [:mswin, :mingw, :x64_mingw]
   gem "github_changelog_generator", '= 1.16.4',        require: false
   gem "nio4r", '=2.5.8',                               require: false
+  gem 'concurrent-ruby', '= 1.1.10',                   require: false
 end
 group :system_tests do
   gem "puppet_litmus", '< 1.0.0', require: false, platforms: [:ruby]
