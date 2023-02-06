@@ -11,7 +11,7 @@ env:
 jobs:
   auto_release:
     name: "Automatic release prep"
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
 
     steps:
     - name: "Honeycomb: Start recording"
@@ -21,7 +21,17 @@ jobs:
         dataset: ${{ env.HONEYCOMB_DATASET }}
         job-status: ${{ job.status }}
 
-
+    - name: "Correct Ruby end"
+      run: |
+        sudo apt-get purge ruby -y
+        sudo sudo apt install build-essential -y
+        sudo snap install ruby --classic
+        sudo snap switch ruby --channel=2.7/stable
+        sudo snap refresh
+        source ~/.bashrc
+        sudo source ~/.bashrc
+        
+        
     - name: "Honeycomb: start first step"
       run: |
         echo STEP_ID="auto-release" >> $GITHUB_ENV
