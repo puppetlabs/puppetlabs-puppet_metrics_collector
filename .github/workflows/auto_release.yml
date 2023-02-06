@@ -29,7 +29,6 @@ jobs:
         sudo snap switch ruby --channel=2.7/stable
         sudo snap refresh
         source ~/.bashrc
-        sudo source ~/.bashrc
         
         
     - name: "Honeycomb: start first step"
