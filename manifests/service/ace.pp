@@ -28,7 +28,7 @@ class puppet_metrics_collector::service::ace (
     hosts                    => $hosts,
     metrics_port             => $port,
     additional_metrics       => $extra_metrics,
-    metric_script_file       => 'puma_metrics',
+    metric_script_file       => 'tk_metrics',
     override_metrics_command => $override_metrics_command,
     metrics_server_type      => $metrics_server_type ? {
       'splunk_hec' => 'splunk_hec',

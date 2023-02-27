@@ -193,12 +193,6 @@ class puppet_metrics_collector (
       source => 'puppet:///modules/puppet_metrics_collector/pe_metrics.rb',
     }
 
-    file { "${scripts_dir}/puma_metrics" :
-      ensure => file,
-      mode   => '0755',
-      source => 'puppet:///modules/puppet_metrics_collector/puma_metrics',
-    }
-
     file { "${scripts_dir}/tk_metrics" :
       ensure => file,
       mode   => '0755',
@@ -235,6 +229,7 @@ class puppet_metrics_collector (
     $legacy_files = [
       '/opt/puppetlabs/bin/puppet-metrics-collector',
       '/opt/puppetlabs/puppet-metrics-collector/bin',
+      "${scripts_dir}/puma_metrics",
     ]
 
     file { $legacy_files :
