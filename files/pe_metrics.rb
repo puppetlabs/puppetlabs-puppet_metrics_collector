@@ -20,7 +20,7 @@ module PuppetX
 
         OptionParser.new { |opts|
           opts.banner = "Usage: #{File.basename(__FILE__)} [options]"
-          opts.on('-p', '--[no-]print', 'Print to STDOUT') { |p| @print = true }
+          opts.on('-p', '--[no-]print', 'Print to STDOUT') { |p| @print = p }
           opts.on('-m [TYPE]', '--metrics_type [TYPE]', 'Type of metrics to collect') { |v| @metrics_type = v }
           opts.on('-o [DIR]', '--output_dir [DIR]', 'Directory to save output to') { |o| @output_dir = o }
           opts.on('--metrics_port [PORT]', 'The port the metrics service runs on') { |port| @metrics_port = port }

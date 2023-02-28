@@ -58,6 +58,7 @@ def main()
         end
       end
     end
+
     next unless @print
     # Use puts so that data gatherd from each host is written to stdout
     # with a newline separator. This enables parsing of multiple datasets
