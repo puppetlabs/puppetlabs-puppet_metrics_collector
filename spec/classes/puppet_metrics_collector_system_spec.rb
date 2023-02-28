@@ -222,7 +222,7 @@ describe 'puppet_metrics_collector::system' do
 
   context 'when setting deprecated parameters' do
     let(:facts) { { puppet_metrics_collector: { have_sysstat: true, have_systemd: true } } }
-    let(:params) { { metrics_server_type: 'splunk_hec' } }
+    let(:params) { { metrics_server_type: 'influxdb' } }
 
     it {
       is_expected.to contain_puppet_metrics_collector__deprecated_parameter('puppet_metrics_collector::system::metrics_server_type')
