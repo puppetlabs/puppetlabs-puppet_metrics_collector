@@ -177,12 +177,6 @@ class puppet_metrics_collector (
       ensure => directory,
     }
 
-    file { "${scripts_dir}/json2timeseriesdb" :
-      ensure => file,
-      mode   => '0755',
-      source => 'puppet:///modules/puppet_metrics_collector/json2timeseriesdb',
-    }
-
     file { "${scripts_dir}/pe_metrics.rb" :
       ensure => file,
       mode   => '0755',
@@ -226,6 +220,7 @@ class puppet_metrics_collector (
       '/opt/puppetlabs/bin/puppet-metrics-collector',
       '/opt/puppetlabs/puppet-metrics-collector/bin',
       "${scripts_dir}/puma_metrics",
+      "${scripts_dir}/json2timeseriesdb",
     ]
 
     file { $legacy_files :
