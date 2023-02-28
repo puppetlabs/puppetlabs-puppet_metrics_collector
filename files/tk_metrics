@@ -5,7 +5,7 @@ require_relative 'pe_metrics'
 include PuppetX::Puppetlabs::PuppetMetricsCollector
 
 # Wrap code in a main method so we can rescue errors
-def main()
+def main
   Puppet.initialize_settings
   metrics_collector_setup
 
@@ -65,10 +65,10 @@ def main()
     # as the output stream is in line-delimited JSON form.
     STDOUT.puts(json_dataset)
   end
-  rescue StandardError => e
-    STDERR.puts "Failed to collect #{@metrics_type} metrics: #{e.message}"
-    STDERR.puts e.backtrace
-    nil
+rescue StandardError => e
+  STDERR.puts "Failed to collect #{@metrics_type} metrics: #{e.message}"
+  STDERR.puts e.backtrace
+  nil
 end
 
 if __FILE__ == $0

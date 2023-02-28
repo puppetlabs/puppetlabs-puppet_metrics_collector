@@ -30,7 +30,6 @@ define puppet_metrics_collector::pe_metric (
   $config_hash = {
     'metrics_type'           => $metrics_type,
     'pe_version'             => $facts['pe_server_version'],
-    'clientcert'             => $::clientcert,
     'hosts'                  => $hosts,
     'metrics_port'           => $metrics_port,
     'ssl'                    => $ssl,

@@ -6,14 +6,13 @@ require 'yaml'
 require 'puppet'
 require 'puppet/http'
 
-# rubocop:disable Style/ClassAndModuleChildren
 module PuppetX
   module Puppetlabs
     # Mixin module to provide instance variables and methods to the tk_metris script
     module PuppetMetricsCollector
-      attr_accessor :client, :metrics_type, :output_dir, :certname, :hosts, :port, :excludes, :additional_metrics, :print, :use_clientcert, :errors
+      attr_accessor :client, :metrics_type, :output_dir, :certname, :hosts, :port, :excludes, :additional_metrics, :print, :errors
 
-      def metrics_collector_setup()
+      def metrics_collector_setup
         # The Puppet HTTP client takes care of connection pooling, client cert auth, and more for us
         @client ||= Puppet.runtime[:http]
         @errors ||= []
@@ -79,24 +78,24 @@ module PuppetX
         {}
       end
 
-      def retrieve_additional_metrics(url, metrics_type, metrics)
+      def retrieve_additional_metrics(url, _metrics_type, metrics)
         metrics_output = post_endpoint(url, metrics.to_json)
         return [] if metrics_output.empty?
 
         # For a status other than 200 or 404, add the HTTP code to the error array
-        metrics_output.select{ |m| m.key?('status') and not [200, 404].include?(m['status']) }.each do |m|
+        metrics_output.select { |m| m.key?('status') and ![200, 404].include?(m['status']) }.each do |m|
           @errors << "HTTP Error #{m['status']} for #{m['request']['mbean']}"
         end
 
         # Select metrics output that has a 'status' key
-        metrics_output.select{ |m| m.key?('status') }.map do |m|
+        metrics_output.select { |m| m.key?('status') }.map do |m|
           # Then merge the corresponding 'metrics' hash
           # e.g. for a metrics_output entry of
           #   {"request"=>{"mbean"=>"puppetlabs.puppetdb.mq:name=global.command-parse-time", "type"=>"read"}, "value" => ...}
           # and a metrics entry of
           #   {"type"=>"read", "name"=>"global_command-parse-time", "mbean"=>"puppetlabs.puppetdb.mq:name=global.command-parse-time"}
           # the result is that 'name' entry is added to the metris_output hash
-          m.merge!(metrics.select {|n| n['mbean'] == m['request']['mbean'] }[0])
+          m.merge!(metrics.select { |n| n['mbean'] == m['request']['mbean'] }[0])
 
           status = m['status']
           if status == 200

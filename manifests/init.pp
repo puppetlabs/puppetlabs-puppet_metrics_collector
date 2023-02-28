@@ -105,10 +105,6 @@
 #   The hostname of the metrics server to send data to. Default: undef
 # @param metrics_server_port
 #   (Deprecated) The port number of the metrics server to send data to. Default: undef
-# @param metrics_server_db_name
-#   (Deprecated)The database name on the metrics server to send data to. Default: undef
-# @param override_metrics_command
-#   Allows you to define the command that is executed to gather metrics. Default: undef
 class puppet_metrics_collector (
   String                  $puppetserver_metrics_ensure = 'present',
   String                  $output_dir                  = '/opt/puppetlabs/puppet-metrics-collector',
