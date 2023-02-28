@@ -95,7 +95,7 @@ module PuppetX
           # and a metrics entry of
           #   {"type"=>"read", "name"=>"global_command-parse-time", "mbean"=>"puppetlabs.puppetdb.mq:name=global.command-parse-time"}
           # the result is that 'name' entry is added to the metris_output hash
-          m.merge!(metrics.select { |n| n['mbean'] == m['request']['mbean'] }[0])
+          m.merge!(metrics.find { |n| n['mbean'] == m['request']['mbean'] })
 
           status = m['status']
           if status == 200
