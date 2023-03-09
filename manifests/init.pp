@@ -66,7 +66,7 @@
 #   Port to connect to bolt on. Default: '62658'
 # 
 # @param metrics_server_type
-# Optional Enum['influxdb','graphite','splunk_hec']: The metrics server type to send data to. Default: undef
+# Optional Enum['splunk_hec']: The metrics server type to send data to. Default: undef
 # 
 # @ param metrics_server_hostname
 # Optional String: The hostname of the metrics server to send data to. Default: undef
@@ -75,8 +75,8 @@
 # Optional Integer: The port number of the metrics server to send data to. Default: undef
 # 
 # @param metrics_server_db_name
-# Optional String: The database name on the metrics server to send data to.
-# Required for metrics_server_type of influxdb. Default: undef
+# Optional String: (Deprecated)The database name on the metrics server to send data to.
+# Default: undef
 # 
 # @param override_metrics_command
 # Optional String: Allows you to define the command that is executed to gather metrics. Default: undef
@@ -104,12 +104,7 @@
 # @param metrics_server_hostname
 #   The hostname of the metrics server to send data to. Default: undef
 # @param metrics_server_port
-#   The port number of the metrics server to send data to. Default: undef
-# @param metrics_server_db_name
-#   The database name on the metrics server to send data to.
-#   Required for metrics_server_type of influxdb. Default: undef
-# @param override_metrics_command
-#   Allows you to define the command that is executed to gather metrics. Default: undef
+#   (Deprecated) The port number of the metrics server to send data to. Default: undef
 class puppet_metrics_collector (
   String                  $puppetserver_metrics_ensure = 'present',
   String                  $output_dir                  = '/opt/puppetlabs/puppet-metrics-collector',
@@ -149,6 +144,11 @@ class puppet_metrics_collector (
   Optional[Integer]       $metrics_server_port         = undef,
   Optional[String]        $metrics_server_db_name      = undef,
 ) {
+  puppet_metrics_collector::deprecated_parameter { 'puppet_metrics_collector::metrics_server_type': }
+  puppet_metrics_collector::deprecated_parameter { 'puppet_metrics_collector::metrics_server_hostname': }
+  puppet_metrics_collector::deprecated_parameter { 'puppet_metrics_collector::metrics_server_port': }
+  puppet_metrics_collector::deprecated_parameter { 'puppet_metrics_collector::metrics_server_db_name': }
+
   $config_dir  = "${output_dir}/config"
   $scripts_dir = "${output_dir}/scripts"
 
@@ -177,22 +177,10 @@ class puppet_metrics_collector (
       ensure => directory,
     }
 
-    file { "${scripts_dir}/json2timeseriesdb" :
-      ensure => file,
-      mode   => '0755',
-      source => 'puppet:///modules/puppet_metrics_collector/json2timeseriesdb',
-    }
-
     file { "${scripts_dir}/pe_metrics.rb" :
       ensure => file,
       mode   => '0755',
       source => 'puppet:///modules/puppet_metrics_collector/pe_metrics.rb',
-    }
-
-    file { "${scripts_dir}/puma_metrics" :
-      ensure => file,
-      mode   => '0755',
-      source => 'puppet:///modules/puppet_metrics_collector/puma_metrics',
     }
 
     file { "${scripts_dir}/tk_metrics" :
@@ -231,6 +219,8 @@ class puppet_metrics_collector (
     $legacy_files = [
       '/opt/puppetlabs/bin/puppet-metrics-collector',
       '/opt/puppetlabs/puppet-metrics-collector/bin',
+      "${scripts_dir}/puma_metrics",
+      "${scripts_dir}/json2timeseriesdb",
     ]
 
     file { $legacy_files :

@@ -113,4 +113,46 @@ describe 'puppet_metrics_collector' do
       end
     }
   end
+
+  context 'when setting deprecated parameters' do
+    let(:params) do
+      {
+        metrics_server_type: 'influxdb', metrics_server_hostname: 'foo', metrics_server_port: 1234, metrics_server_db_name: 'bar'
+      }
+    end
+
+    it {
+      is_expected.to contain_puppet_metrics_collector__deprecated_parameter('puppet_metrics_collector::metrics_server_type')
+      is_expected.to contain_puppet_metrics_collector__deprecated_parameter('puppet_metrics_collector::metrics_server_hostname')
+      is_expected.to contain_puppet_metrics_collector__deprecated_parameter('puppet_metrics_collector::metrics_server_port')
+      is_expected.to contain_puppet_metrics_collector__deprecated_parameter('puppet_metrics_collector::metrics_server_db_name')
+      is_expected.to contain_notify('Invalid value for puppet_metrics_collector::metrics_server_type')
+      is_expected.to contain_notify('puppet_metrics_collector::metrics_server_db_name is deprecated')
+      is_expected.to contain_notify('puppet_metrics_collector::metrics_server_hostname is deprecated')
+      is_expected.to contain_notify('puppet_metrics_collector::metrics_server_port is deprecated')
+
+      ['ace', 'bolt', 'orchestrator', 'console', 'puppetdb', 'puppetserver'].each do |service|
+        is_expected.to contain_puppet_metrics_collector__pe_metric(service).with_metrics_server_type(nil)
+        is_expected.to contain_notify("Invalid value for puppet_metrics_collector::service::#{service}::metrics_server_type")
+        is_expected.to contain_notify("puppet_metrics_collector::service::#{service}::metrics_server_db_name is deprecated")
+        is_expected.to contain_notify("puppet_metrics_collector::service::#{service}::metrics_server_hostname is deprecated")
+        is_expected.to contain_notify("puppet_metrics_collector::service::#{service}::metrics_server_port is deprecated")
+
+        is_expected.to contain_puppet_metrics_collector__deprecated_parameter("puppet_metrics_collector::service::#{service}::metrics_server_type")
+        is_expected.to contain_puppet_metrics_collector__deprecated_parameter("puppet_metrics_collector::service::#{service}::metrics_server_hostname")
+        is_expected.to contain_puppet_metrics_collector__deprecated_parameter("puppet_metrics_collector::service::#{service}::metrics_server_port")
+        is_expected.to contain_puppet_metrics_collector__deprecated_parameter("puppet_metrics_collector::service::#{service}::metrics_server_db_name")
+      end
+    }
+  end
+
+  context 'when shipping to splunk' do
+    let(:params) { { metrics_server_type: 'splunk_hec' } }
+
+    it {
+      ['ace', 'bolt', 'orchestrator', 'console', 'puppetdb', 'puppetserver'].each do |service|
+        is_expected.to contain_puppet_metrics_collector__pe_metric(service).with_metrics_server_type('splunk_hec')
+      end
+    }
+  end
 end

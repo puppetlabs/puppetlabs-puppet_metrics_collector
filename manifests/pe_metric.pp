@@ -10,12 +10,8 @@ define puppet_metrics_collector::pe_metric (
   Boolean                   $ssl                      = true,
   Array[String]             $excludes                 = puppet_metrics_collector::version_based_excludes($title),
   Array[Hash]               $additional_metrics       = [],
-  Optional[Boolean]         $remote_metrics_enabled   = lookup('puppet_metrics_collector::pe_metric::remote_metrics_enabled', { 'default_value' => undef }), # lint:ignore:140chars
   Optional[String]          $override_metrics_command = undef,
-  Optional[Enum['influxdb','graphite','splunk_hec']] $metrics_server_type = undef,
-  Optional[String]          $metrics_server_hostname  = undef,
-  Optional[Integer]         $metrics_server_port      = undef,
-  Optional[String]          $metrics_server_db_name   = undef,
+  Optional[Enum['splunk_hec']]   $metrics_server_type = undef,
   Optional[Hash]            $env_vars                 = undef,
 ) {
   $metrics_output_dir = "${puppet_metrics_collector::output_dir}/${metrics_type}"
@@ -31,28 +27,12 @@ define puppet_metrics_collector::pe_metric (
     force  => true,
   }
 
-  $_remote_metrics_enabled = if $remote_metrics_enabled =~ Boolean {
-    $remote_metrics_enabled
-  } elsif $facts.dig('pe_server_version') =~ NotUndef {
-    if versioncmp($facts.dig('pe_server_version'), '2019.8.5') >= 0 {
-      true
-    } else {
-      false
-    }
-  } else {
-    false
-  }
-
   $config_hash = {
     'metrics_type'           => $metrics_type,
-    'pe_version'             => $facts['pe_server_version'],
-    'clientcert'             => $::clientcert,
     'hosts'                  => $hosts,
     'metrics_port'           => $metrics_port,
-    'ssl'                    => $ssl,
     'excludes'               => $excludes,
     'additional_metrics'     => $additional_metrics,
-    'remote_metrics_enabled' => $_remote_metrics_enabled,
   }
 
   file { "${puppet_metrics_collector::config_dir}/${metrics_type}.yaml" :
@@ -65,13 +45,12 @@ define puppet_metrics_collector::pe_metric (
 
   if empty($override_metrics_command) {
     $base_metrics_command = "${metric_script_file_path} --metrics_type ${metrics_type} --output_dir ${metrics_output_dir}"
-    $metrics_shipping_command = puppet_metrics_collector::generate_metrics_server_command(
-      $puppet_metrics_collector::scripts_dir,
-      $metrics_server_type,
-      $metrics_server_hostname,
-      $metrics_server_db_name,
-      $metrics_server_port
-    )
+    $metrics_shipping_command = join(['--print |',
+        '/opt/puppetlabs/bin/puppet',
+        'splunk_hec',
+        '--sourcetype puppet:metrics',
+        '--pe_metrics',
+    ], ' ')
 
     if !empty($metrics_server_type) {
       $metrics_command = "${base_metrics_command} ${metrics_shipping_command} > /dev/null"
