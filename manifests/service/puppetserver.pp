@@ -25,17 +25,17 @@ class puppet_metrics_collector::service::puppetserver (
     {
       'type'  => 'read',
       'name'  => 'file-sync-storage-commit-timer',
-      'mbean' => 'puppetserver:name=puppetlabs.puppet.file-sync-storage.commit-timer'
+      'mbean' => 'puppetserver:name=puppetlabs.*.file-sync-storage.commit-timer'
     },
     {
       'type'  => 'read',
       'name'  => 'file-sync-storage-pre-commit-hook-timer',
-      'mbean' => 'puppetserver:name=puppetlabs.puppet.file-sync-storage.pre-commit-hook-timer'
+      'mbean' => 'puppetserver:name=puppetlabs.*.file-sync-storage.pre-commit-hook-timer'
     },
     {
       'type' => 'read',
       'name' => 'file-sync-storage-commit-add-rm-timer',
-      'mbean' => 'puppetserver:name=puppetlabs.puppet.file-sync-storage.commit-add-rm-timer'
+      'mbean' => 'puppetserver:name=puppetlabs.*.file-sync-storage.commit-add-rm-timer'
     },
   ]
 
