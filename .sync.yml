@@ -27,7 +27,9 @@ spec/spec_helper.rb:
   coverage_report: true
 Rakefile:
   changelog_user: "puppetlabs"
-
+  extra_disabled_lint_checks:
+    - parameter_documentation
+    - selector_inside_resource
 spec/default_facts.yml:
   extra_facts:
     pe_server_version: '2019.8.6'
@@ -58,6 +60,8 @@ spec/default_facts.yml:
     "RSpec/EmptyExampleGroup":
        Enabled: False
     "Style/CollectionMethods":
+       Enabled: False
+    "Performance/StringInclude":
        Enabled: False
 Gemfile:
   optional:

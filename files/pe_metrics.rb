@@ -111,7 +111,7 @@ module PuppetX
 
         case dataset
         when Hash
-          dataset = dataset.each_with_object({}) { |(k, v), m| m[k] = filter_metrics(v, filters) unless filters.include? k; }
+          dataset = dataset.each_with_object({}) { |(k, v), m| m[k] = filter_metrics(v, filters) unless filters.include? k }
         when Array
           dataset.map! { |e| filter_metrics(e, filters) }
         end
