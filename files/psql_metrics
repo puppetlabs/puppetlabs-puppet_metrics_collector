@@ -244,8 +244,6 @@ module PuppetMetricsCollector
       else
         @pg_version = Gem::Version.new(@pg_version.strip)
       end
-      # Some functions and statistics views were re-named in Postgres 10.0.
-      @is_pg10 = Gem::Requirement.new('>= 10.0').satisfied_by?(@pg_version)
 
       add_data!(@result, :checkpoints, sql_query(<<-EOS))
 SELECT json_build_object(
@@ -314,8 +312,6 @@ ORDER BY
 LIMIT 1;
 EOS
 
-      lsn_diff = @is_pg10 ? 'pg_wal_lsn_diff' : 'pg_xlog_location_diff'
-      current_lsn = @is_pg10 ? 'pg_current_wal_lsn()' : 'pg_current_xlog_location()'
       add_data!(@result, :replication_slots, sql_query(<<-EOS))
 SELECT json_object_agg(
   slot_name,
@@ -323,7 +319,7 @@ SELECT json_object_agg(
     'active', active,
     'xmin', xmin,
     'catalog_xmin', catalog_xmin,
-    'lag_bytes', #{lsn_diff}(#{current_lsn}, restart_lsn)
+    'lag_bytes', pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn)
   )
 )
 FROM
