@@ -1,1 +1,3 @@
 --relative
+--no-parameter_documentation-check
+--no-selector_inside_resource-check

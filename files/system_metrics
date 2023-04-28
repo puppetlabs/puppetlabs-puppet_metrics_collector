@@ -260,7 +260,7 @@ module SystemMetrics
         when %r{bolt-server}
           return 'bolt'
         when %r{ace-server}
-          if %r{ruby}.match?(command_full)
+          if command_full.include?('ruby')
             return 'ace-cleanup'
           end
           return 'ace'

@@ -70,19 +70,19 @@ module PuppetMetricsCollector
       end
 
       { servers: {
-        @hostname.tr('.', '-') => {
-          vmware: result
-        }
-      },
+          @hostname.tr('.', '-') => {
+            vmware: result
+          }
+        },
        timestamp: Time.now.utc.iso8601 }
     rescue => e
       { servers: {
-        @hostname.tr('.', '-') => {
-          vmware: {
-            error: "#{e.class}: #{e.message}"
+          @hostname.tr('.', '-') => {
+            vmware: {
+              error: "#{e.class}: #{e.message}"
+            }
           }
-        }
-      },
+        },
        timestamp: Time.now.utc.iso8601 }
     end
 
