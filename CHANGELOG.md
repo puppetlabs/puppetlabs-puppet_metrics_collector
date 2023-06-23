@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v8.0.0](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/tree/v8.0.0) (2023-06-23)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v7.2.0...v8.0.0)
+
+### Changed
+
+- \(SUP-3952\) Remove Puppet 6 as a supported platform [\#195](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/195) ([elainemccloskey](https://github.com/elainemccloskey))
+- \(SUP-3521\) Remove legacy code [\#191](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/191) ([m0dular](https://github.com/m0dular))
+
+### Added
+
+- \(SUP-4210\) Remove logic for EOL Postgres versions [\#197](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/197) ([Sharpie](https://github.com/Sharpie))
+- \(SUP-4200\) Puppet 8 compatibility [\#196](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/196) ([MartyEwings](https://github.com/MartyEwings))
+- \(SUP-4126\) Fix file sync additional metrics [\#192](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/192) ([m0dular](https://github.com/m0dular))
+
 ## [v7.2.0](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/tree/v7.2.0) (2023-02-06)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v7.1.1...v7.2.0)
