@@ -27,21 +27,21 @@
 ### Defined types
 
 * [`puppet_metrics_collector::collect`](#puppet_metrics_collector--collect): Creates systemd units for collecting a given metric
+* [`puppet_metrics_collector::deprecated_parameter`](#puppet_metrics_collector--deprecated_parameter)
 * [`puppet_metrics_collector::pe_metric`](#puppet_metrics_collector--pe_metric): A defined type to manage the configuration of tbe different metrics collection targets
 * [`puppet_metrics_collector::sar_metric`](#puppet_metrics_collector--sar_metric): This class manages the collections of SAR metrics
 
 ### Functions
 
-* [`puppet_metrics_collector::generate_metrics_server_command`](#puppet_metrics_collector--generate_metrics_server_command): Generate the metrics shipping command for the cron job including remote metrics
 * [`puppet_metrics_collector::hosts_with_pe_profile`](#puppet_metrics_collector--hosts_with_pe_profile): Function: hosts_with_pe_profile  Queries PuppetDB for hosts with the specified Puppet Enterprise profile. Used by this module to query Puppet
 * [`puppet_metrics_collector::to_yaml`](#puppet_metrics_collector--to_yaml): Description: Converts the content of the passed array or hash to YAML
-* [`puppet_metrics_collector::version_based_excludes`](#puppet_metrics_collector--version_based_excludes): Function: version_based_excludes  Description: Generates a list of services to exlude based on version of PE
+* [`puppet_metrics_collector::version_based_excludes`](#puppet_metrics_collector--version_based_excludes): Function: version_based_excludes  Description: Generates a list of services to exlude based on the metrics type
 
 ## Classes
 
 ### <a name="puppet_metrics_collector"></a>`puppet_metrics_collector`
 
-Optional Enum['influxdb','graphite','splunk_hec']: The metrics server type to send data to. Default: undef
+Optional Enum['splunk_hec']: The metrics server type to send data to. Default: undef
 
 @ param metrics_server_hostname
 Optional String: The hostname of the metrics server to send data to. Default: undef
@@ -49,8 +49,8 @@ Optional String: The hostname of the metrics server to send data to. Default: un
 @ param metrics_server_port
 Optional Integer: The port number of the metrics server to send data to. Default: undef
 
-Optional String: The database name on the metrics server to send data to.
-Required for metrics_server_type of influxdb. Default: undef
+Optional String: (Deprecated)The database name on the metrics server to send data to.
+Default: undef
 
 Optional String: Allows you to define the command that is executed to gather metrics. Default: undef
 
@@ -98,8 +98,6 @@ The following parameters are available in the `puppet_metrics_collector` class:
 * [`activemq_excludes`](#-puppet_metrics_collector--activemq_excludes)
 * [`metrics_server_hostname`](#-puppet_metrics_collector--metrics_server_hostname)
 * [`metrics_server_port`](#-puppet_metrics_collector--metrics_server_port)
-* [`metrics_server_db_name`](#-puppet_metrics_collector--metrics_server_db_name)
-* [`override_metrics_command`](#-puppet_metrics_collector--override_metrics_command)
 
 ##### <a name="-puppet_metrics_collector--puppetserver_metrics_ensure"></a>`puppetserver_metrics_ensure`
 
@@ -385,20 +383,7 @@ Default value: `undef`
 
 Data type: `Optional[Integer]`
 
-The port number of the metrics server to send data to. Default: undef
-
-Default value: `undef`
-
-##### <a name="-puppet_metrics_collector--metrics_server_db_name"></a>`metrics_server_db_name`
-
-The database name on the metrics server to send data to.
-Required for metrics_server_type of influxdb. Default: undef
-
-Default value: `undef`
-
-##### <a name="-puppet_metrics_collector--override_metrics_command"></a>`override_metrics_command`
-
-Allows you to define the command that is executed to gather metrics. Default: undef
+(Deprecated) The port number of the metrics server to send data to. Default: undef
 
 Default value: `undef`
 
@@ -593,6 +578,10 @@ Data type: `String`
 
 Default value: `'5'`
 
+### <a name="puppet_metrics_collector--deprecated_parameter"></a>`puppet_metrics_collector::deprecated_parameter`
+
+The puppet_metrics_collector::deprecated_parameter class.
+
 ### <a name="puppet_metrics_collector--pe_metric"></a>`puppet_metrics_collector::pe_metric`
 
 A defined type to manage the configuration of tbe different metrics collection targets
@@ -611,12 +600,8 @@ The following parameters are available in the `puppet_metrics_collector::pe_metr
 * [`ssl`](#-puppet_metrics_collector--pe_metric--ssl)
 * [`excludes`](#-puppet_metrics_collector--pe_metric--excludes)
 * [`additional_metrics`](#-puppet_metrics_collector--pe_metric--additional_metrics)
-* [`remote_metrics_enabled`](#-puppet_metrics_collector--pe_metric--remote_metrics_enabled)
 * [`override_metrics_command`](#-puppet_metrics_collector--pe_metric--override_metrics_command)
 * [`metrics_server_type`](#-puppet_metrics_collector--pe_metric--metrics_server_type)
-* [`metrics_server_hostname`](#-puppet_metrics_collector--pe_metric--metrics_server_hostname)
-* [`metrics_server_port`](#-puppet_metrics_collector--pe_metric--metrics_server_port)
-* [`metrics_server_db_name`](#-puppet_metrics_collector--pe_metric--metrics_server_db_name)
 * [`env_vars`](#-puppet_metrics_collector--pe_metric--env_vars)
 
 ##### <a name="-puppet_metrics_collector--pe_metric--metrics_type"></a>`metrics_type`
@@ -699,14 +684,6 @@ Data type: `Array[Hash]`
 
 Default value: `[]`
 
-##### <a name="-puppet_metrics_collector--pe_metric--remote_metrics_enabled"></a>`remote_metrics_enabled`
-
-Data type: `Optional[Boolean]`
-
-
-
-Default value: `lookup('puppet_metrics_collector::pe_metric::remote_metrics_enabled', { 'default_value' => undef })`
-
 ##### <a name="-puppet_metrics_collector--pe_metric--override_metrics_command"></a>`override_metrics_command`
 
 Data type: `Optional[String]`
@@ -717,31 +694,7 @@ Default value: `undef`
 
 ##### <a name="-puppet_metrics_collector--pe_metric--metrics_server_type"></a>`metrics_server_type`
 
-Data type: `Optional[Enum['influxdb','graphite','splunk_hec']]`
-
-
-
-Default value: `undef`
-
-##### <a name="-puppet_metrics_collector--pe_metric--metrics_server_hostname"></a>`metrics_server_hostname`
-
-Data type: `Optional[String]`
-
-
-
-Default value: `undef`
-
-##### <a name="-puppet_metrics_collector--pe_metric--metrics_server_port"></a>`metrics_server_port`
-
-Data type: `Optional[Integer]`
-
-
-
-Default value: `undef`
-
-##### <a name="-puppet_metrics_collector--pe_metric--metrics_server_db_name"></a>`metrics_server_db_name`
-
-Data type: `Optional[String]`
+Data type: `Optional[Enum['splunk_hec']]`
 
 
 
@@ -848,48 +801,6 @@ Default value: `undef`
 
 ## Functions
 
-### <a name="puppet_metrics_collector--generate_metrics_server_command"></a>`puppet_metrics_collector::generate_metrics_server_command`
-
-Type: Puppet Language
-
-Generate the metrics shipping command for the cron job including remote metrics
-
-#### `puppet_metrics_collector::generate_metrics_server_command(Optional[String] $scripts_dir, Optional[Enum['influxdb','graphite','splunk_hec']] $metrics_server_type = undef, Optional[String] $metrics_server_hostname = undef, Optional[String] $metrics_server_db_name = undef, Optional[Integer] $metrics_server_port = undef)`
-
-The puppet_metrics_collector::generate_metrics_server_command function.
-
-Returns: `String` of the metrics command or undef
-
-##### `scripts_dir`
-
-Data type: `Optional[String]`
-
-the path to the scripts directory
-
-##### `metrics_server_type`
-
-Data type: `Optional[Enum['influxdb','graphite','splunk_hec']]`
-
-the metric server type
-
-##### `metrics_server_hostname`
-
-Data type: `Optional[String]`
-
-the metric server's address
-
-##### `metrics_server_db_name`
-
-Data type: `Optional[String]`
-
-the influxdb database name
-
-##### `metrics_server_port`
-
-Data type: `Optional[Integer]`
-
-the port to connect to
-
 ### <a name="puppet_metrics_collector--hosts_with_pe_profile"></a>`puppet_metrics_collector::hosts_with_pe_profile`
 
 Type: Puppet Language
@@ -956,13 +867,13 @@ Type: Puppet Language
 
 Function: version_based_excludes
 
-Description: Generates a list of services to exlude based on version of PE
+Description: Generates a list of services to exlude based on the metrics type
 
 #### `puppet_metrics_collector::version_based_excludes(String[1] $metrics_type)`
 
 Function: version_based_excludes
 
-Description: Generates a list of services to exlude based on version of PE
+Description: Generates a list of services to exlude based on the metrics type
 
 Returns: `Array[String]` excludes the list of services to exclude
 
