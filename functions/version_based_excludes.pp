@@ -6,10 +6,14 @@
 function puppet_metrics_collector::version_based_excludes(
   String[1] $metrics_type,
 ) >> Array[String] {
-  if $metrics_type == 'puppetserver' {
-    ['file-sync-storage-service','pe-puppet-profiler','pe-master','pe-jruby-metrics']
-  }
-  else {
-    $excludes = []
+  case $metrics_type {
+    'puppetserver': {
+      # File Sync Storage includes a lot of detail that bloats file sizes.
+      # The pe-* metrics are legacy representations that only duplicate data.
+      ['file-sync-storage-service','pe-puppet-profiler','pe-master','pe-jruby-metrics']
+    }
+    default: {
+      []
+    }
   }
 }
