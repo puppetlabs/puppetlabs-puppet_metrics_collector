@@ -12,6 +12,12 @@ function puppet_metrics_collector::version_based_excludes(
       # The pe-* metrics are legacy representations that only duplicate data.
       ['file-sync-storage-service','pe-puppet-profiler','pe-master','pe-jruby-metrics']
     }
+    'console': {
+      # PE Console has a lot of parameterized routes that can result in
+      # hundreds of megabytes collected daily from the route metrics.
+      # This data can be extracted from the console access log if needed.
+      ['comidi-route-metrics']
+    }
     default: {
       []
     }
