@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v8.1.0](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/tree/v8.1.0) (2024-12-06)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v8.0.0...v8.1.0)
+
+### Added
+
+- \(SUP-4870\) Exclude comidi-route-metrics from Console collection [\#200](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/200) ([Sharpie](https://github.com/Sharpie))
+
 ## [v8.0.0](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/tree/v8.0.0) (2023-06-23)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v7.2.0...v8.0.0)
