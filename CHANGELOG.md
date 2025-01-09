@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v8.2.0](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/tree/v8.2.0) (2025-01-09)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v8.1.0...v8.2.0)
+
+### Added
+
+- \(SUP-5232\) Added error handling to JSON conversion of metrics [\#202](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/202) ([Rory-Johnston](https://github.com/Rory-Johnston))
+
 ## [v8.1.0](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/tree/v8.1.0) (2024-12-06)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v8.0.0...v8.1.0)
