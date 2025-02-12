@@ -80,6 +80,15 @@ module PuppetX
 
       def retrieve_additional_metrics(url, _metrics_type, metrics)
         metrics_output = post_endpoint(url, metrics.to_json)
+
+        unless metrics_output.is_a?(Array)
+          STDERR.puts('ERROR request to %{url} returned data non-Array data of type %{class}: %{output}' %
+                      { url: url,
+                        class: metrics_output.class,
+                        output: metrics_output.to_s })
+          return []
+        end
+
         return [] if metrics_output.empty?
 
         # For a status other than 200 or 404, add the HTTP code to the error array
