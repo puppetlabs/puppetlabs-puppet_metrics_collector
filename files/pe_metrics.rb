@@ -79,16 +79,7 @@ module PuppetX
       end
 
       def retrieve_additional_metrics(url, _metrics_type, metrics)
-        begin
-          json_data = metrics.to_json
-        rescue StandardError => e
-          STDERR.puts 'Failed to convert metrics to JSON.'
-          STDERR.puts "Error: #{e.message}"
-          STDERR.puts e.backtrace
-          return []
-        end
-
-        metrics_output = post_endpoint(url, json_data)
+        metrics_output = post_endpoint(url, metrics.to_json)
         return [] if metrics_output.empty?
 
         # For a status other than 200 or 404, add the HTTP code to the error array
