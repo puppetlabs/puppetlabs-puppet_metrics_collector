@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v8.2.1](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/tree/v8.2.1) (2025-02-14)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v8.2.0...v8.2.1)
+
+### Fixed
+
+- \(PE-40043\) Remove faulty index bloat statistics [\#206](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/206) ([Sharpie](https://github.com/Sharpie))
+- \(PE-40346\) Fix retrieve\_additional\_metrics error handling [\#205](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/205) ([Sharpie](https://github.com/Sharpie))
+
 ## [v8.2.0](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/tree/v8.2.0) (2025-01-09)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v8.1.0...v8.2.0)
