@@ -456,18 +456,22 @@ class puppet_metrics_collector::service::puppetdb (
     default       => true,
   }
 
-  if $port == 8081 and $ssl == false {
-    $_port = 8080
-  } else {
-    $_port = $port
-  }
+  # Prior to https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/82,
+  # this class substituted PuppetDB's plaintext port (8080) for the SSL port (8081)
+  # whenever $ssl was false -- e.g. via the "Configuration for Distributed Metrics
+  # Collection" pattern in README.md, where a PuppetDB host is classified with
+  # puppetdb_hosts => ['127.0.0.1'] to collect its own metrics over loopback. The
+  # collection scripts (files/tk_metrics) always connect over HTTPS regardless of $port,
+  # so that substitution only ever produced a failed TLS handshake against a plaintext
+  # port. $port (the SSL API port) is used unconditionally; loopback collection
+  # authenticates the same way remote collection does, via the node's own agent cert.
 
   puppet_metrics_collector::pe_metric { 'puppetdb' :
     metric_ensure            => $metrics_ensure,
     cron_minute              => "0/${collection_frequency}",
     retention_days           => $retention_days,
     hosts                    => $hosts,
-    metrics_port             => $_port,
+    metrics_port             => $port,
     ssl                      => $ssl,
     override_metrics_command => $override_metrics_command,
     excludes                 => $excludes,
