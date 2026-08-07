@@ -787,7 +787,8 @@ Default value: `'system_metrics'`
 
 Data type: `String`
 
-The parameter that defines the command for the remote shipping of metrics. Default: '$puppet_metrics_collector::system::metrics_shipping_command'
+The parameter that defines the command for the remote shipping of metrics.
+Default: '$puppet_metrics_collector::system::metrics_shipping_command'
 
 Default value: `$puppet_metrics_collector::system::metrics_shipping_command`
 
