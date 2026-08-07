@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v8.2.2](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/tree/v8.2.2) (2026-08-07)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v8.2.1...v8.2.2)
+
+### Fixed
+
+- Fix puppet-lint space\_before\_arrow and 140chars warnings [\#210](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/210) ([jonathannewman](https://github.com/jonathannewman))
+- Remove broken plaintext-port fallback in PuppetDB metrics collection [\#209](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/209) ([jonathannewman](https://github.com/jonathannewman))
+
 ## [v8.2.1](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/tree/v8.2.1) (2025-02-14)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v8.2.0...v8.2.1)
