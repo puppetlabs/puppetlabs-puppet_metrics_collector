@@ -451,23 +451,30 @@ class puppet_metrics_collector::service::puppetdb (
   $additional_metrics = $base_metrics + $storage_metrics + $connection_pool_metrics +
   $version_specific_metrics + $ha_sync_metrics + $extra_metrics
 
-  $ssl = $hosts ? {
-    ['127.0.0.1'] => false,
-    default       => true,
-  }
-
-  if $port == 8081 and $ssl == false {
-    $_port = 8080
-  } else {
-    $_port = $port
-  }
+  # Prior to https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/82,
+  # this class substituted PuppetDB's plaintext port (8080) for the SSL port (8081)
+  # whenever $hosts was the loopback address -- e.g. via the "Configuration for
+  # Distributed Metrics Collection" pattern in README.md, where a PuppetDB host is
+  # classified with puppetdb_hosts => ['127.0.0.1'] to collect its own metrics over
+  # loopback. The collection scripts (files/tk_metrics) always connect over HTTPS
+  # regardless of $port, so that substitution only ever produced a failed TLS handshake
+  # against a plaintext port. $port (the SSL API port) is used unconditionally; loopback
+  # collection authenticates the same way remote collection does, via the node's own
+  # agent cert.
+  #
+  # $ssl is forced to true unconditionally for the same reason: collection is always over
+  # HTTPS regardless of $hosts, so ssl => false never reflected reality. pe_metric.pp
+  # accepts an $ssl parameter but never reads it in its body -- it's vestigial and a
+  # candidate for removal in a follow-up. Not removed here to avoid changing
+  # puppet_metrics_collector::pe_metric's signature (used by 5 other call sites) in this fix.
+  $ssl = true
 
   puppet_metrics_collector::pe_metric { 'puppetdb' :
     metric_ensure            => $metrics_ensure,
     cron_minute              => "0/${collection_frequency}",
     retention_days           => $retention_days,
     hosts                    => $hosts,
-    metrics_port             => $_port,
+    metrics_port             => $port,
     ssl                      => $ssl,
     override_metrics_command => $override_metrics_command,
     excludes                 => $excludes,

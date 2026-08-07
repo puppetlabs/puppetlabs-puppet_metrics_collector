@@ -155,4 +155,35 @@ describe 'puppet_metrics_collector' do
       end
     }
   end
+
+  context 'when puppetdb_hosts is a normal (non-loopback) host list' do
+    let(:params) { { puppetdb_hosts: ['puppetdb.example.com'] } }
+
+    it { is_expected.to contain_puppet_metrics_collector__pe_metric('puppetdb').with_metrics_port(8081) }
+    it { is_expected.to contain_puppet_metrics_collector__pe_metric('puppetdb').with_ssl(true) }
+  end
+
+  context 'when puppetdb_hosts resolves to the loopback address' do
+    # Matches the "Configuration for Distributed Metrics Collection" pattern documented
+    # in README.md, where a PuppetDB host is classified directly with
+    # puppetdb_hosts => ['127.0.0.1'] to collect its own metrics over loopback.
+    let(:params) { { puppetdb_hosts: ['127.0.0.1'] } }
+
+    it 'always uses the SSL API port for PuppetDB metrics, never substituting the plaintext port' do
+      is_expected.to contain_puppet_metrics_collector__pe_metric('puppetdb').with_metrics_port(8081)
+    end
+
+    it 'always reports ssl => true, since collection is always over HTTPS regardless of $hosts' do
+      is_expected.to contain_puppet_metrics_collector__pe_metric('puppetdb').with_ssl(true)
+    end
+  end
+
+  context 'when an explicit non-default puppetdb_port is set alongside the loopback address' do
+    # This does not exercise the removed port-substitution branch -- that branch only ever
+    # fired when $port was left at its default (8081). It documents that a custom port
+    # always passes through unchanged, regardless of $hosts.
+    let(:params) { { puppetdb_hosts: ['127.0.0.1'], puppetdb_port: 9999 } }
+
+    it { is_expected.to contain_puppet_metrics_collector__pe_metric('puppetdb').with_metrics_port(9999) }
+  end
 end
