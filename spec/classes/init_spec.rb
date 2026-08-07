@@ -160,6 +160,7 @@ describe 'puppet_metrics_collector' do
     let(:params) { { puppetdb_hosts: ['puppetdb.example.com'] } }
 
     it { is_expected.to contain_puppet_metrics_collector__pe_metric('puppetdb').with_metrics_port(8081) }
+    it { is_expected.to contain_puppet_metrics_collector__pe_metric('puppetdb').with_ssl(true) }
   end
 
   context 'when puppetdb_hosts resolves to the loopback address' do
@@ -170,6 +171,10 @@ describe 'puppet_metrics_collector' do
 
     it 'always uses the SSL API port for PuppetDB metrics, never substituting the plaintext port' do
       is_expected.to contain_puppet_metrics_collector__pe_metric('puppetdb').with_metrics_port(8081)
+    end
+
+    it 'always reports ssl => true, since collection is always over HTTPS regardless of $hosts' do
+      is_expected.to contain_puppet_metrics_collector__pe_metric('puppetdb').with_ssl(true)
     end
   end
 
