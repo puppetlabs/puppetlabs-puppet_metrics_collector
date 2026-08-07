@@ -23,7 +23,8 @@
 #   The script file to run to collect the metrics. Default: 'system_metrics'
 #
 # @param metrics_shipping_command
-#   The parameter that defines the command for the remote shipping of metrics. Default: '$puppet_metrics_collector::system::metrics_shipping_command'
+#   The parameter that defines the command for the remote shipping of metrics.
+#   Default: '$puppet_metrics_collector::system::metrics_shipping_command'
 define puppet_metrics_collector::sar_metric (
   String                    $metrics_type              = $title,
   Enum['absent', 'present'] $metric_ensure             = 'present',
@@ -79,11 +80,11 @@ define puppet_metrics_collector::sar_metric (
   # LEGACY CLEANUP
 
   cron { "${metrics_type}_metrics_tidy" :
-    ensure  => absent,
+    ensure => absent,
   }
 
   cron { "${metrics_type}_metrics_collection" :
-    ensure  => absent,
+    ensure => absent,
   }
 
   $metric_legacy_files = [
