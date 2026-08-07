@@ -75,11 +75,11 @@ define puppet_metrics_collector::pe_metric (
 
   # LEGACY CLEANUP
   cron { "${metrics_type}_metrics_collection" :
-    ensure  => absent,
+    ensure => absent,
   }
 
   cron { "${metrics_type}_metrics_tidy" :
-    ensure  => absent,
+    ensure => absent,
   }
 
   $metric_legacy_files = [
