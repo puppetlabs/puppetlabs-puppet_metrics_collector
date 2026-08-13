@@ -17,7 +17,8 @@ module PuppetMetricsCollector
   # The {#collect_data} function contains the queries used, which currently
   # gather:
   #
-  #   - Checkpoint activity from `pg_stat_bgwriter`.
+  #   - Checkpoint activity from `pg_stat_bgwriter` (and, on PostgreSQL 17
+  #     and newer, `pg_stat_checkpointer`).
   #   - Details of the oldest open transaction from `pg_stat_activity`.
   #   - Connection counts grouped by status (`idle`, `active`, etc.)
   #     along with the maximum number of connections allowed.
@@ -233,19 +234,47 @@ module PuppetMetricsCollector
       nil
     end
 
-    # Execute SQL statements to gather metrics
-    def collect_data
-      @result = {}
-      @pg_version = sql_query('SHOW server_version;', parse_json: false)
-
-      if @pg_version.nil?
-        # Error occurred.
-        return
+    # SQL to gather checkpoint activity for the server's version
+    #
+    # PostgreSQL 17 moved the checkpoint counters out of `pg_stat_bgwriter`
+    # into `pg_stat_checkpointer`, renamed several of them, and dropped
+    # `buffers_backend` and `buffers_backend_fsync` entirely. Those two are
+    # selected as NULL so that the shape of the result is the same on every
+    # version. `stats_reset` is still sourced from `pg_stat_bgwriter`; on 17+
+    # `pg_stat_checkpointer` tracks its own reset time independently, so this
+    # value only reflects when bgwriter's counters (not checkpointer's) were
+    # last reset.
+    #
+    # @return [String] The SQL statement to execute.
+    #
+    # @see https://www.postgresql.org/docs/17/monitoring-stats.html
+    def checkpoints_query
+      # @pg_version is nil when the server's version couldn't be determined
+      # or parsed (see #parse_pg_version). Treat that as "not 17+" so this
+      # still attempts the pre-17 query rather than raising on a nil compare:
+      # if that guess is wrong, only this one query fails (reported like any
+      # other failed query) instead of losing every other metric in the run.
+      if @pg_version && @pg_version >= Gem::Version.new('17')
+        <<-EOS
+SELECT json_build_object(
+  'checkpoints_timed', checkpointer.num_timed,
+  'checkpoints_req', checkpointer.num_requested,
+  'checkpoint_write_time', checkpointer.write_time,
+  'checkpoint_sync_time', checkpointer.sync_time,
+  'buffers_checkpoint', checkpointer.buffers_written,
+  'buffers_clean', bgwriter.buffers_clean,
+  'maxwritten_clean', bgwriter.maxwritten_clean,
+  'buffers_backend', NULL,
+  'buffers_backend_fsync', NULL,
+  'buffers_alloc', bgwriter.buffers_alloc,
+  'stats_reset', extract(epoch FROM bgwriter.stats_reset)
+)
+FROM
+  pg_stat_bgwriter AS bgwriter,
+  pg_stat_checkpointer AS checkpointer;
+        EOS
       else
-        @pg_version = Gem::Version.new(@pg_version.strip)
-      end
-
-      add_data!(@result, :checkpoints, sql_query(<<-EOS))
+        <<-EOS
 SELECT json_build_object(
   'checkpoints_timed', checkpoints_timed,
   'checkpoints_req', checkpoints_req,
@@ -261,7 +290,37 @@ SELECT json_build_object(
 )
 FROM
   pg_stat_bgwriter;
-EOS
+        EOS
+      end
+    end
+
+    # Parse the output of `SHOW server_version` into a Gem::Version
+    #
+    # Some builds append a suffix after the numeric version (e.g. a distro
+    # package revision), which Gem::Version rejects outright.
+    #
+    # @param raw_version [String] Raw output of `SHOW server_version`.
+    #
+    # @return [Gem::Version, nil] The parsed version, or nil if it couldn't
+    #   be parsed. An error is recorded via {#add_error!} in that case.
+    def parse_pg_version(raw_version)
+      reported_version = raw_version.strip
+      version_number = reported_version[%r{\A[0-9]+(?:\.[0-9]+)*}]
+      if version_number.nil?
+        add_error!('Unable to parse Postgres version %{version}' %
+                     { version: reported_version.inspect })
+        return nil
+      end
+      Gem::Version.new(version_number)
+    end
+
+    # Execute SQL statements to gather metrics
+    def collect_data
+      @result = {}
+      raw_version = sql_query('SHOW server_version;', parse_json: false)
+      @pg_version = raw_version.nil? ? nil : parse_pg_version(raw_version)
+
+      add_data!(@result, :checkpoints, sql_query(checkpoints_query))
 
       # NOTE: 'other' in the below query comes from entries with
       #       a NULL state which are usually non-query backend
@@ -359,6 +418,8 @@ FROM (
 ) sub;
 EOS
 
+        # TODO: PE-45861 this interpolates `db` directly into the query
+        # string below instead of parameterizing it.
         add_data!(db_result, :database_stats, sql_query(<<-EOS))
 SELECT json_build_object(
   'numbackends', numbackends,
