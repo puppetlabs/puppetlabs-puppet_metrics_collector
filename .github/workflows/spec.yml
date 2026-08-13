@@ -38,7 +38,7 @@ jobs:
         id: get-matrix
         run: |
           if [ '${{ github.repository_owner }}' == 'puppetlabs' ]; then
-          bundle exec matrix_from_metadata_v2
+          bundle exec matrix_from_metadata_v3
           else
             echo  "spec_matrix={}" >> $GITHUB_OUTPUT
           fi
