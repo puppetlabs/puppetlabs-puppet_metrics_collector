@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v8.2.3](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/tree/v8.2.3) (2026-08-14)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v8.2.2...v8.2.2)
+
+### Fixed
+
+- \(PE-45849\) Fix PG17 checkpoints query and harden version parsing [\#213](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/213) ([beechtom](https://github.com/beechtom))
+
 ## [v8.2.2](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/tree/v8.2.2) (2026-08-07)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v8.2.1...v8.2.2)
