@@ -38,7 +38,7 @@ group :development do
   gem "concurrent-ruby", '= 1.1.10',             require: false
 end
 group :system_tests do
-  gem "puppet_litmus", '~> 1.0', require: false, platforms: [:ruby, :x64_mingw]
+  gem "puppet_litmus", '~> 2.7', require: false, platforms: [:ruby, :x64_mingw]
   gem "serverspec", '~> 2.41',   require: false
 end
 
