@@ -1,0 +1,5 @@
+---
+puppet_metrics_collector::service::puppetserver::extra_metrics:
+  - type: read
+    name: user-supplied-metric
+    mbean: 'puppetserver:name=puppetlabs.*.user.supplied'

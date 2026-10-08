@@ -39,9 +39,24 @@ class puppet_metrics_collector::service::puppetserver (
     },
   ]
 
+  # Registered by Puppet Server versions that support the drain window, so collected whether or
+  # not file sync is enabled. Counts how often the drain-window version-count cap, rather than its
+  # duration, cut short the protection of an in-flight code version. A rising rate means code is
+  # being deployed faster than in-flight runs can be protected, so some runs may get a 410 and
+  # reconverge on a later run.
+  # A server that does not register it reports a 404 for that mbean in the bulk response (Jolokia:
+  # no MBean matched the pattern), which the collector records as null without counting an error.
+  $code_version_metrics = [
+    {
+      'type'  => 'read',
+      'name'  => 'code-version-count-cap-binding',
+      'mbean' => 'puppetserver:name=puppetlabs.*.puppetserver.code-version.count-cap-binding'
+    },
+  ]
+
   $additional_metrics = $facts.dig('puppet_metrics_collector', 'file_sync_storage_enabled') ? {
-    true    => $filesync_storage_metrics + $extra_metrics,
-    default => $extra_metrics,
+    true    => $filesync_storage_metrics + $code_version_metrics + $extra_metrics,
+    default => $code_version_metrics + $extra_metrics,
   }
 
   puppet_metrics_collector::pe_metric { 'puppetserver' :

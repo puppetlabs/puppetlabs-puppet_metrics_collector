@@ -19,6 +19,7 @@ Table of Contents
   - [Usage](#usage)
     - [Searching Metrics](#searching-metrics)
       - [Searching Puppetserver Metrics](#searching-puppetserver-metrics)
+      - [Code version drain-window metric](#code-version-drain-window-metric)
       - [Searching PuppetDB Metrics](#searching-puppetdb-metrics)
     - [Sharing Metrics Data](#sharing-metrics-data)
   - [Reference](#reference)
@@ -200,6 +201,44 @@ jq '.. |."average-free-jrubies"? | select(. != null)| input_filename , .' -- pup
 "puppetserver/primary.example.com/20190404T171502Z.json"
 0.9999993830655706,
 ```
+
+#### Code version drain-window metric
+
+Puppet Server's drain window keeps a superseded code version available for a period, so agent runs that started on it can finish.
+On Puppet Server versions that support the drain window, the `puppetserver` metrics include `code-version-count-cap-binding` (the server's own metric name is `puppetserver.code-version.count-cap-binding`), a counter of how many times the drain window's version-count cap, rather than its duration, cut that protection short for a code version that agent runs were still using.
+It is the signal that code is being deployed faster than in-flight runs can be protected.
+While it is rising, the drain window protects runs for less time than its configured duration implies, so some runs may get a `410` (HTTP Gone, the code version is no longer available) and reconverge on a later run.
+Nothing else in the collected metrics flags this, so without the counter the effect is easy to miss and hard to connect to deploy frequency.
+
+Alert on its rate of increase, not on its absolute value.
+The count restarts from zero when Puppet Server restarts.
+It counts events rather than distinct code versions, so it can exceed the number of code versions affected.
+Treat a nonzero rate as a hint that the cap or the deploy frequency needs attention, not as proof that runs failed.
+
+Example, with illustrative output (the exact shape can vary with your Puppet Server version):
+
+```bash
+jq '.. |."code-version-count-cap-binding"? | select(. != null)| input_filename , .' -- puppetserver/primary.example.com/*.json
+
+"puppetserver/primary.example.com/20261008T170501Z.json"
+{
+  "puppetserver:name=puppetlabs.primary.example.com.puppetserver.code-version.count-cap-binding": {
+    "Count": 3
+  }
+}
+```
+
+The value is an object with one entry per matching metric, keyed by the metric's full name, and each entry's `Count` attribute is its running total.
+A `Count` of `0` is the normal value: the cap has not bound since the last restart.
+If the metric is not found (a Puppet Server that does not register it answers with a per-item 404 inside the bulk response), the collector records `null` for the key, which stays present in the JSON, without adding to `error_count`.
+The `jq` example above omits those `null` entries, so a `null` can mean that the Puppet Server in use predates this metric.
+
+Collecting this metric means the collector reads the `/metrics/v2` API on every Puppet Server it scrapes, including when the collecting host does not run file sync storage, where it previously made no such call unless `extra_metrics` was set.
+If the request to that API as a whole fails with an error status, the failure is recorded in `error` and `error_count` as `HTTP Error <code> for <url>`, and a connection, TLS or timeout failure, or a response body that cannot be parsed as JSON, is recorded as the exception message instead.
+When the whole request fails, the `code-version-count-cap-binding` key is absent from that run's output rather than `null`.
+Typical causes are an access-denied response on PE older than 2019.8.5, where `/metrics/v2` is restricted to `localhost` (see the note under [Overview](#overview) and [Configuration for Distributed Metrics Collection](#configuration-for-distributed-metrics-collection)), a denial from an authorization rule, and a 404 where the endpoint has been disabled.
+The failure is recorded on every collection run until access is fixed, so `error_count` stays nonzero in the archived records.
+`puppetserver_excludes` only drops the key from the output and does not skip the call; the fix is to restore access, or to collect from a host where the API is reachable as described in the [Configuration for Distributed Metrics Collection](#configuration-for-distributed-metrics-collection) section.
 
 #### Searching PuppetDB Metrics
 
