@@ -2,9 +2,17 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v8.3.0](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/tree/v8.3.0) (2026-10-09)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v8.2.3...v8.3.0)
+
+### Added
+
+- \(PE-46479\) Collect the code-version count-cap-binding counter [\#217](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/pull/217) ([jonathannewman](https://github.com/jonathannewman))
+
 ## [v8.2.3](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/tree/v8.2.3) (2026-08-14)
 
-[Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v8.2.2...v8.2.2)
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-puppet_metrics_collector/compare/v8.2.2...v8.2.3)
 
 ### Fixed
 
