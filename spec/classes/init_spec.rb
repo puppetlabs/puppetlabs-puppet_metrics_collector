@@ -114,6 +114,62 @@ describe 'puppet_metrics_collector' do
     }
   end
 
+  describe 'the puppetserver collection config' do
+    # puppetserver.code-version.count-cap-binding is registered by Puppet Server versions that
+    # support the drain window, independent of file sync, so it is collected whether or not file
+    # sync storage is enabled. A metric that is not listed in additional_metrics is never read
+    # from /metrics/v2/read and so never reaches the archive.
+    let(:config_file) { '/opt/puppetlabs/puppet-metrics-collector/config/puppetserver.yaml' }
+    let(:additional_metrics) do
+      YAML.safe_load(catalogue.resource('file', config_file)[:content])['additional_metrics']
+    end
+    let(:count_cap_binding) do
+      {
+        'type' => 'read',
+        'name' => 'code-version-count-cap-binding',
+        'mbean' => 'puppetserver:name=puppetlabs.*.puppetserver.code-version.count-cap-binding',
+      }
+    end
+    let(:file_sync_names) do
+      ['file-sync-storage-commit-timer', 'file-sync-storage-pre-commit-hook-timer', 'file-sync-storage-commit-add-rm-timer']
+    end
+
+    context 'when file sync storage is not enabled' do
+      it 'collects only the code-version count-cap-binding counter' do
+        expect(additional_metrics).to eq([count_cap_binding])
+      end
+    end
+
+    context 'when file sync storage is enabled' do
+      let(:facts) { { puppet_metrics_collector: { have_systemd: true, file_sync_storage_enabled: true } } }
+
+      it 'collects the file-sync storage timers and the counter' do
+        expect(additional_metrics.map { |m| m['name'] }).to eq(file_sync_names + ['code-version-count-cap-binding'])
+        expect(additional_metrics).to include(count_cap_binding)
+      end
+    end
+
+    context 'when extra_metrics are supplied' do
+      # Supplies puppet_metrics_collector::service::puppetserver::extra_metrics from spec/fixtures/hiera/data/extra_metrics.yaml.
+      let(:hiera_config) { File.expand_path('../fixtures/hiera/hiera.yaml', __dir__) }
+      let(:extra_metric) do
+        { 'type' => 'read', 'name' => 'user-supplied-metric', 'mbean' => 'puppetserver:name=puppetlabs.*.user.supplied' }
+      end
+
+      it 'appends them after the counter' do
+        expect(additional_metrics).to eq([count_cap_binding, extra_metric])
+      end
+
+      context 'and file sync storage is enabled' do
+        let(:facts) { { puppet_metrics_collector: { have_systemd: true, file_sync_storage_enabled: true } } }
+
+        it 'keeps them after the file-sync storage timers and the counter' do
+          expect(additional_metrics.map { |m| m['name'] }).to eq(file_sync_names + ['code-version-count-cap-binding', 'user-supplied-metric'])
+        end
+      end
+    end
+  end
+
   context 'when setting deprecated parameters' do
     let(:params) do
       {
